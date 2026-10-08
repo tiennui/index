@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Biểu đồ Binance</title>
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --text: #131722;
+    --muted: #787b86;
+    --line: #e0e3eb;
+    --hover: #f0f3fa;
+    --active: #e1ecfb;
+    --accent: #2962ff;
+    --up: #089981;
+    --down: #f23645;
+  }
+  :root[data-theme="dark"] {
+    --bg: #131722;
+    --panel: #131722;
+    --text: #d1d4dc;
+    --muted: #787b86;
+    --line: #2a2e39;
+    --hover: #2a2e39;
+    --active: #2a3a5c;
+    --accent: #2962ff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
+    font-size: 13px; display: flex; flex-direction: column; overflow: hidden;
+  }
+  /* Thanh công cụ */
+  .toolbar {
+    height: 44px; flex: none; display: flex; align-items: center; gap: 4px;
+    padding: 0 8px; border-bottom: 1px solid var(--line); overflow-x: auto; white-space: nowrap;
+  }
+  .toolbar .sep { width: 1px; height: 22px; background: var(--line); margin: 0 6px; flex: none; }
+  .btn {
+    background: none; border: 0; color: var(--text); padding: 6px 9px; border-radius: 4px;
+    cursor: pointer; font: inherit; font-weight: 500;
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.on { background: var(--active); color: var(--accent); }
+  .btn:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  select.sym {
+    background: var(--hover); color: var(--text); border: 0; border-radius: 4px;
+    padding: 6px 10px; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  .live { display: flex; align-items: center; gap: 6px; margin-left: auto; color: var(--muted); padding-right: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--up); }
+  .dot.err { background: var(--down); }
+
+  /* Khu vực biểu đồ */
+  .charts { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; }
+  #clock {
+    position: absolute; right: 0; bottom: 0; z-index: 30; height: 26px; padding: 0 8px; cursor: pointer;
+    display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+    background: var(--bg); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
+    font-size: 10.5px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; user-select: none;
+  }
+  #clock b { color: var(--text); font-weight: 600; }
+  #clock span { color: var(--muted); }
+  #clock:hover span { color: var(--accent); }
+  .pane { position: relative; min-height: 0; }
+  #mainPane { flex: 1; }
+  #rsiPane { height: 28%; max-height: 75%; flex: none; }
+  #rsiPane.collapsed { display: none; }
+  #splitter {
+    height: 7px; flex: none; cursor: row-resize; background: var(--line); position: relative;
+    touch-action: none; z-index: 20;
+  }
+  #splitter::after {
+    content: ""; position: absolute; left: 50%; top: 2px; width: 36px; height: 3px;
+    margin-left: -18px; border-radius: 2px; background: var(--muted); opacity: .6;
+  }
+  #splitter:hover, #splitter.drag { background: var(--accent); }
+  #splitter:hover::after, #splitter.drag::after { background: #fff; opacity: .9; }
+  #splitter.hidden { display: none; }
+  body.dragging { user-select: none; cursor: row-resize; }
+  #cfg {
+    position: fixed; top: 48px; right: 12px; z-index: 50; display: none; width: 260px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  #cfg.open { display: block; }
+  #cfg h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  #cfg .f { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+  #cfg .f label { color: var(--text); }
+  #cfg .f label i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  #cfg input {
+    width: 76px; background: var(--hover); color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 7px; font: inherit; text-align: right;
+  }
+  #cfg input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #cfg .sub { color: var(--muted); font-size: 11.5px; margin: 10px 0 4px; }
+  #cfg .acts { display: flex; justify-content: space-between; margin-top: 12px; }
+  #cfg .acts .btn { background: var(--hover); }
+  #cfg .err { color: var(--down); font-size: 12px; min-height: 16px; margin-top: 4px; }
+
+  #rbar {
+    display: none; flex: none; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 12.5px;
+  }
+  #rbar[data-phase] { display: flex; }
+  #rbar .grp { display: none; align-items: center; gap: 6px; flex-wrap: wrap; }
+  #rbar[data-phase="run"] .grp { display: flex; }
+  #rbar[data-phase="run"] #rHint { display: none; }
+  #rbar .btn { background: var(--hover); padding: 5px 10px; }
+  #rbar .btn.buy { background: var(--up); color: #fff; }
+  #rbar .btn.sell { background: var(--down); color: #fff; }
+  #rbar .btn:disabled { opacity: .4; cursor: not-allowed; }
+  #rbar select {
+    background: var(--hover); color: var(--text); border: 0; border-radius: 4px; padding: 5px 6px; font: inherit;
+  }
+  #rbar .stat { color: var(--muted); }
+  #rbar .stat b { color: var(--text); font-weight: 600; }
+  #rbar .spacer { margin-left: auto; display: flex; gap: 6px; }
+  #rbar[data-phase="select"] #rRedo { display: none; }
+  #draw { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; touch-action: none; }
+  #dTools {
+    position: absolute; left: 8px; top: 132px; z-index: 8; display: flex; flex-direction: column; gap: 2px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px;
+  }
+  #dTools .tb {
+    width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0;
+    background: none; border: 0; border-radius: 4px; color: var(--text); cursor: pointer;
+  }
+  #dTools .tb:hover { background: var(--hover); }
+  #dTools .tb.on { background: var(--active); color: var(--accent); }
+  #dTools .tb:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #dTools .tb svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #dTools .hr { height: 1px; background: var(--line); margin: 2px 4px; }
+  #dTools input[type=color] {
+    width: 26px; height: 26px; margin: 3px auto; padding: 0; border: 1px solid var(--line);
+    border-radius: 4px; background: none; cursor: pointer;
+  }
+  #dHint {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 9; display: none;
+    pointer-events: none; background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 12px;
+  }
+  @media (max-width: 640px) { #dTools { top: 152px; } }
+  #hist {
+    position: fixed; top: 92px; right: 12px; z-index: 50; display: none; width: 400px; max-width: calc(100% - 24px);
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  #hist.open { display: block; }
+  #hist h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+  #hist .scroll { max-height: 280px; overflow: auto; }
+  #hist table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  #hist th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px 4px 0; position: sticky; top: 0; background: var(--panel); }
+  #hist td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); }
+  #timer {
+    position: absolute; right: 0; z-index: 6; display: none; pointer-events: none;
+    color: #fff; font-size: 11px; font-weight: 600; text-align: center; line-height: 17px;
+    height: 17px; font-variant-numeric: tabular-nums; background: var(--up);
+  }
+  .chart { position: absolute; inset: 0; }
+  #vsync {
+    position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 25; display: none;
+    pointer-events: none; border-left: 1px dashed #758696;
+  }
+  .legend {
+    position: absolute; left: 12px; top: 8px; z-index: 5; pointer-events: none;
+    display: flex; flex-direction: column; gap: 3px; max-width: calc(100% - 100px);
+  }
+  .legend .title { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .legend .ohlc { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12.5px; }
+  .legend .ohlc b { font-weight: 500; }
+  .legend .row { color: var(--muted); font-size: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend .row span i { font-style: normal; }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .quote {
+    position: absolute; left: 12px; top: 74px; z-index: 5; display: flex; gap: 6px;
+  }
+  .quote div {
+    border: 1px solid; border-radius: 4px; padding: 3px 9px; background: var(--panel);
+    font-size: 12px; line-height: 1.25; text-align: center; min-width: 84px;
+  }
+  .quote .sell { border-color: var(--down); color: var(--down); }
+  .quote .buy { border-color: var(--accent); color: var(--accent); }
+  .quote small { display: block; font-size: 10px; opacity: .85; }
+  .loading {
+    position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+    z-index: 10; background: color-mix(in srgb, var(--bg) 70%, transparent); color: var(--muted);
+    text-align: center; padding: 20px;
+  }
+  .loading.show { display: flex; }
+  @media (max-width: 640px) {
+    .quote { top: 96px; }
+    #rsiPane { height: 32%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar" id="toolbar">
+  <select class="sym" id="symbol" aria-label="Cặp giao dịch">
+    <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
+    <option>SOLUSDT</option><option>XRPUSDT</option><option>DOGEUSDT</option>
+    <option>ADAUSDT</option><option>TRXUSDT</option>
+  </select>
+  <span class="sep"></span>
+  <div id="tfs"></div>
+  <span class="sep"></span>
+  <button class="btn on" id="tgEma">EMA 50/100/200</button>
+  <button class="btn on" id="tgVol">Vol</button>
+  <button class="btn on" id="tgRsi">RSI</button>
+  <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
+  <span class="sep"></span>
+  <button class="btn" id="tgLog" title="Thang giá logarit">Log</button>
+  <button class="btn on" id="tgAuto" title="Tự động co giãn trục giá theo các nến đang hiển thị (tự tắt khi bạn kéo trục giá bằng tay)">Auto</button>
+  <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
+  <button class="btn" id="tgTheme">Giao diện sáng</button>
+  <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
+</div>
+
+<div id="cfg" role="dialog" aria-label="Cài đặt RSI">
+  <h4>Cài đặt RSI</h4>
+  <div class="f"><label for="cLen"><i style="background:#9c27b0"></i>Chu kỳ RSI</label><input id="cLen" type="number" min="2" max="200" step="1"></div>
+  <div class="f"><label for="cEma"><i style="background:#26a69a"></i>EMA của RSI</label><input id="cEma" type="number" min="1" max="200" step="1"></div>
+  <div class="f"><label for="cWma"><i style="background:#5b6cff"></i>WMA của RSI</label><input id="cWma" type="number" min="1" max="200" step="1"></div>
+  <div class="sub">Đường mức (vạch trắng)</div>
+  <div class="f"><label for="cHi">Mức trên</label><input id="cHi" type="number" min="2" max="99" step="1"></div>
+  <div class="f"><label for="cLo">Mức dưới</label><input id="cLo" type="number" min="1" max="98" step="1"></div>
+  <div class="sub">Vùng tô màu và cột nổi bật</div>
+  <div class="f"><label for="cXhi">Vùng quá mua</label><input id="cXhi" type="number" min="3" max="100" step="1"></div>
+  <div class="f"><label for="cXlo">Vùng quá bán</label><input id="cXlo" type="number" min="0" max="97" step="1"></div>
+  <div class="err" id="cErr"></div>
+  <div class="acts"><button class="btn" id="cReset">Mặc định</button><button class="btn on" id="cClose">Đóng</button></div>
+</div>
+
+<div id="rbar">
+  <span id="rHint">Bấm vào một nến trên biểu đồ để chọn điểm bắt đầu.</span>
+  <div class="grp">
+    <button class="btn" id="rPlay">▶ Chạy</button>
+    <button class="btn" id="rStep" title="Phím mũi tên phải">Nến tiếp ›</button>
+    <select id="rSpeed" aria-label="Tốc độ">
+      <option value="1000">1x</option><option value="500">2x</option>
+      <option value="200">5x</option><option value="100">10x</option>
+    </select>
+    <button class="btn buy" id="rBuy">Mua</button>
+    <button class="btn sell" id="rSell">Bán</button>
+    <button class="btn" id="rClose">Đóng lệnh</button>
+    <span class="stat">Vốn <b id="sEq">–</b></span>
+    <span class="stat">Tổng <b id="sPnl">–</b></span>
+    <span class="stat">Lệnh <b id="sPos">–</b></span>
+    <span class="stat">Số lệnh <b id="sN">0</b></span>
+    <span class="stat">Thắng <b id="sWin">–</b></span>
+    <button class="btn" id="rHist">Lịch sử</button>
+  </div>
+  <div class="spacer">
+    <button class="btn grp-redo" id="rRedo">Chọn lại</button>
+    <button class="btn" id="rExit">Thoát</button>
+  </div>
+</div>
+
+<div id="hist" role="dialog" aria-label="Lịch sử lệnh">
+  <h4>Lịch sử lệnh</h4>
+  <div class="scroll"><table>
+    <thead><tr><th>Hướng</th><th>Giá vào</th><th>Giá ra</th><th>Lãi/lỗ (USDT)</th></tr></thead>
+    <tbody id="hBody"></tbody>
+  </table></div>
+</div>
+
+<div class="charts">
+  <div class="pane" id="mainPane">
+    <div class="legend">
+      <div class="title"><span id="lgName">Bitcoin / TetherUS · 1D · Binance</span><span class="ohlc" id="lgOhlc"></span></div>
+      <div class="row" id="lgVol"></div>
+      <div class="row" id="lgEma"></div>
+    </div>
+    <div class="quote">
+      <div class="sell"><span id="qSell">–</span><small>BÁN</small></div>
+      <div class="buy"><span id="qBuy">–</span><small>MUA</small></div>
+    </div>
+    <div class="loading" id="loading">Đang tải dữ liệu từ Binance…</div>
+    <div class="chart" id="main"></div>
+    <div id="timer"></div>
+    <canvas id="draw"></canvas>
+    <div id="dHint"></div>
+    <div id="dTools" role="toolbar" aria-label="Công cụ vẽ">
+      <button class="tb on" data-tool="cursor" title="Con trỏ (Esc)"><svg viewBox="0 0 24 24"><path d="M6 3l12 8-5.5 1.5L9.5 18z"/></svg></button>
+      <button class="tb" data-tool="trend" title="Đường xu hướng"><svg viewBox="0 0 24 24"><path d="M6 18L18 6"/><circle cx="5.5" cy="18.5" r="2"/><circle cx="18.5" cy="5.5" r="2"/></svg></button>
+      <button class="tb" data-tool="hline" title="Đường ngang"><svg viewBox="0 0 24 24"><path d="M3 12h18"/><circle cx="12" cy="12" r="2"/></svg></button>
+      <button class="tb" data-tool="rect" title="Hình chữ nhật"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10" rx="1"/></svg></button>
+      <button class="tb" data-tool="fib" title="Fibonacci retracement"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 14h16M4 19h16M6 19L18 5" /></svg></button>
+      <button class="tb" data-tool="measure" title="Thước đo giá / thời gian"><svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4M4 12h3M17 12h3"/></svg></button>
+      <div class="hr"></div>
+      <button class="tb" id="dMagnet" title="Nam châm: hít vào giá O/H/L/C"><svg viewBox="0 0 24 24"><path d="M7 4v8a5 5 0 0 0 10 0V4h-4v8a1 1 0 0 1-2 0V4z"/></svg></button>
+      <input type="color" id="dColor" value="#2962ff" title="Màu hình vẽ" aria-label="Màu hình vẽ">
+      <button class="tb" id="dDel" title="Xoá hình đang chọn (Delete) · chưa chọn thì xoá tất cả"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
+    </div>
+  </div>
+  <div id="splitter" role="separator" aria-orientation="horizontal" title="Kéo để đổi kích thước · bấm đúp để đặt lại"></div>
+  <div class="pane" id="rsiPane">
+    <div class="legend"><div class="row" id="lgRsi"></div></div>
+    <div class="chart" id="rsi"></div>
+  </div>
+  <div id="vsync"></div>
+  <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
+</div>
+
+<script>
+(() => {
+  const NAMES = {
+    BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
+    XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON'
+  };
+  const TFS = ['1h','2h','4h','6h','8h','12h','1d','3d','1w','1M'];
+  const TF_LABEL = { '1d':'D', '3d':'3D', '1w':'W', '1M':'M' };
+  const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
+  const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
+
+  const state = {
+    symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
+    showEma: true, showVol: true, dark: true, reqId: 0
+  };
+
+  const rp = { phase: 'off', timer: null, speed: 1000, start: 10000, balance: 10000, pos: null, trades: [], markers: [] };
+  state.full = []; state.log = false;
+  const RSI_DEFAULT = { len: 14, ema: 9, wma: 45, hi: 70, lo: 30, xhi: 80, xlo: 20 };
+  state.rsi = { ...RSI_DEFAULT };
+  try {
+    const saved = JSON.parse(localStorage.getItem('rsiCfg') || 'null');
+    if (saved) state.rsi = { ...RSI_DEFAULT, ...saved };
+  } catch (e) {}
+
+  const $ = id => document.getElementById(id);
+  const fmt = (n, d = 2) => n == null ? '–' : n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtVol = n => n >= 1e9 ? (n/1e9).toFixed(3)+'B' : n >= 1e6 ? (n/1e6).toFixed(3)+'M' : n >= 1e3 ? (n/1e3).toFixed(3)+'K' : n.toFixed(3);
+
+  /* ---------- Theme ---------- */
+  function palette() {
+    return state.dark
+      ? { bg:'#131722', text:'#d1d4dc', grid:'#1e222d', line:'#2a2e39', up:'#089981', down:'#f23645',
+          upW:'#ffffff', dnW:'#2a2e39', volUp:'rgba(8,153,129,.45)', volDn:'rgba(242,54,69,.45)' }
+      : { bg:'#ffffff', text:'#131722', grid:'#f0f3fa', line:'#e0e3eb', up:'#089981', down:'#f23645',
+          upW:'#089981', dnW:'#f23645', volUp:'rgba(8,153,129,.35)', volDn:'rgba(242,54,69,.35)' };
+  }
+  function chartOptions() {
+    const p = palette();
+    return {
+      layout: { background: { type: 'solid', color: p.bg }, textColor: p.text, fontSize: 12 },
+      grid: { vertLines: { color: p.grid }, horzLines: { color: p.grid } },
+      rightPriceScale: { borderColor: p.line, minimumWidth: 80 },
+      timeScale: { borderColor: p.line, timeVisible: true, secondsVisible: false, rightOffset: 12 },
+      crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+      autoSize: true
+    };
+  }
+
+  /* ---------- Biểu đồ ---------- */
+  const main = LightweightCharts.createChart($('main'), chartOptions());
+  main.applyOptions({ timeScale: { visible: false } });
+  const rsiChart = LightweightCharts.createChart($('rsi'), chartOptions());
+
+  const p0 = palette();
+  const candles = main.addCandlestickSeries({
+    upColor: p0.up, downColor: p0.down, borderVisible: false, wickUpColor: p0.up, wickDownColor: p0.down,
+    priceLineColor: ''
+  });
+  const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
+  main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+
+  const EMA_DEF = [[50,'#f5a623'],[100,'#2962ff'],[200,'#e040fb']];
+  const emaSeries = EMA_DEF.map(([n, c]) => ({
+    n, color: c,
+    s: main.addLineSeries({ color: c, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+  }));
+
+  // Các vùng nền (vẽ bằng series baseline để luôn khớp trục thời gian và trục giá)
+  const zoneSeries = [0, 1, 2, 3, 4].map(() => rsiChart.addBaselineSeries({
+    baseValue: { type: 'price', price: 0 },
+    topLineColor: 'rgba(0,0,0,0)', bottomLineColor: 'rgba(0,0,0,0)', lineWidth: 1,
+    priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false
+  }));
+  // Cột tô màu tại nến RSI chạm vùng quá mua / quá bán
+  const rsiCols = rsiChart.addHistogramSeries({
+    priceScaleId: 'cols', base: 0, priceLineVisible: false, lastValueVisible: false,
+    autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 1 } })
+  });
+  rsiChart.priceScale('cols').applyOptions({ scaleMargins: { top: 0, bottom: 0 } });
+  const rsiLine = rsiChart.addLineSeries({ color: '#ab47bc', lineWidth: 2, priceLineVisible: false });
+  const rsiEma = rsiChart.addLineSeries({ color: '#66bb6a', lineWidth: 1, priceLineVisible: false });
+  const rsiWma = rsiChart.addLineSeries({ color: '#42a5f5', lineWidth: 1, priceLineVisible: false });
+  let levelLines = [];
+  function setLevels() {
+    levelLines.forEach(l => rsiLine.removePriceLine(l));
+    levelLines = [state.rsi.hi, state.rsi.lo].map(price =>
+      rsiLine.createPriceLine({ price, color: state.dark ? 'rgba(255,255,255,0.75)' : '#ffffff', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: false, title: '' })
+    );
+  }
+  setLevels();
+  rsiChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.04, bottom: 0.04 } });
+
+  // Đồng bộ trục thời gian
+  let syncing = false;
+  const link = (a, b) => a.timeScale().subscribeVisibleLogicalRangeChange(r => {
+    if (syncing || !r) return; syncing = true; b.timeScale().setVisibleLogicalRange(r); syncing = false;
+  });
+  link(main, rsiChart); link(rsiChart, main);
+
+  /* ---------- Chỉ báo ---------- */
+  function ema(values, n) {
+    const k = 2 / (n + 1), out = new Array(values.length).fill(null);
+    if (values.length < n) return out;
+    let prev = values.slice(0, n).reduce((a, b) => a + b, 0) / n;
+    out[n - 1] = prev;
+    for (let i = n; i < values.length; i++) { prev = values[i] * k + prev * (1 - k); out[i] = prev; }
+    return out;
+  }
+  function wma(values, n) {
+    const out = new Array(values.length).fill(null), den = n * (n + 1) / 2;
+    for (let i = n - 1; i < values.length; i++) {
+      let s = 0;
+      for (let j = 0; j < n; j++) s += values[i - n + 1 + j] * (j + 1);
+      out[i] = s / den;
+    }
+    return out;
+  }
+  function rsi(closes, n = 14) {
+    const out = new Array(closes.length).fill(null);
+    if (closes.length <= n) return out;
+    let g = 0, l = 0;
+    for (let i = 1; i <= n; i++) { const d = closes[i] - closes[i-1]; d >= 0 ? g += d : l -= d; }
+    g /= n; l /= n;
+    out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    for (let i = n + 1; i < closes.length; i++) {
+      const d = closes[i] - closes[i-1];
+      g = (g * (n - 1) + (d > 0 ? d : 0)) / n;
+      l = (l * (n - 1) + (d < 0 ? -d : 0)) / n;
+      out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+    }
+    return out;
+  }
+  const toSeries = (times, vals) => {
+    const r = [];
+    for (let i = 0; i < vals.length; i++) r.push(vals[i] == null ? { time: times[i] } : { time: times[i], value: vals[i] });
+    return r;
+  };
+
+  let cache = {};
+  function renderIndicators() {
+    const d = state.data, t = d.map(x => x.time), c = d.map(x => x.close);
+    const R = rsi(c, state.rsi.len);
+    // Lấp giá trị null để EMA/WMA tính trên phần RSI hợp lệ
+    let first = R.findIndex(v => v != null);
+    if (first < 0) first = R.length;
+    const valid = R.slice(first);
+    const E9 = ema(valid, state.rsi.ema), W45 = wma(valid, state.rsi.wma);
+    const pad = new Array(first).fill(null);
+    const E = pad.concat(E9), W = pad.concat(W45);
+
+    rsiLine.setData(toSeries(t, R));
+    rsiEma.setData(toSeries(t, E));
+    rsiWma.setData(toSeries(t, W));
+
+    // Cột tô màu khi RSI chạm vùng quá mua / quá bán
+    const cols = [];
+    for (let i = 0; i < d.length; i++) {
+      if (R[i] == null) continue;
+      if (R[i] >= state.rsi.xhi) cols.push({ time: t[i], value: 1, color: 'rgba(76,175,80,0.45)' });
+      else if (R[i] <= state.rsi.xlo) cols.push({ time: t[i], value: 1, color: 'rgba(242,54,69,0.35)' });
+    }
+    rsiCols.setData(cols);
+    rsiLine.setMarkers([]);
+
+    // Các vùng nền: [đáy, đỉnh, màu]
+    const s = state.rsi, P = 'rgba(126,87,194,';
+    const zones = [
+      [s.xhi, 100, 'rgba(76,175,80,0.16)'],
+      [s.hi, s.xhi, P + '0.20)'],
+      [s.lo, s.hi, P + '0.09)'],
+      [s.xlo, s.lo, P + '0.20)'],
+      [s.xlo, 0, 'rgba(255,193,7,0.12)']
+    ];
+    zones.forEach(([base, val, c], i) => {
+      zoneSeries[i].applyOptions({
+        baseValue: { type: 'price', price: base },
+        topFillColor1: c, topFillColor2: c, bottomFillColor1: c, bottomFillColor2: c
+      });
+      zoneSeries[i].setData(t.map(time => ({ time, value: val })));
+    });
+
+    emaSeries.forEach(e => {
+      const v = ema(c, e.n);
+      e.vals = v;
+      e.s.setData(state.showEma ? toSeries(t, v) : []);
+    });
+    cache = { R, E, W };
+    updateLegend(d.length - 1);
+  }
+
+  function renderAll() {
+    const p = palette();
+    candles.setData(state.data.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
+    vol.setData(state.showVol ? state.data.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? p.volUp : p.volDn })) : []);
+    renderIndicators();
+  }
+
+  /* ---------- Chú giải ---------- */
+  function updateLegend(i) {
+    const d = state.data[i]; if (!d) return;
+    const prev = state.data[i - 1];
+    const diff = prev ? d.close - prev.close : d.close - d.open;
+    const pct = prev ? diff / prev.close * 100 : 0;
+    const cls = diff >= 0 ? 'up' : 'down';
+    $('lgOhlc').innerHTML =
+      `<span>O<b class="${cls}"> ${fmt(d.open)}</b></span><span>H<b class="${cls}"> ${fmt(d.high)}</b></span>` +
+      `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` +
+      `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`;
+    $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`;
+    $('lgEma').innerHTML = emaSeries.map(e =>
+      `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join('');
+    const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i];
+    $('lgRsi').innerHTML =
+      `<span>RSI close ${state.rsi.len} ${state.rsi.xhi} ${state.rsi.xlo}</span>` +
+      `<span style="color:#ab47bc">${r != null ? fmt(r) : '–'}</span>` +
+      `<span style="color:#66bb6a">${e9 != null ? fmt(e9) : '–'}</span>` +
+      `<span style="color:#42a5f5">${w != null ? fmt(w) : '–'}</span>`;
+  }
+  main.subscribeCrosshairMove(param => {
+    if (!param.time) { updateLegend(state.data.length - 1); return; }
+    const i = state.data.findIndex(x => x.time === param.time);
+    if (i >= 0) updateLegend(i);
+  });
+  rsiChart.subscribeCrosshairMove(param => {
+    if (!param.time) return;
+    const i = state.data.findIndex(x => x.time === param.time);
+    if (i >= 0) updateLegend(i);
+  });
+
+  function updateTitle() {
+    const base = state.symbol.replace('USDT', '');
+    const tf = TF_LABEL[state.interval] || state.interval;
+    $('lgName').textContent = `${NAMES[state.symbol]} / TetherUS · ${tf} · Binance`;
+    document.title = `${state.symbol} · ${tf} · Binance`;
+  }
+  function updateQuote(price) {
+    $('qSell').textContent = fmt(price);
+    $('qBuy').textContent = fmt(price + 0.01);
+  }
+
+  /* ---------- Dữ liệu Binance ---------- */
+  async function fetchKlines(symbol, interval) {
+    let lastErr;
+    for (const host of HOSTS) {
+      try {
+        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return await res.json();
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr;
+  }
+  const mapKline = k => ({ time: Math.floor(k[0] / 1000) + TZ, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] });
+
+  function setStatus(kind, text) {
+    $('dot').className = 'dot ' + (kind || '');
+    $('status').textContent = text;
+  }
+
+  async function load() {
+    const id = ++state.reqId;
+    closeWs();
+    resetReplayUI();
+    syncDrawings();
+    updateTitle();
+    $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
+    $('loading').classList.add('show');
+    setStatus('', 'Đang tải…');
+    try {
+      const raw = await fetchKlines(state.symbol, state.interval);
+      if (id !== state.reqId) return;
+      state.data = raw.map(mapKline);
+      renderAll();
+      main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
+      updateQuote(state.data[state.data.length - 1].close);
+      $('loading').classList.remove('show');
+      openWs(id);
+    } catch (e) {
+      if (id !== state.reqId) return;
+      $('loading').innerHTML = 'Không tải được dữ liệu từ Binance.<br>Hãy kiểm tra kết nối mạng, hoặc mở file này trực tiếp bằng trình duyệt (Binance có thể chặn một số quốc gia/mạng).';
+      setStatus('err', 'Lỗi kết nối');
+    }
+  }
+
+  /* ---------- WebSocket cập nhật realtime ---------- */
+  function closeWs() {
+    clearTimeout(state.wsTimer);
+    if (state.ws) { state.ws.onclose = null; state.ws.close(); state.ws = null; }
+  }
+  function openWs(id) {
+    const url = `wss://stream.binance.com:9443/ws/${state.symbol.toLowerCase()}@kline_${state.interval}`;
+    const ws = new WebSocket(url);
+    state.ws = ws;
+    ws.onopen = () => setStatus('ok', 'Trực tiếp');
+    ws.onmessage = ev => {
+      const k = JSON.parse(ev.data).k; if (!k) return;
+      const bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
+      const last = state.data[state.data.length - 1];
+      if (last && last.time === bar.time) state.data[state.data.length - 1] = bar;
+      else state.data.push(bar);
+      const p = palette();
+      candles.update({ time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+      if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
+      renderIndicators();
+      updateQuote(bar.close);
+    };
+    ws.onclose = () => {
+      if (id !== state.reqId) return;
+      setStatus('err', 'Mất kết nối, đang thử lại…');
+      state.wsTimer = setTimeout(() => openWs(id), 3000);
+    };
+    ws.onerror = () => ws.close();
+  }
+
+  /* ---------- Điều khiển ---------- */
+  const tfBox = $('tfs');
+  TFS.forEach(tf => {
+    const b = document.createElement('button');
+    b.className = 'btn' + (tf === state.interval ? ' on' : '');
+    b.textContent = TF_LABEL[tf] || tf;
+    b.dataset.tf = tf;
+    b.onclick = () => {
+      state.interval = tf;
+      tfBox.querySelectorAll('.btn').forEach(x => x.classList.toggle('on', x.dataset.tf === tf));
+      load();
+    };
+    tfBox.appendChild(b);
+  });
+  $('symbol').onchange = e => { state.symbol = e.target.value; load(); };
+  $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
+  $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); renderAll(); };
+  $('tgTheme').onclick = e => {
+    state.dark = !state.dark;
+    document.documentElement.dataset.theme = state.dark ? 'dark' : 'light';
+    e.currentTarget.textContent = state.dark ? 'Giao diện sáng' : 'Giao diện tối';
+    const p = palette();
+    main.applyOptions(chartOptions());
+    main.applyOptions({ timeScale: { visible: $('rsiPane').classList.contains('collapsed') } });
+    rsiChart.applyOptions(chartOptions());
+    setLevels();
+    candles.applyOptions({ upColor: p.up, downColor: p.down, wickUpColor: p.up, wickDownColor: p.down });
+    renderAll();
+  };
+
+  /* ---------- Đếm ngược đóng nến (dưới nhãn giá) ---------- */
+  const SECS = { '1h':3600, '2h':7200, '4h':14400, '6h':21600, '8h':28800, '12h':43200, '1d':86400, '3d':259200, '1w':604800 };
+  const timerEl = $('timer');
+  function closeTime(openSec) {
+    if (state.interval === '1M') {
+      const d = new Date((openSec - TZ) * 1000);
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1) / 1000 + TZ;
+    }
+    return openSec + SECS[state.interval];
+  }
+  const pad2 = n => String(n).padStart(2, '0');
+  function tickTimer() {
+    const last = state.data[state.data.length - 1];
+    if (!last || rp.phase !== 'off') { timerEl.style.display = 'none'; return; }
+    const y = candles.priceToCoordinate(last.close);
+    if (y == null) { timerEl.style.display = 'none'; return; }
+    let left = Math.max(0, Math.floor(closeTime(last.time) - (Date.now() / 1000 + TZ)));
+    const days = Math.floor(left / 86400); left -= days * 86400;
+    const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+    timerEl.textContent = (days ? days + 'd ' : '') + `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+    const w = (main.priceScale('right').width && main.priceScale('right').width()) || 72;
+    timerEl.style.width = w + 'px';
+    timerEl.style.top = (y + 9) + 'px';
+    timerEl.style.background = last.close >= last.open ? palette().up : palette().down;
+    timerEl.style.display = 'block';
+  }
+  setInterval(tickTimer, 250);
+  main.timeScale().subscribeVisibleLogicalRangeChange(tickTimer);
+  main.priceScale('right').applyOptions({});
+
+  /* ---------- Kéo để đổi kích thước khung RSI ---------- */
+  const splitter = $('splitter'), rsiPane = $('rsiPane'), charts = document.querySelector('.charts');
+  let startY = 0, startH = 0;
+  splitter.addEventListener('pointerdown', e => {
+    startY = e.clientY; startH = rsiPane.getBoundingClientRect().height;
+    splitter.setPointerCapture(e.pointerId);
+    splitter.classList.add('drag'); document.body.classList.add('dragging');
+  });
+  splitter.addEventListener('pointermove', e => {
+    if (!splitter.hasPointerCapture(e.pointerId)) return;
+    const total = charts.getBoundingClientRect().height - splitter.offsetHeight;
+    const h = Math.min(total - 120, Math.max(60, startH + (startY - e.clientY)));
+    rsiPane.style.height = h + 'px';
+  });
+  const endDrag = e => {
+    if (splitter.hasPointerCapture(e.pointerId)) splitter.releasePointerCapture(e.pointerId);
+    splitter.classList.remove('drag'); document.body.classList.remove('dragging');
+  };
+  splitter.addEventListener('pointerup', endDrag);
+  splitter.addEventListener('pointercancel', endDrag);
+  splitter.addEventListener('dblclick', () => { rsiPane.style.height = ''; });
+
+  // Bật / tắt hẳn khung RSI
+  $('tgRsi').onclick = e => {
+    const on = rsiPane.classList.toggle('collapsed') === false;
+    e.currentTarget.classList.toggle('on', on);
+    splitter.classList.toggle('hidden', !on);
+    main.applyOptions({ timeScale: { visible: !on } });
+  };
+
+  /* ---------- Bảng cài đặt RSI ---------- */
+  const cfg = $('cfg');
+  const FIELDS = { len: 'cLen', ema: 'cEma', wma: 'cWma', hi: 'cHi', lo: 'cLo', xhi: 'cXhi', xlo: 'cXlo' };
+  const RANGE = { len: [2, 200], ema: [1, 200], wma: [1, 200], hi: [2, 99], lo: [1, 98], xhi: [3, 100], xlo: [0, 97] };
+  function fillCfg() { for (const k in FIELDS) $(FIELDS[k]).value = state.rsi[k]; $('cErr').textContent = ''; }
+  function applyCfg() {
+    const next = {};
+    for (const k in FIELDS) {
+      const v = parseInt($(FIELDS[k]).value, 10);
+      const [min, max] = RANGE[k];
+      if (!Number.isFinite(v) || v < min || v > max) { $('cErr').textContent = `Giá trị phải từ ${min} đến ${max}.`; return; }
+      next[k] = v;
+    }
+    if (!(next.xlo < next.lo && next.lo < next.hi && next.hi < next.xhi)) {
+      $('cErr').textContent = 'Cần thỏa: vùng quá bán < mức dưới < mức trên < vùng quá mua.'; return;
+    }
+    $('cErr').textContent = '';
+    state.rsi = next;
+    try { localStorage.setItem('rsiCfg', JSON.stringify(next)); } catch (e) {}
+    setLevels();
+    renderIndicators();
+  }
+  Object.values(FIELDS).forEach(id => $(id).addEventListener('input', applyCfg));
+  $('btnCfg').onclick = e => {
+    const open = cfg.classList.toggle('open');
+    e.currentTarget.classList.toggle('on', open);
+    if (open) fillCfg();
+  };
+  $('cClose').onclick = () => { cfg.classList.remove('open'); $('btnCfg').classList.remove('on'); };
+  $('cReset').onclick = () => { state.rsi = { ...RSI_DEFAULT }; fillCfg(); applyCfg(); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('cClose').click(); });
+
+  /* ---------- Chế độ Log ---------- */
+  $('tgLog').onclick = e => {
+    state.log = !state.log;
+    e.currentTarget.classList.toggle('on', state.log);
+    main.priceScale('right').applyOptions({
+      mode: state.log ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal
+    });
+  };
+
+  /* ---------- Backtest theo nến (replay + giao dịch thử) ---------- */
+  const FEE = 0.001; // phí 0,1% mỗi chiều
+  const rbar = $('rbar');
+  const lastBar = () => state.data[state.data.length - 1];
+
+  function setPhase(p) {
+    rp.phase = p;
+    if (p === 'off') rbar.removeAttribute('data-phase'); else rbar.dataset.phase = p;
+    $('tgReplay').classList.toggle('on', p !== 'off');
+  }
+  function pausePlay() {
+    clearInterval(rp.timer); rp.timer = null; $('rPlay').textContent = '▶ Chạy';
+  }
+  function resetTrades() {
+    if (rp.pos && rp.pos.line) candles.removePriceLine(rp.pos.line);
+    rp.pos = null; rp.trades = []; rp.markers = []; rp.balance = rp.start;
+    candles.setMarkers([]);
+  }
+  function resetReplayUI() {
+    if (rp.phase === 'off') return;
+    pausePlay(); resetTrades(); setPhase('off'); $('hist').classList.remove('open');
+  }
+
+  function enterSelect() {
+    if (!state.data.length) return;
+    if (rp.phase === 'off') {
+      closeWs(); state.full = state.data.slice(); setStatus('', 'Backtest');
+    } else {
+      pausePlay(); resetTrades(); state.data = state.full.slice(); renderAll();
+    }
+    $('hist').classList.remove('open');
+    setPhase('select');
+  }
+  function startReplay(idx) {
+    state.data = state.full.slice(0, idx + 1);
+    renderAll();
+    main.timeScale().setVisibleLogicalRange({ from: idx - 120, to: idx + 25 });
+    setPhase('run');
+    updateQuote(lastBar().close);
+    updateStats();
+  }
+  main.subscribeClick(param => {
+    if (rp.phase !== 'select' || !param.time) return;
+    const idx = state.full.findIndex(x => x.time === param.time);
+    if (idx >= 1) startReplay(idx);
+  });
+
+  function step() {
+    if (rp.phase !== 'run' || state.data.length >= state.full.length) { pausePlay(); return false; }
+    const bar = state.full[state.data.length], p = palette();
+    state.data.push(bar);
+    candles.update({ time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+    if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
+    renderIndicators();
+    updateQuote(bar.close);
+    updateStats();
+    if (state.data.length >= state.full.length) pausePlay();
+    return true;
+  }
+  function startTimer() {
+    clearInterval(rp.timer);
+    rp.timer = setInterval(step, rp.speed);
+    $('rPlay').textContent = '⏸ Dừng';
+  }
+  $('rPlay').onclick = () => {
+    if (rp.timer) pausePlay();
+    else if (state.data.length < state.full.length) startTimer();
+  };
+  $('rStep').onclick = () => { pausePlay(); step(); };
+  $('rSpeed').onchange = e => { rp.speed = +e.target.value; if (rp.timer) startTimer(); };
+
+  // Giao dịch thử: khớp ở giá đóng cửa của nến hiện tại, dùng toàn bộ vốn, phí 0,1% mỗi chiều
+  function openPos(dir) {
+    if (rp.phase !== 'run' || rp.pos) return;
+    const b = lastBar(), qty = rp.balance / b.close, fee = qty * b.close * FEE;
+    rp.balance -= fee;
+    rp.pos = {
+      dir, entry: b.close, qty, fee, time: b.time,
+      line: candles.createPriceLine({ price: b.close, color: '#2962ff', lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: dir > 0 ? 'Long' : 'Short' })
+    };
+    rp.markers.push({ time: b.time, position: dir > 0 ? 'belowBar' : 'aboveBar',
+      color: dir > 0 ? '#089981' : '#f23645', shape: dir > 0 ? 'arrowUp' : 'arrowDown', text: dir > 0 ? 'Mua' : 'Bán' });
+    candles.setMarkers(rp.markers);
+    updateStats();
+  }
+  function closePos() {
+    const pos = rp.pos; if (!pos) return;
+    const b = lastBar(), gross = pos.dir * (b.close - pos.entry) * pos.qty, fee = pos.qty * b.close * FEE;
+    rp.balance += gross - fee;
+    const net = gross - fee - pos.fee;
+    rp.trades.push({ dir: pos.dir, entry: pos.entry, exit: b.close, net, pct: net / (pos.qty * pos.entry) * 100 });
+    candles.removePriceLine(pos.line); rp.pos = null;
+    rp.markers.push({ time: b.time, position: 'inBar', color: '#f5a623', shape: 'circle', text: 'Đóng' });
+    candles.setMarkers(rp.markers);
+    updateStats();
+  }
+  $('rBuy').onclick = () => openPos(1);
+  $('rSell').onclick = () => openPos(-1);
+  $('rClose').onclick = closePos;
+
+  function updateStats() {
+    const b = lastBar(); if (!b) return;
+    const unreal = rp.pos ? rp.pos.dir * (b.close - rp.pos.entry) * rp.pos.qty : 0;
+    const eq = rp.balance + unreal, tot = (eq / rp.start - 1) * 100;
+    const wins = rp.trades.filter(t => t.net > 0).length;
+    const cls = v => v >= 0 ? 'up' : 'down', sg = v => v >= 0 ? '+' : '';
+    $('sEq').textContent = fmt(eq) + ' USDT';
+    $('sPnl').innerHTML = `<span class="${cls(tot)}">${sg(tot)}${fmt(tot)}%</span>`;
+    $('sPos').innerHTML = rp.pos
+      ? `<span class="${cls(unreal)}">${rp.pos.dir > 0 ? 'Long' : 'Short'} ${sg(unreal)}${fmt(unreal)}</span>` : 'Không có';
+    $('sN').textContent = rp.trades.length;
+    $('sWin').textContent = rp.trades.length ? fmt(wins / rp.trades.length * 100, 0) + '%' : '–';
+    $('rBuy').disabled = $('rSell').disabled = !!rp.pos;
+    $('rClose').disabled = !rp.pos;
+    if ($('hist').classList.contains('open')) renderHist();
+  }
+  function renderHist() {
+    const rows = rp.trades.slice().reverse().map(t =>
+      `<tr><td>${t.dir > 0 ? 'Long' : 'Short'}</td><td>${fmt(t.entry)}</td><td>${fmt(t.exit)}</td>` +
+      `<td class="${t.net >= 0 ? 'up' : 'down'}">${t.net >= 0 ? '+' : ''}${fmt(t.net)} (${fmt(t.pct)}%)</td></tr>`).join('');
+    $('hBody').innerHTML = rows || '<tr><td colspan="4" style="color:var(--muted)">Chưa có lệnh nào.</td></tr>';
+  }
+  $('rHist').onclick = () => { const o = $('hist').classList.toggle('open'); if (o) renderHist(); };
+
+  $('tgReplay').onclick = () => { if (rp.phase === 'off') enterSelect(); else { resetReplayUI(); load(); } };
+  $('rRedo').onclick = enterSelect;
+  $('rExit').onclick = () => { resetReplayUI(); load(); };
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' && rp.phase === 'run' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+      pausePlay(); step();
+    }
+  });
+
+  /* ---------- Công cụ vẽ & đo (canvas phủ lên biểu đồ giá) ---------- */
+  const cv = $('draw'), cx = cv.getContext('2d');
+  let drawings = [], drawSym = null, selId = null, cur = null, measure = null;
+  let tool = 'cursor', magnet = false, dColor = '#2962ff', drag = null, hover = null;
+  let justStarted = false, downXY = null, ver = 0, sig = '', W = 0, H = 0;
+  const touch = () => { ver++; };
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const dKey = () => 'draw_' + state.symbol;
+  const saveDrawings = () => { try { localStorage.setItem(dKey(), JSON.stringify(drawings)); } catch (e) {} };
+  function syncDrawings() {
+    if (drawSym === state.symbol) return;
+    drawSym = state.symbol;
+    try { drawings = JSON.parse(localStorage.getItem(dKey()) || '[]') || []; } catch (e) { drawings = []; }
+    selId = null; cur = null; measure = null; touch();
+  }
+
+  // Quy đổi thời gian <-> chỉ số nến (kể cả vùng tương lai, nội suy theo độ dài nến)
+  const barSecs = () => state.interval === '1M' ? 2592000 : (SECS[state.interval] || 86400);
+  function timeToIdx(t) {
+    const d = state.data, n = d.length; if (n < 1) return 0;
+    const bs = barSecs();
+    if (n === 1 || t <= d[0].time) return (t - d[0].time) / bs;
+    if (t >= d[n-1].time) return n - 1 + (t - d[n-1].time) / bs;
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (d[mid].time <= t) lo = mid; else hi = mid; }
+    return lo + (t - d[lo].time) / (d[hi].time - d[lo].time);
+  }
+  function idxToTime(i) {
+    const d = state.data, n = d.length; if (n < 1) return 0;
+    const bs = barSecs();
+    if (n === 1 || i <= 0) return d[0].time + i * bs;
+    if (i >= n - 1) return d[n-1].time + (i - (n - 1)) * bs;
+    const lo = Math.floor(i);
+    return d[lo].time + (i - lo) * (d[lo+1].time - d[lo].time);
+  }
+  const X = t => main.timeScale().logicalToCoordinate(timeToIdx(t));
+  const Y = p => candles.priceToCoordinate(p);
+  const toPx = pt => ({ x: X(pt.t), y: Y(pt.p) });
+  const valid = pts => pts.every(p => p.x != null && p.y != null);
+
+  function ptFromEvent(e) {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    let lg = main.timeScale().coordinateToLogical(x), price = candles.coordinateToPrice(y);
+    if (lg == null || price == null) return null;
+    if (magnet) {
+      lg = Math.round(lg);
+      const b = state.data[lg];
+      if (b) {
+        let best = null, bd = 14;
+        for (const v of [b.open, b.high, b.low, b.close]) {
+          const yy = Y(v);
+          if (yy != null && Math.abs(yy - y) < bd) { bd = Math.abs(yy - y); best = v; }
+        }
+        if (best != null) price = best;
+      }
+    }
+    return { t: idxToTime(lg), p: price };
+  }
+  const xyOf = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+
+  /* --- Vẽ --- */
+  const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+  const FIBC = ['#787b86', '#f23645', '#ff9800', '#4caf50', '#089981', '#00bcd4', '#787b86'];
+  const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
+  const fmtDur = s => {
+    const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), o = [];
+    if (d) o.push(d + ' ngày'); if (h) o.push(h + ' giờ'); if (m && !d) o.push(m + ' phút');
+    return o.join(' ') || '0';
+  };
+  function tag(lines, x, y, bg, align, vmode) {
+    cx.font = '600 11.5px -apple-system, "Trebuchet MS", Roboto, sans-serif';
+    const w = Math.max(...lines.map(l => cx.measureText(l).width)) + 14, h = lines.length * 15 + 6;
+    let left = align === 'c' ? x - w / 2 : align === 'r' ? x - w : x;
+    left = Math.min(Math.max(4, left), W - w - 4);
+    let top = vmode === 'above' ? y - h : vmode === 'mid' ? y - h / 2 : y;
+    top = Math.min(Math.max(4, top), H - h - 4);
+    cx.fillStyle = bg; cx.beginPath();
+    if (cx.roundRect) cx.roundRect(left, top, w, h, 4); else cx.rect(left, top, w, h);
+    cx.fill();
+    cx.fillStyle = '#fff'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
+    lines.forEach((l, i) => cx.fillText(l, left + 7, top + 10.5 + i * 15));
+  }
+  function arrow(x1, y1, x2, y2) {
+    cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
+    const a = Math.atan2(y2 - y1, x2 - x1), s = 6;
+    cx.beginPath(); cx.moveTo(x2, y2);
+    cx.lineTo(x2 - s * Math.cos(a - 0.45), y2 - s * Math.sin(a - 0.45));
+    cx.lineTo(x2 - s * Math.cos(a + 0.45), y2 - s * Math.sin(a + 0.45));
+    cx.closePath(); cx.fillStyle = cx.strokeStyle; cx.fill();
+  }
+  function drawShape(s, sel) {
+    const pts = s.pts.map(toPx);
+    if (!valid(pts)) return;
+    const [a, b] = pts, col = s.color || '#2962ff';
+    cx.lineWidth = 2; cx.strokeStyle = col; cx.fillStyle = col; cx.setLineDash([]);
+    if (s.type === 'trend') {
+      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+    } else if (s.type === 'hline') {
+      cx.beginPath(); cx.moveTo(0, a.y); cx.lineTo(W, a.y); cx.stroke();
+      tag([fmt(s.pts[0].p)], W - 4, a.y, col, 'r', 'mid');
+    } else if (s.type === 'rect') {
+      const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
+      cx.fillStyle = hexA(col, 0.15); cx.fillRect(x, y, w, h); cx.strokeRect(x, y, w, h);
+    } else if (s.type === 'fib') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+      const prices = FIB.map(l => s.pts[1].p + (s.pts[0].p - s.pts[1].p) * l), ys = prices.map(Y);
+      if (ys.every(v => v != null)) {
+        for (let i = 0; i < FIB.length - 1; i++) {
+          cx.fillStyle = hexA(FIBC[i + 1], 0.08);
+          cx.fillRect(x0, Math.min(ys[i], ys[i+1]), x1 - x0, Math.abs(ys[i+1] - ys[i]));
+        }
+        cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'bottom';
+        FIB.forEach((l, i) => {
+          cx.strokeStyle = FIBC[i]; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x0, ys[i]); cx.lineTo(x1, ys[i]); cx.stroke();
+          cx.fillStyle = FIBC[i]; cx.fillText(`${l} (${fmt(prices[i])})`, x0 + 4, ys[i] - 2);
+        });
+      }
+      cx.strokeStyle = '#787b86'; cx.lineWidth = 1; cx.setLineDash([4, 4]);
+      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.setLineDash([]);
+    } else if (s.type === 'measure') {
+      const up = s.pts[1].p >= s.pts[0].p, mc = up ? '#2962ff' : '#f23645';
+      cx.fillStyle = hexA(mc, 0.15);
+      cx.fillRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+      cx.strokeStyle = mc; cx.lineWidth = 1.5;
+      arrow(a.x, (a.y + b.y) / 2, b.x, (a.y + b.y) / 2);
+      arrow((a.x + b.x) / 2, a.y, (a.x + b.x) / 2, b.y);
+      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
+      const bars = Math.round(timeToIdx(s.pts[1].t) - timeToIdx(s.pts[0].t));
+      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
+      tag([`${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${Math.abs(bars)} nến, ${fmtDur(secs)}`],
+        (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
+    }
+    if (sel) {
+      cx.lineWidth = 2; cx.setLineDash([]);
+      pts.forEach((p, i) => {
+        if (s.type === 'hline') p = { x: Math.min(Math.max(p.x, 14), W - 60), y: p.y };
+        cx.beginPath(); cx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        cx.fillStyle = '#fff'; cx.fill(); cx.strokeStyle = col; cx.stroke();
+      });
+    }
+  }
+
+  let lastDpr = 1;
+  function frame() {
+    requestAnimationFrame(frame);
+    const pane = $('mainPane'), ts = main.timeScale(), ps = main.priceScale('right');
+    const rps = rsiChart.priceScale('right');
+    if (ps.options && rps.options) {
+      const au = !!(ps.options().autoScale && rps.options().autoScale);
+      if (au !== state.auto) { state.auto = au; $('tgAuto').classList.toggle('on', au); }
+    }
+    if (ps.width && rps.width) {
+      const wm = ps.width(), wr = rps.width();
+      if (wm && wr && wm !== wr) {
+        const target = Math.max(wm, wr);
+        main.applyOptions({ rightPriceScale: { minimumWidth: target } });
+        rsiChart.applyOptions({ rightPriceScale: { minimumWidth: target } });
+      }
+    }
+    const scaleW = (ps.width && ps.width()) || 72;
+    const collapsed = $('rsiPane').classList.contains('collapsed');
+    const tsH = collapsed ? ((ts.height && ts.height()) || 26) : 0;
+    const w = Math.max(0, pane.clientWidth - scaleW), h = Math.max(0, pane.clientHeight - tsH);
+    const s = [w, h, ver, state.data.length, state.interval, state.log, state.dark,
+      ts.logicalToCoordinate(0), ts.logicalToCoordinate(100),
+      candles.priceToCoordinate(1000), candles.priceToCoordinate(50000), candles.priceToCoordinate(100000)].join('|');
+    if (s === sig) return;
+    sig = s; W = w; H = h;
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr) || dpr !== lastDpr) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); lastDpr = dpr;
+      cv.style.width = w + 'px'; cv.style.height = h + 'px';
+    }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx.clearRect(0, 0, w, h);
+    cx.save(); cx.beginPath(); cx.rect(0, 0, w, h); cx.clip();
+    drawings.forEach(d => drawShape(d, d.id === selId));
+    if (measure) drawShape(measure, false);
+    if (cur) drawShape(cur, false);
+    if (tool !== 'cursor' && hover) {
+      cx.strokeStyle = state.dark ? '#787b86' : '#9598a1'; cx.lineWidth = 1; cx.setLineDash([3, 3]);
+      cx.beginPath(); cx.moveTo(hover.x, 0); cx.lineTo(hover.x, h); cx.moveTo(0, hover.y); cx.lineTo(w, hover.y); cx.stroke();
+      cx.setLineDash([]);
+    }
+    cx.restore();
+  }
+
+  /* --- Kiểm tra trúng hình --- */
+  function distSeg(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1, dy = y2 - y1, l2 = dx * dx + dy * dy;
+    let t = l2 ? ((px - x1) * dx + (py - y1) * dy) / l2 : 0; t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+  }
+  function hitBody(s, x, y) {
+    const pts = s.pts.map(toPx); if (!valid(pts)) return false;
+    const [a, b] = pts;
+    if (s.type === 'trend') return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
+    if (s.type === 'hline') return Math.abs(y - a.y) <= 6;
+    if (s.type === 'rect') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      return ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
+             ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
+    }
+    if (s.type === 'fib') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+      if (distSeg(x, y, a.x, a.y, b.x, b.y) <= 7) return true;
+      return FIB.some(l => {
+        const yy = Y(s.pts[1].p + (s.pts[0].p - s.pts[1].p) * l);
+        return yy != null && Math.abs(y - yy) <= 6 && x >= x0 - 6 && x <= x1 + 6;
+      });
+    }
+    return false;
+  }
+  function hit(x, y) {
+    for (let i = drawings.length - 1; i >= 0; i--) {
+      const s = drawings[i];
+      if (s.id === selId && s.type !== 'hline') {
+        const pts = s.pts.map(toPx);
+        if (valid(pts)) {
+          const hi = pts.findIndex(p => Math.hypot(x - p.x, y - p.y) <= 9);
+          if (hi >= 0) return { s, handle: hi };
+        }
+      }
+      if (hitBody(s, x, y)) return { s, handle: -1 };
+    }
+    return null;
+  }
+
+  /* --- Điều khiển --- */
+  const HINTS = {
+    trend: 'Bấm điểm đầu rồi bấm điểm cuối của đường xu hướng',
+    hline: 'Bấm để đặt đường ngang',
+    rect: 'Bấm hai góc của hình chữ nhật',
+    fib: 'Bấm điểm đầu và điểm cuối của sóng',
+    measure: 'Bấm hai điểm để đo giá và thời gian'
+  };
+  function setAuto(v) { cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) cv.style.cursor = ''; }
+  function setTool(t) {
+    tool = t; cur = null; drag = null; hover = null;
+    if (t !== 'cursor') { measure = null; selId = null; }
+    document.querySelectorAll('#dTools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    setAuto(t !== 'cursor');
+    if (t !== 'cursor') cv.style.cursor = 'crosshair';
+    const hint = $('dHint');
+    hint.style.display = t === 'cursor' ? 'none' : 'block';
+    hint.textContent = HINTS[t] || '';
+    touch();
+  }
+  function finishCur() {
+    if (cur.type === 'measure') measure = { type: 'measure', pts: cur.pts };
+    else { drawings.push(cur); selId = cur.id; syncColor(); saveDrawings(); }
+    cur = null; justStarted = false;
+    setTool('cursor');
+  }
+  function syncColor() {
+    const s = drawings.find(d => d.id === selId);
+    if (s && s.color) $('dColor').value = s.color;
+  }
+
+  cv.addEventListener('pointerdown', e => {
+    const { x, y } = xyOf(e);
+    if (tool !== 'cursor') {
+      const pt = ptFromEvent(e); if (!pt) return;
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      if (tool === 'hline') {
+        const d = { id: uid(), type: 'hline', pts: [pt], color: dColor };
+        drawings.push(d); selId = d.id; saveDrawings(); setTool('cursor'); return;
+      }
+      if (!cur) {
+        measure = null;
+        cur = { id: uid(), type: tool, pts: [pt, { ...pt }], color: dColor };
+        downXY = { x, y }; justStarted = true;
+      } else { cur.pts[1] = pt; finishCur(); }
+      touch(); return;
+    }
+    const h = hit(x, y);
+    if (!h) { selId = null; setAuto(false); touch(); return; }
+    e.preventDefault();
+    selId = h.s.id; syncColor();
+    drag = { id: h.s.id, handle: h.handle, sx: x, sy: y, orig: h.s.pts.map(toPx) };
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+    touch();
+  });
+  cv.addEventListener('pointermove', e => {
+    const { x, y } = xyOf(e);
+    if (drag) {
+      const s = drawings.find(d => d.id === drag.id); if (!s) return;
+      if (drag.handle >= 0) { const pt = ptFromEvent(e); if (pt) s.pts[drag.handle] = pt; }
+      else {
+        const dx = x - drag.sx, dy = y - drag.sy, ts = main.timeScale();
+        const np = drag.orig.map(o => {
+          const lg = ts.coordinateToLogical(o.x + dx), p = candles.coordinateToPrice(o.y + dy);
+          return lg == null || p == null ? null : { t: idxToTime(lg), p };
+        });
+        if (np.every(Boolean)) s.pts = np;
+      }
+      touch(); return;
+    }
+    if (tool !== 'cursor') {
+      hover = { x, y }; showSync(x, 'main');
+      if (cur) { const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt; }
+      touch(); return;
+    }
+    const h = hit(x, y);
+    if (!h) setAuto(false); else cv.style.cursor = h.handle >= 0 ? 'grab' : 'move';
+  });
+  cv.addEventListener('pointerup', e => {
+    if (drag) { drag = null; saveDrawings(); return; }
+    if (cur && justStarted) {
+      justStarted = false;
+      const { x, y } = xyOf(e);
+      if (Math.hypot(x - downXY.x, y - downXY.y) > 6) {
+        const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt;
+        finishCur();
+      }
+    }
+  });
+  cv.addEventListener('pointerleave', () => { if (!drag) { hover = null; hideSync(); touch(); } });
+
+  // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
+  $('main').addEventListener('pointermove', e => {
+    if (tool !== 'cursor' || drag || !drawings.length) return;
+    const { x, y } = xyOf(e);
+    if (x < 0 || y < 0 || x > W || y > H) return;
+    const h = hit(x, y);
+    if (h) { setAuto(true); cv.style.cursor = h.handle >= 0 ? 'grab' : 'move'; }
+  });
+  main.subscribeClick(() => {
+    if (tool === 'cursor' && (measure || selId)) { measure = null; selId = null; touch(); }
+  });
+
+  document.querySelectorAll('#dTools [data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); };
+  $('dColor').oninput = e => {
+    dColor = e.target.value;
+    const s = drawings.find(d => d.id === selId);
+    if (s) { s.color = dColor; saveDrawings(); touch(); }
+  };
+  function deleteSelected() {
+    const i = drawings.findIndex(d => d.id === selId);
+    if (i < 0) return false;
+    drawings.splice(i, 1); selId = null; saveDrawings(); touch(); return true;
+  }
+  $('dDel').onclick = () => {
+    if (deleteSelected()) return;
+    if (measure) { measure = null; touch(); return; }
+    if (drawings.length && confirm('Xoá tất cả hình vẽ của ' + state.symbol + '?')) {
+      drawings = []; saveDrawings(); touch();
+    }
+  };
+  document.addEventListener('keydown', e => {
+    if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (e.key === 'Delete' || e.key === 'Backspace') { if (deleteSelected()) e.preventDefault(); }
+    else if (e.key === 'Escape') {
+      if (cur) { cur = null; justStarted = false; touch(); }
+      else if (tool !== 'cursor') setTool('cursor');
+      else { measure = null; selId = null; touch(); }
+    }
+  });
+  requestAnimationFrame(frame);
+
+  /* ---------- Đồng hồ UTC+7 + đếm ngược hết ngày (góc dưới bên phải) ---------- */
+  const clock = $('clock');
+  let dayMode = 'local'; // 'local': hết ngày lúc 00:00 giờ VN · 'binance': nến ngày Binance đóng lúc 07:00 giờ VN
+  const hms = s => `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s % 3600 / 60))}:${pad2(Math.floor(s % 60))}`;
+  function tickClock() {
+    const nowSec = Date.now() / 1000;
+    const d = new Date((nowSec + TZ) * 1000);
+    $('clkNow').textContent = `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} UTC+7`;
+    const into = dayMode === 'local' ? (nowSec + TZ) % 86400 : nowSec % 86400;
+    $('clkLeft').textContent = (dayMode === 'local' ? 'Hết ngày: ' : 'Nến ngày đóng: ') + hms(86400 - into);
+    const h = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
+    clock.style.height = h + 'px';
+    clock.title = dayMode === 'local'
+      ? 'Đếm ngược đến 00:00 giờ Việt Nam. Bấm để đổi sang giờ đóng nến ngày của Binance (07:00).'
+      : 'Đếm ngược đến lúc nến ngày Binance đóng (07:00 giờ Việt Nam). Bấm để đổi sang hết ngày 00:00.';
+  }
+  const toggleDay = () => { dayMode = dayMode === 'local' ? 'binance' : 'local'; tickClock(); };
+  clock.addEventListener('click', toggleDay);
+  clock.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDay(); } });
+  setInterval(tickClock, 500);
+  tickClock();
+
+  /* ---------- Nút Auto: tự co giãn trục giá ---------- */
+  state.auto = true;
+  function setAutoScale(v) {
+    state.auto = v;
+    $('tgAuto').classList.toggle('on', v);
+    main.priceScale('right').applyOptions({ autoScale: v });
+    rsiChart.priceScale('right').applyOptions({ autoScale: v });
+  }
+  $('tgAuto').onclick = () => setAutoScale(!state.auto);
+
+  /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
+  // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
+  const vsync = $('vsync');
+  function hideSync() { vsync.style.display = 'none'; }
+  function showSync(x, from) {
+    if (x == null || $('rsiPane').classList.contains('collapsed')) { hideSync(); return; }
+    const cr = charts.getBoundingClientRect(), mr = $('mainPane').getBoundingClientRect(), rr = $('rsiPane').getBoundingClientRect();
+    const tsH = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
+    const top = from === 'main' ? mr.bottom : mr.top;
+    const bottom = from === 'main' ? rr.bottom - tsH : rr.top;
+    if (bottom - top < 1) { hideSync(); return; }
+    vsync.style.left = Math.round(x) + 'px';
+    vsync.style.top = (top - cr.top) + 'px';
+    vsync.style.height = (bottom - top) + 'px';
+    vsync.style.display = 'block';
+  }
+  // Bám đúng giữa nến (giống đường dọc có sẵn của biểu đồ), ngoài vùng nến thì theo chuột
+  const syncX = (chart, param) => {
+    if (!param.point) return null;
+    const c = param.time != null ? chart.timeScale().timeToCoordinate(param.time) : null;
+    return c != null ? c : param.point.x;
+  };
+  main.subscribeCrosshairMove(param => { const x = syncX(main, param); x == null ? hideSync() : showSync(x, 'main'); });
+  rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); });
+
+  document.documentElement.dataset.theme = 'dark';
+  load();
+})();
+</script>
+</body>
+</html>
