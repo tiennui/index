@@ -123,7 +123,7 @@
   #rbar .stat b { color: var(--text); font-weight: 600; }
   #rbar .spacer { margin-left: auto; display: flex; gap: 6px; }
   #rbar[data-phase="select"] #rRedo { display: none; }
-  #draw { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; touch-action: none; }
+  #draw, #drawRsi { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; touch-action: none; }
   #dTools {
     position: absolute; left: 8px; top: 132px; z-index: 8; display: flex; flex-direction: column; gap: 2px;
     background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px;
@@ -293,8 +293,10 @@
       <button class="tb" data-tool="rect" title="Hình chữ nhật"><svg viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="10" rx="1"/></svg></button>
       <button class="tb" data-tool="fib" title="Fibonacci retracement"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 10h16M4 14h16M4 19h16M6 19L18 5" /></svg></button>
       <button class="tb" data-tool="measure" title="Thước đo giá / thời gian"><svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4M4 12h3M17 12h3"/></svg></button>
+      <button class="tb" data-tool="brush" title="Cọ vẽ tự do (giữ chuột và rê) · dùng được cả trên khung giá và khung RSI"><svg viewBox="0 0 24 24"><path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08"/><path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z"/></svg></button>
       <div class="hr"></div>
       <button class="tb" id="dMagnet" title="Nam châm: hít vào giá O/H/L/C"><svg viewBox="0 0 24 24"><path d="M7 4v8a5 5 0 0 0 10 0V4h-4v8a1 1 0 0 1-2 0V4z"/></svg></button>
+      <button class="tb" id="dW" title="Độ dày nét cọ (bấm để đổi)" style="font-size:10.5px;font-weight:600">3px</button>
       <input type="color" id="dColor" value="#2962ff" title="Màu hình vẽ" aria-label="Màu hình vẽ">
       <button class="tb" id="dDel" title="Xoá hình đang chọn (Delete) · chưa chọn thì xoá tất cả"><svg viewBox="0 0 24 24"><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/></svg></button>
     </div>
@@ -303,6 +305,7 @@
   <div class="pane" id="rsiPane">
     <div class="legend"><div class="row" id="lgRsi"></div></div>
     <div class="chart" id="rsi"></div>
+    <canvas id="drawRsi"></canvas>
   </div>
   <div id="vsync"></div>
   <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
@@ -888,11 +891,20 @@
     }
   });
 
-  /* ---------- Công cụ vẽ & đo (canvas phủ lên biểu đồ giá) ---------- */
-  const cv = $('draw'), cx = cv.getContext('2d');
+  /* ---------- Công cụ vẽ & đo (canvas phủ lên khung giá và khung RSI) ---------- */
+  const PANES = {
+    main: { key: 'main', el: $('mainPane'), cv: $('draw'),    chart: main,     series: candles, W: 0, H: 0, sig: '', dpr: 1, hover: null },
+    rsi:  { key: 'rsi',  el: $('rsiPane'),  cv: $('drawRsi'), chart: rsiChart, series: rsiLine, W: 0, H: 0, sig: '', dpr: 1, hover: null }
+  };
+  const PLIST = [PANES.main, PANES.rsi];
+  PLIST.forEach(p => { p.cx = p.cv.getContext('2d'); });
+  let P = PANES.main, cx = P.cx, W = 0, H = 0;   // khung đang xử lý
+  const useP = p => { P = p; cx = p.cx; W = p.W; H = p.H; };
   let drawings = [], drawSym = null, selId = null, cur = null, measure = null;
-  let tool = 'cursor', magnet = false, dColor = '#2962ff', drag = null, hover = null;
-  let justStarted = false, downXY = null, ver = 0, sig = '', W = 0, H = 0;
+  let tool = 'cursor', magnet = false, dColor = '#2962ff', drag = null;
+  let justStarted = false, downXY = null, ver = 0;
+  let brushW = 3, brushing = false, brushLast = null;
+  const paneOf = d => d.pane || 'main';
   const touch = () => { ver++; };
   const uid = () => Math.random().toString(36).slice(2, 9);
   const dKey = () => 'draw_' + state.symbol;
@@ -901,7 +913,7 @@
     if (drawSym === state.symbol) return;
     drawSym = state.symbol;
     try { drawings = JSON.parse(localStorage.getItem(dKey()) || '[]') || []; } catch (e) { drawings = []; }
-    selId = null; cur = null; measure = null; touch();
+    selId = null; cur = null; measure = null; brushing = false; touch();
   }
 
   // Quy đổi thời gian <-> chỉ số nến (kể cả vùng tương lai, nội suy theo độ dài nến)
@@ -923,16 +935,16 @@
     const lo = Math.floor(i);
     return d[lo].time + (i - lo) * (d[lo+1].time - d[lo].time);
   }
-  const X = t => main.timeScale().logicalToCoordinate(timeToIdx(t));
-  const Y = p => candles.priceToCoordinate(p);
+  const X = t => P.chart.timeScale().logicalToCoordinate(timeToIdx(t));
+  const Y = p => P.series.priceToCoordinate(p);
   const toPx = pt => ({ x: X(pt.t), y: Y(pt.p) });
   const valid = pts => pts.every(p => p.x != null && p.y != null);
 
   function ptFromEvent(e) {
-    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    let lg = main.timeScale().coordinateToLogical(x), price = candles.coordinateToPrice(y);
+    const r = P.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    let lg = P.chart.timeScale().coordinateToLogical(x), price = P.series.coordinateToPrice(y);
     if (lg == null || price == null) return null;
-    if (magnet) {
+    if (magnet && P.key === 'main' && tool !== 'brush') {
       lg = Math.round(lg);
       const b = state.data[lg];
       if (b) {
@@ -946,7 +958,7 @@
     }
     return { t: idxToTime(lg), p: price };
   }
-  const xyOf = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  const xyOf = e => { const r = P.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
   /* --- Vẽ --- */
   const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
@@ -983,6 +995,22 @@
     if (!valid(pts)) return;
     const [a, b] = pts, col = s.color || '#2962ff';
     cx.lineWidth = 2; cx.strokeStyle = col; cx.fillStyle = col; cx.setLineDash([]);
+    if (s.type === 'brush') {
+      const w = s.w || 3;
+      const path = () => {
+        cx.beginPath(); cx.moveTo(pts[0].x, pts[0].y);
+        if (pts.length === 1) cx.lineTo(pts[0].x + 0.01, pts[0].y);
+        for (let i = 1; i < pts.length - 1; i++) {
+          cx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + pts[i+1].x) / 2, (pts[i].y + pts[i+1].y) / 2);
+        }
+        if (pts.length > 1) cx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+      };
+      cx.save(); cx.lineCap = 'round'; cx.lineJoin = 'round';
+      if (sel) { cx.lineWidth = w + 6; cx.strokeStyle = hexA(col, 0.25); path(); cx.stroke(); }
+      cx.lineWidth = w; cx.strokeStyle = col; path(); cx.stroke();
+      cx.restore();
+      return;
+    }
     if (s.type === 'trend') {
       cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
     } else if (s.type === 'hline') {
@@ -1017,7 +1045,7 @@
       const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
       const bars = Math.round(timeToIdx(s.pts[1].t) - timeToIdx(s.pts[0].t));
       const secs = Math.abs(s.pts[1].t - s.pts[0].t);
-      tag([`${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${Math.abs(bars)} nến, ${fmtDur(secs)}`],
+      tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${Math.abs(bars)} nến, ${fmtDur(secs)}`],
         (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
     }
     if (sel) {
@@ -1030,11 +1058,41 @@
     }
   }
 
-  let lastDpr = 1;
+  function renderPane(p, scaleW, tsH) {
+    const ts = p.chart.timeScale();
+    const w = Math.max(0, p.el.clientWidth - scaleW), h = Math.max(0, p.el.clientHeight - tsH);
+    const probe = p.key === 'main'
+      ? [candles.priceToCoordinate(1000), candles.priceToCoordinate(50000), candles.priceToCoordinate(100000)]
+      : [rsiLine.priceToCoordinate(0), rsiLine.priceToCoordinate(50), rsiLine.priceToCoordinate(100)];
+    const s = [w, h, ver, state.data.length, state.interval, state.log, state.dark,
+      ts.logicalToCoordinate(0), ts.logicalToCoordinate(100), ...probe].join('|');
+    if (s === p.sig) return;
+    p.sig = s; p.W = w; p.H = h;
+    useP(p);
+    const dpr = window.devicePixelRatio || 1;
+    if (p.cv.width !== Math.round(w * dpr) || p.cv.height !== Math.round(h * dpr) || dpr !== p.dpr) {
+      p.cv.width = Math.round(w * dpr); p.cv.height = Math.round(h * dpr); p.dpr = dpr;
+      p.cv.style.width = w + 'px'; p.cv.style.height = h + 'px';
+    }
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx.clearRect(0, 0, w, h);
+    cx.save(); cx.beginPath(); cx.rect(0, 0, w, h); cx.clip();
+    drawings.forEach(d => { if (paneOf(d) === p.key) drawShape(d, d.id === selId); });
+    if (measure && paneOf(measure) === p.key) drawShape(measure, false);
+    if (cur && paneOf(cur) === p.key) drawShape(cur, false);
+    if (tool === 'brush' && p.hover) {
+      cx.strokeStyle = dColor; cx.lineWidth = 1; cx.setLineDash([]);
+      cx.beginPath(); cx.arc(p.hover.x, p.hover.y, brushW / 2 + 1, 0, Math.PI * 2); cx.stroke();
+    } else if (tool !== 'cursor' && p.hover) {
+      cx.strokeStyle = state.dark ? '#787b86' : '#9598a1'; cx.lineWidth = 1; cx.setLineDash([3, 3]);
+      cx.beginPath(); cx.moveTo(p.hover.x, 0); cx.lineTo(p.hover.x, h); cx.moveTo(0, p.hover.y); cx.lineTo(w, p.hover.y); cx.stroke();
+      cx.setLineDash([]);
+    }
+    cx.restore();
+  }
   function frame() {
     requestAnimationFrame(frame);
-    const pane = $('mainPane'), ts = main.timeScale(), ps = main.priceScale('right');
-    const rps = rsiChart.priceScale('right');
+    const ts = main.timeScale(), ps = main.priceScale('right'), rps = rsiChart.priceScale('right');
     if (ps.options && rps.options) {
       const au = !!(ps.options().autoScale && rps.options().autoScale);
       if (au !== state.auto) { state.auto = au; $('tgAuto').classList.toggle('on', au); }
@@ -1049,30 +1107,8 @@
     }
     const scaleW = (ps.width && ps.width()) || 72;
     const collapsed = $('rsiPane').classList.contains('collapsed');
-    const tsH = collapsed ? ((ts.height && ts.height()) || 26) : 0;
-    const w = Math.max(0, pane.clientWidth - scaleW), h = Math.max(0, pane.clientHeight - tsH);
-    const s = [w, h, ver, state.data.length, state.interval, state.log, state.dark,
-      ts.logicalToCoordinate(0), ts.logicalToCoordinate(100),
-      candles.priceToCoordinate(1000), candles.priceToCoordinate(50000), candles.priceToCoordinate(100000)].join('|');
-    if (s === sig) return;
-    sig = s; W = w; H = h;
-    const dpr = window.devicePixelRatio || 1;
-    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr) || dpr !== lastDpr) {
-      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); lastDpr = dpr;
-      cv.style.width = w + 'px'; cv.style.height = h + 'px';
-    }
-    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cx.clearRect(0, 0, w, h);
-    cx.save(); cx.beginPath(); cx.rect(0, 0, w, h); cx.clip();
-    drawings.forEach(d => drawShape(d, d.id === selId));
-    if (measure) drawShape(measure, false);
-    if (cur) drawShape(cur, false);
-    if (tool !== 'cursor' && hover) {
-      cx.strokeStyle = state.dark ? '#787b86' : '#9598a1'; cx.lineWidth = 1; cx.setLineDash([3, 3]);
-      cx.beginPath(); cx.moveTo(hover.x, 0); cx.lineTo(hover.x, h); cx.moveTo(0, hover.y); cx.lineTo(w, hover.y); cx.stroke();
-      cx.setLineDash([]);
-    }
-    cx.restore();
+    renderPane(PANES.main, scaleW, collapsed ? ((ts.height && ts.height()) || 26) : 0);
+    if (!collapsed) renderPane(PANES.rsi, scaleW, (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26);
   }
 
   /* --- Kiểm tra trúng hình --- */
@@ -1084,6 +1120,12 @@
   function hitBody(s, x, y) {
     const pts = s.pts.map(toPx); if (!valid(pts)) return false;
     const [a, b] = pts;
+    if (s.type === 'brush') {
+      const tol = Math.max(7, (s.w || 3) / 2 + 5);
+      if (pts.length === 1) return Math.hypot(x - a.x, y - a.y) <= tol;
+      for (let i = 1; i < pts.length; i++) if (distSeg(x, y, pts[i-1].x, pts[i-1].y, pts[i].x, pts[i].y) <= tol) return true;
+      return false;
+    }
     if (s.type === 'trend') return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
     if (s.type === 'hline') return Math.abs(y - a.y) <= 6;
     if (s.type === 'rect') {
@@ -1104,7 +1146,8 @@
   function hit(x, y) {
     for (let i = drawings.length - 1; i >= 0; i--) {
       const s = drawings[i];
-      if (s.id === selId && s.type !== 'hline') {
+      if (paneOf(s) !== P.key) continue;
+      if (s.id === selId && s.type !== 'hline' && s.type !== 'brush') {
         const pts = s.pts.map(toPx);
         if (valid(pts)) {
           const hi = pts.findIndex(p => Math.hypot(x - p.x, y - p.y) <= 9);
@@ -1122,110 +1165,153 @@
     hline: 'Bấm để đặt đường ngang',
     rect: 'Bấm hai góc của hình chữ nhật',
     fib: 'Bấm điểm đầu và điểm cuối của sóng',
-    measure: 'Bấm hai điểm để đo giá và thời gian'
+    measure: 'Bấm hai điểm để đo giá và thời gian',
+    brush: 'Giữ chuột và rê để vẽ tự do · Esc để thoát cọ'
   };
-  function setAuto(v) { cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) cv.style.cursor = ''; }
+  function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
   function setTool(t) {
-    tool = t; cur = null; drag = null; hover = null;
+    tool = t; cur = null; drag = null; brushing = false;
+    PLIST.forEach(p => { p.hover = null; });
     if (t !== 'cursor') { measure = null; selId = null; }
     document.querySelectorAll('#dTools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
-    setAuto(t !== 'cursor');
-    if (t !== 'cursor') cv.style.cursor = 'crosshair';
+    PLIST.forEach(p => { setAuto(t !== 'cursor', p); if (t !== 'cursor') p.cv.style.cursor = 'crosshair'; });
     const hint = $('dHint');
     hint.style.display = t === 'cursor' ? 'none' : 'block';
     hint.textContent = HINTS[t] || '';
     touch();
   }
   function finishCur() {
-    if (cur.type === 'measure') measure = { type: 'measure', pts: cur.pts };
+    if (cur.type === 'measure') measure = { type: 'measure', pane: cur.pane, pts: cur.pts };
     else { drawings.push(cur); selId = cur.id; syncColor(); saveDrawings(); }
     cur = null; justStarted = false;
     setTool('cursor');
+  }
+  function endBrush() {
+    if (!brushing) return;
+    brushing = false;
+    if (cur && cur.type === 'brush') { drawings.push(cur); saveDrawings(); }
+    cur = null; touch();
   }
   function syncColor() {
     const s = drawings.find(d => d.id === selId);
     if (s && s.color) $('dColor').value = s.color;
   }
 
-  cv.addEventListener('pointerdown', e => {
-    const { x, y } = xyOf(e);
-    if (tool !== 'cursor') {
-      const pt = ptFromEvent(e); if (!pt) return;
-      e.preventDefault();
-      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-      if (tool === 'hline') {
-        const d = { id: uid(), type: 'hline', pts: [pt], color: dColor };
-        drawings.push(d); selId = d.id; saveDrawings(); setTool('cursor'); return;
-      }
-      if (!cur) {
-        measure = null;
-        cur = { id: uid(), type: tool, pts: [pt, { ...pt }], color: dColor };
-        downXY = { x, y }; justStarted = true;
-      } else { cur.pts[1] = pt; finishCur(); }
-      touch(); return;
-    }
-    const h = hit(x, y);
-    if (!h) { selId = null; setAuto(false); touch(); return; }
-    e.preventDefault();
-    selId = h.s.id; syncColor();
-    drag = { id: h.s.id, handle: h.handle, sx: x, sy: y, orig: h.s.pts.map(toPx) };
-    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-    touch();
-  });
-  cv.addEventListener('pointermove', e => {
-    const { x, y } = xyOf(e);
-    if (drag) {
-      const s = drawings.find(d => d.id === drag.id); if (!s) return;
-      if (drag.handle >= 0) { const pt = ptFromEvent(e); if (pt) s.pts[drag.handle] = pt; }
-      else {
-        const dx = x - drag.sx, dy = y - drag.sy, ts = main.timeScale();
-        const np = drag.orig.map(o => {
-          const lg = ts.coordinateToLogical(o.x + dx), p = candles.coordinateToPrice(o.y + dy);
-          return lg == null || p == null ? null : { t: idxToTime(lg), p };
-        });
-        if (np.every(Boolean)) s.pts = np;
-      }
-      touch(); return;
-    }
-    if (tool !== 'cursor') {
-      hover = { x, y }; showSync(x, 'main');
-      if (cur) { const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt; }
-      touch(); return;
-    }
-    const h = hit(x, y);
-    if (!h) setAuto(false); else cv.style.cursor = h.handle >= 0 ? 'grab' : 'move';
-  });
-  cv.addEventListener('pointerup', e => {
-    if (drag) { drag = null; saveDrawings(); return; }
-    if (cur && justStarted) {
-      justStarted = false;
+  function bindPane(p) {
+    const cv = p.cv;
+    cv.addEventListener('pointerdown', e => {
+      useP(p);
       const { x, y } = xyOf(e);
-      if (Math.hypot(x - downXY.x, y - downXY.y) > 6) {
-        const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt;
-        finishCur();
+      if (tool !== 'cursor') {
+        if (cur && paneOf(cur) !== p.key) return;      // điểm thứ hai phải nằm cùng khung với điểm đầu
+        const pt = ptFromEvent(e); if (!pt) return;
+        e.preventDefault();
+        try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+        if (tool === 'brush') {
+          measure = null; selId = null;
+          cur = { id: uid(), type: 'brush', pane: p.key, pts: [pt], color: dColor, w: brushW };
+          brushing = true; brushLast = { x, y }; touch(); return;
+        }
+        if (tool === 'hline') {
+          const d = { id: uid(), type: 'hline', pane: p.key, pts: [pt], color: dColor };
+          drawings.push(d); selId = d.id; saveDrawings(); setTool('cursor'); return;
+        }
+        if (!cur) {
+          measure = null;
+          cur = { id: uid(), type: tool, pane: p.key, pts: [pt, { ...pt }], color: dColor };
+          downXY = { x, y }; justStarted = true;
+        } else { cur.pts[1] = pt; finishCur(); }
+        touch(); return;
       }
-    }
-  });
-  cv.addEventListener('pointerleave', () => { if (!drag) { hover = null; hideSync(); touch(); } });
+      const h = hit(x, y);
+      if (!h) { selId = null; setAuto(false, p); touch(); return; }
+      e.preventDefault();
+      selId = h.s.id; syncColor();
+      drag = { id: h.s.id, pane: p.key, handle: h.handle, sx: x, sy: y, orig: h.s.pts.map(toPx) };
+      try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+      touch();
+    });
+    cv.addEventListener('pointermove', e => {
+      useP(p);
+      const { x, y } = xyOf(e);
+      if (brushing && cur && paneOf(cur) === p.key) {
+        const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [];
+        for (const ev of (evs.length ? evs : [e])) {
+          const q = xyOf(ev);
+          if (Math.hypot(q.x - brushLast.x, q.y - brushLast.y) < 2.5) continue;
+          const pt = ptFromEvent(ev);
+          if (pt) { cur.pts.push(pt); brushLast = q; }
+        }
+        p.hover = { x, y }; touch(); return;
+      }
+      if (drag && drag.pane === p.key) {
+        const s = drawings.find(d => d.id === drag.id); if (!s) return;
+        if (drag.handle >= 0) { const pt = ptFromEvent(e); if (pt) s.pts[drag.handle] = pt; }
+        else {
+          const dx = x - drag.sx, dy = y - drag.sy, ts = P.chart.timeScale();
+          const np = drag.orig.map(o => {
+            const lg = ts.coordinateToLogical(o.x + dx), pr = P.series.coordinateToPrice(o.y + dy);
+            return lg == null || pr == null ? null : { t: idxToTime(lg), p: pr };
+          });
+          if (np.every(Boolean)) s.pts = np;
+        }
+        touch(); return;
+      }
+      if (tool !== 'cursor') {
+        p.hover = { x, y };
+        if (tool !== 'brush') showSync(x, p.key);
+        if (cur && paneOf(cur) === p.key && !brushing) { const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt; }
+        touch(); return;
+      }
+      const h = hit(x, y);
+      if (!h) setAuto(false, p); else cv.style.cursor = h.handle >= 0 ? 'grab' : 'move';
+    });
+    cv.addEventListener('pointerup', e => {
+      useP(p);
+      if (brushing) { endBrush(); return; }
+      if (drag) { drag = null; saveDrawings(); return; }
+      if (cur && justStarted && paneOf(cur) === p.key) {
+        justStarted = false;
+        const { x, y } = xyOf(e);
+        if (Math.hypot(x - downXY.x, y - downXY.y) > 6) {
+          const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt;
+          finishCur();
+        }
+      }
+    });
+    cv.addEventListener('pointercancel', () => { endBrush(); if (drag) { drag = null; saveDrawings(); } });
+    cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); touch(); } });
 
-  // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
-  $('main').addEventListener('pointermove', e => {
-    if (tool !== 'cursor' || drag || !drawings.length) return;
-    const { x, y } = xyOf(e);
-    if (x < 0 || y < 0 || x > W || y > H) return;
-    const h = hit(x, y);
-    if (h) { setAuto(true); cv.style.cursor = h.handle >= 0 ? 'grab' : 'move'; }
-  });
-  main.subscribeClick(() => {
-    if (tool === 'cursor' && (measure || selId)) { measure = null; selId = null; touch(); }
-  });
+    // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
+    p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
+      if (tool !== 'cursor' || drag || !drawings.length) return;
+      useP(p);
+      const { x, y } = xyOf(e);
+      if (x < 0 || y < 0 || x > W || y > H) return;
+      const h = hit(x, y);
+      if (h) { setAuto(true, p); cv.style.cursor = h.handle >= 0 ? 'grab' : 'move'; }
+    });
+  }
+  PLIST.forEach(bindPane);
+  const clickDeselect = () => { if (tool === 'cursor' && (measure || selId)) { measure = null; selId = null; touch(); } };
+  main.subscribeClick(clickDeselect);
+  rsiChart.subscribeClick(clickDeselect);
 
   document.querySelectorAll('#dTools [data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); };
+  $('dMagnet').title = 'Nam châm: hít vào giá O/H/L/C (chỉ khung giá)';
   $('dColor').oninput = e => {
     dColor = e.target.value;
     const s = drawings.find(d => d.id === selId);
     if (s) { s.color = dColor; saveDrawings(); touch(); }
+  };
+  const BRUSH_W = [2, 3, 5, 8];
+  $('dW').onclick = () => {
+    brushW = BRUSH_W[(BRUSH_W.indexOf(brushW) + 1) % BRUSH_W.length];
+    $('dW').textContent = brushW + 'px';
+    const s = drawings.find(d => d.id === selId);
+    if (s && s.type === 'brush') { s.w = brushW; saveDrawings(); }
+    touch();
   };
   function deleteSelected() {
     const i = drawings.findIndex(d => d.id === selId);
@@ -1243,7 +1329,7 @@
     if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
     if (e.key === 'Delete' || e.key === 'Backspace') { if (deleteSelected()) e.preventDefault(); }
     else if (e.key === 'Escape') {
-      if (cur) { cur = null; justStarted = false; touch(); }
+      if (cur) { cur = null; justStarted = false; brushing = false; touch(); }
       else if (tool !== 'cursor') setTool('cursor');
       else { measure = null; selId = null; touch(); }
     }
