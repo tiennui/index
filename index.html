@@ -317,8 +317,8 @@
     BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
     XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON'
   };
-  const TFS = ['4h','6h','8h','12h','1d','3d','1w','1M'];
-  const TF_LABEL = { '1d':'D', '3d':'3D', '1w':'W', '1M':'M' };
+  const TFS = ['4h','6h','8h','12h','1d','2d','3d','1w','1M'];
+  const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '1M':'M' };
   const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
   const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
 
@@ -557,12 +557,32 @@
     let lastErr;
     for (const host of HOSTS) {
       try {
-        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`);
+        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiInterval(interval)}&limit=1000`);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) { lastErr = e; }
     }
     throw lastErr;
+  }
+  /* Binance không có khung 2d -> ghép từ nến 1d (mỗi 2 ngày UTC, mốc từ 01/01/1970) */
+  const apiInterval = tf => tf === '2d' ? '1d' : tf;
+  const bucket2d = t => Math.floor((t - TZ) / 172800) * 172800 + TZ;
+  function aggregate2d(bars) {
+    const out = [];
+    for (const b of bars) {
+      const k = bucket2d(b.time), last = out[out.length - 1];
+      if (last && last.time === k) {
+        last.high = Math.max(last.high, b.high);
+        last.low = Math.min(last.low, b.low);
+        last.close = b.close;
+        last.volume += b.volume;
+      } else {
+        out.push({ time: k, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume, _first: b.time });
+      }
+    }
+    if (out.length && out[0]._first !== out[0].time) out.shift(); // bỏ nến đầu nếu thiếu nửa ngày
+    out.forEach(o => delete o._first);
+    return out;
   }
   const mapKline = k => ({ time: Math.floor(k[0] / 1000) + TZ, open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5] });
 
@@ -584,6 +604,7 @@
       const raw = await fetchKlines(state.symbol, state.interval);
       if (id !== state.reqId) return;
       state.data = raw.map(mapKline);
+      if (state.interval === '2d') { state.base = state.data; state.data = aggregate2d(state.base); }
       renderAll();
       main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
       updateQuote(state.data[state.data.length - 1].close);
@@ -602,13 +623,24 @@
     if (state.ws) { state.ws.onclose = null; state.ws.close(); state.ws = null; }
   }
   function openWs(id) {
-    const url = `wss://stream.binance.com:9443/ws/${state.symbol.toLowerCase()}@kline_${state.interval}`;
+    const url = `wss://stream.binance.com:9443/ws/${state.symbol.toLowerCase()}@kline_${apiInterval(state.interval)}`;
     const ws = new WebSocket(url);
     state.ws = ws;
     ws.onopen = () => setStatus('ok', 'Trực tiếp');
     ws.onmessage = ev => {
       const k = JSON.parse(ev.data).k; if (!k) return;
-      const bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
+      let bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
+      if (state.interval === '2d' && state.base) {
+        const b1 = state.base, lb = b1[b1.length - 1];
+        if (lb && lb.time === bar.time) b1[b1.length - 1] = bar; else b1.push(bar);
+        const key = bucket2d(bar.time);
+        const part = aggregate2d(b1.filter(x => bucket2d(x.time) === key).map(x => ({ ...x })));
+        if (part.length) bar = part[0];
+        else {
+          const g = b1.filter(x => bucket2d(x.time) === key);
+          bar = { time: key, open: g[0].open, high: Math.max(...g.map(x => x.high)), low: Math.min(...g.map(x => x.low)), close: g[g.length - 1].close, volume: g.reduce((a, x) => a + x.volume, 0) };
+        }
+      }
       const last = state.data[state.data.length - 1];
       if (last && last.time === bar.time) state.data[state.data.length - 1] = bar;
       else state.data.push(bar);
@@ -657,7 +689,7 @@
   };
 
   /* ---------- Đếm ngược đóng nến (dưới nhãn giá) ---------- */
-  const SECS = { '1h':3600, '2h':7200, '4h':14400, '6h':21600, '8h':28800, '12h':43200, '1d':86400, '3d':259200, '1w':604800 };
+  const SECS = { '1h':3600, '2h':7200, '4h':14400, '6h':21600, '8h':28800, '12h':43200, '1d':86400, '2d':172800, '3d':259200, '1w':604800 };
   const timerEl = $('timer');
   function closeTime(openSec) {
     if (state.interval === '1M') {
