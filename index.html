@@ -1232,6 +1232,7 @@
   function bindPane(p) {
     const cv = p.cv;
     cv.addEventListener('pointerdown', e => {
+      if (e.button === 2) return;                    // chuột phải = reset biểu đồ, không vẽ
       useP(p);
       const { x, y } = xyOf(e);
       if (tool !== 'cursor') {
@@ -1399,6 +1400,19 @@
     rsiChart.priceScale('right').applyOptions({ autoScale: v });
   }
   $('tgAuto').onclick = () => setAutoScale(!state.auto);
+
+  /* ---------- Chuột phải: reset biểu đồ về mặc định ---------- */
+  function resetChartView() {
+    setAutoScale(true);
+    const n = state.data.length;
+    if (!n) return;
+    main.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
+    rsiChart.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
+  }
+  ['mainPane', 'rsiPane'].forEach(id => $(id).addEventListener('contextmenu', e => {
+    e.preventDefault();
+    resetChartView();
+  }));
 
   /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
   // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
