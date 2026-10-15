@@ -573,11 +573,11 @@
   }
 
   /* ---------- Dữ liệu Binance ---------- */
-  async function fetchKlines(symbol, interval, endTime) {
+  async function fetchKlines(symbol, interval, endTime, startTime) {
     let lastErr;
     for (const host of HOSTS) {
       try {
-        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiInterval(interval)}&limit=1000${endTime ? '&endTime=' + endTime : ''}`);
+        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiInterval(interval)}&limit=1000${endTime ? '&endTime=' + endTime : ''}${startTime ? '&startTime=' + startTime : ''}`);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) { lastErr = e; }
@@ -718,14 +718,17 @@
 
   /* ---------- Điều khiển ---------- */
   const tfBox = $('tfs');
+  const setTfButtons = tf => tfBox.querySelectorAll('.btn').forEach(x => x.classList.toggle('on', x.dataset.tf === tf));
   TFS.forEach(tf => {
     const b = document.createElement('button');
     b.className = 'btn' + (tf === state.interval ? ' on' : '');
     b.textContent = TF_LABEL[tf] || tf;
     b.dataset.tf = tf;
     b.onclick = () => {
+      // Đang backtest: đổi khung nhưng giữ nguyên thời điểm đang phát lại
+      if (rp.phase !== 'off') { if (tf !== state.interval) switchReplayTf(tf); return; }
       state.interval = tf;
-      tfBox.querySelectorAll('.btn').forEach(x => x.classList.toggle('on', x.dataset.tf === tf));
+      setTfButtons(tf);
       load();
     };
     tfBox.appendChild(b);
@@ -866,6 +869,7 @@
     candles.setMarkers([]);
   }
   function resetReplayUI() {
+    rp.switching = false;
     if (rp.phase === 'off') return;
     pausePlay(); resetTrades(); setPhase('off'); $('hist').classList.remove('open');
   }
@@ -888,6 +892,63 @@
     updateQuote(lastBar().close);
     updateStats();
   }
+
+  /* Đổi khung thời gian khi đang backtest: tải lại ở khung mới và dừng đúng thời điểm đang phát lại
+     (chỉ hiện các nến đã đóng xong trước thời điểm đó, không nhìn trước tương lai) */
+  async function switchReplayTf(tf) {
+    const id = ++state.reqId, prevTf = state.interval, phase = rp.phase;
+    pausePlay();
+    if (!rp.switching) rp.cursorMs = phase === 'run' && lastBar() ? (closeTime(lastBar().time) - TZ) * 1000 : null;
+    rp.switching = true;
+    state.interval = tf; setTfButtons(tf); updateTitle();
+    $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
+    $('loading').classList.add('show');
+    try {
+      const cur = rp.cursorMs;
+      let bars = [], end = cur == null ? undefined : cur;
+      for (let i = 0; i < 4; i++) {            // lùi về quá khứ
+        const raw = await fetchKlines(state.symbol, tf, end);
+        if (id !== state.reqId) return;
+        if (!raw.length) break;
+        bars = raw.map(mapKline).concat(bars);
+        end = raw[0][0] - 1;
+        if (raw.length < 1000) break;
+      }
+      if (cur != null && bars.length) {         // phần "tương lai" để phát lại tiếp
+        let start = (bars[bars.length - 1].time - TZ) * 1000 + 1;
+        for (let i = 0; i < 5; i++) {
+          const raw = await fetchKlines(state.symbol, tf, undefined, start);
+          if (id !== state.reqId) return;
+          if (!raw.length) break;
+          bars = bars.concat(raw.map(mapKline));
+          start = raw[raw.length - 1][0] + 1;
+          if (raw.length < 1000) break;
+        }
+      }
+      if (tf === '2d') { state.base = bars; bars = aggregate2d(bars); }
+      let cut = bars.length;
+      if (cur != null) {
+        cut = 0;
+        while (cut < bars.length && (closeTime(bars[cut].time) - TZ) * 1000 <= cur) cut++;
+        if (cut < 2) { resetReplayUI(); load(); return; }
+      }
+      state.full = bars;
+      state.data = bars.slice(0, cut);
+      renderAll();
+      setAutoScale(true);
+      const idx = cut - 1;
+      main.timeScale().setVisibleLogicalRange(cur != null ? { from: idx - 120, to: idx + 25 } : { from: idx - 130, to: idx + 12 });
+      updateQuote(lastBar().close);
+      if (phase === 'run') updateStats();
+      $('loading').classList.remove('show');
+      rp.switching = false;
+    } catch (e) {
+      if (id !== state.reqId) return;
+      state.interval = prevTf; setTfButtons(prevTf); updateTitle();
+      $('loading').classList.remove('show');
+      rp.switching = false;
+    }
+  }
   main.subscribeClick(param => {
     if (rp.phase !== 'select' || !param.time) return;
     const idx = state.full.findIndex(x => x.time === param.time);
@@ -895,6 +956,7 @@
   });
 
   function step() {
+    if (rp.switching) return false;
     if (rp.phase !== 'run' || state.data.length >= state.full.length) { pausePlay(); return false; }
     const bar = state.full[state.data.length], p = palette();
     state.data.push(bar);
