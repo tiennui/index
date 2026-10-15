@@ -146,6 +146,19 @@
     pointer-events: none; background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 12px;
   }
   @media (max-width: 640px) { #dTools { top: 152px; } }
+  #ctxMenu {
+    position: fixed; z-index: 100; display: none; min-width: 220px; padding: 6px 0;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.3); user-select: none;
+  }
+  #ctxMenu.open { display: block; }
+  #ctxMenu .it {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 14px; border: 0;
+    background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  }
+  #ctxMenu .it:hover, #ctxMenu .it:focus-visible { background: var(--hover); outline: none; }
+  #ctxMenu .it svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #ctxMenu .it .k { margin-left: auto; padding-left: 24px; color: var(--muted); font-size: 12px; }
   #hist {
     position: fixed; top: 92px; right: 12px; z-index: 50; display: none; width: 400px; max-width: calc(100% - 24px);
     background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
@@ -210,16 +223,23 @@
   <span class="sep"></span>
   <div id="tfs"></div>
   <span class="sep"></span>
-  <button class="btn on" id="tgEma">EMA 50/100/200</button>
-  <button class="btn on" id="tgVol">Vol</button>
+  <button class="btn" id="tgEma">EMA 50/100/200</button>
+  <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
   <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
   <span class="sep"></span>
   <button class="btn" id="tgLog" title="Thang giá logarit">Log</button>
   <button class="btn on" id="tgAuto" title="Tự động co giãn trục giá theo các nến đang hiển thị (tự tắt khi bạn kéo trục giá bằng tay)">Auto</button>
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
-  <button class="btn" id="tgTheme">Giao diện sáng</button>
+  <button class="btn" id="tgTheme">Giao diện tối</button>
   <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
+</div>
+
+<div id="ctxMenu" role="menu" aria-label="Menu biểu đồ">
+  <button class="it" id="ctxReset" role="menuitem">
+    <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg>
+    <span>Đặt lại biểu đồ</span><span class="k">Alt + R</span>
+  </button>
 </div>
 
 <div id="cfg" role="dialog" aria-label="Cài đặt RSI">
@@ -324,7 +344,7 @@
 
   const state = {
     symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
-    showEma: true, showVol: true, dark: true, reqId: 0
+    showEma: false, showVol: false, dark: false, reqId: 0
   };
 
   const rp = { phase: 'off', timer: null, speed: 1000, start: 10000, balance: 10000, pos: null, trades: [], markers: [] };
@@ -398,7 +418,7 @@
   function setLevels() {
     levelLines.forEach(l => rsiLine.removePriceLine(l));
     levelLines = [state.rsi.hi, state.rsi.lo].map(price =>
-      rsiLine.createPriceLine({ price, color: state.dark ? 'rgba(255,255,255,0.75)' : '#ffffff', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: false, title: '' })
+      rsiLine.createPriceLine({ price, color: state.dark ? 'rgba(255,255,255,0.75)' : '#b2b5be', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: false, title: '' })
     );
   }
   setLevels();
@@ -553,11 +573,11 @@
   }
 
   /* ---------- Dữ liệu Binance ---------- */
-  async function fetchKlines(symbol, interval) {
+  async function fetchKlines(symbol, interval, endTime) {
     let lastErr;
     for (const host of HOSTS) {
       try {
-        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiInterval(interval)}&limit=1000`);
+        const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiInterval(interval)}&limit=1000${endTime ? '&endTime=' + endTime : ''}`);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         return await res.json();
       } catch (e) { lastErr = e; }
@@ -591,6 +611,38 @@
     $('status').textContent = text;
   }
 
+  /* Tải thêm lịch sử: mỗi lần Binance chỉ trả 1000 nến nên lùi dần theo endTime (tối đa HIST_PAGES trang) */
+  const HIST_PAGES = 20;
+  async function loadHistory(id) {
+    const is2d = state.interval === '2d';
+    const src = is2d ? state.base : state.data;
+    if (!src || !src.length) return;
+    let endMs = (src[0].time - TZ) * 1000 - 1;
+    let acc = [];
+    const merge = () => {
+      if (!acc.length || id !== state.reqId || rp.phase !== 'off') return;
+      const rng = main.timeScale().getVisibleLogicalRange();
+      const n0 = state.data.length;
+      if (is2d) { state.base = acc.concat(state.base); state.data = aggregate2d(state.base); }
+      else state.data = acc.concat(state.data);
+      const add = state.data.length - n0;
+      acc = [];
+      renderAll();
+      if (rng) main.timeScale().setVisibleLogicalRange({ from: rng.from + add, to: rng.to + add });
+    };
+    for (let page = 0; page < HIST_PAGES; page++) {
+      let raw;
+      try { raw = await fetchKlines(state.symbol, state.interval, endMs); } catch (e) { break; }
+      if (id !== state.reqId) return;
+      if (!raw.length) break;
+      acc = raw.map(mapKline).concat(acc);
+      endMs = raw[0][0] - 1;
+      if ((page + 1) % 4 === 0) merge();
+      if (raw.length < 1000) break;
+    }
+    merge();
+  }
+
   async function load() {
     const id = ++state.reqId;
     closeWs();
@@ -610,6 +662,7 @@
       updateQuote(state.data[state.data.length - 1].close);
       $('loading').classList.remove('show');
       openWs(id);
+      loadHistory(id);
     } catch (e) {
       if (id !== state.reqId) return;
       $('loading').innerHTML = 'Không tải được dữ liệu từ Binance.<br>Hãy kiểm tra kết nối mạng, hoặc mở file này trực tiếp bằng trình duyệt (Binance có thể chặn một số quốc gia/mạng).';
@@ -1409,10 +1462,30 @@
     main.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
     rsiChart.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
   }
+  const ctxMenu = $('ctxMenu');
+  const hideCtx = () => ctxMenu.classList.remove('open');
+  function showCtx(x, y) {
+    ctxMenu.classList.add('open');
+    const w = ctxMenu.offsetWidth, h = ctxMenu.offsetHeight;
+    ctxMenu.style.left = Math.max(4, Math.min(x, innerWidth - w - 4)) + 'px';
+    ctxMenu.style.top = Math.max(4, Math.min(y, innerHeight - h - 4)) + 'px';
+  }
   ['mainPane', 'rsiPane'].forEach(id => $(id).addEventListener('contextmenu', e => {
     e.preventDefault();
-    resetChartView();
+    showCtx(e.clientX, e.clientY);
   }));
+  $('ctxReset').onclick = () => { hideCtx(); resetChartView(); };
+  // Bấm chuột trái (hoặc bất kỳ chỗ nào ngoài menu) để tắt menu
+  document.addEventListener('pointerdown', e => { if (!ctxMenu.contains(e.target)) hideCtx(); }, true);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') hideCtx();
+    else if (e.altKey && e.code === 'KeyR' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+      e.preventDefault(); hideCtx(); resetChartView();
+    }
+  });
+  window.addEventListener('resize', hideCtx);
+  window.addEventListener('blur', hideCtx);
+  ctxMenu.addEventListener('contextmenu', e => e.preventDefault());
 
   /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
   // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
@@ -1439,7 +1512,7 @@
   main.subscribeCrosshairMove(param => { const x = syncX(main, param); x == null ? hideSync() : showSync(x, 'main'); });
   rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); });
 
-  document.documentElement.dataset.theme = 'dark';
+  document.documentElement.dataset.theme = 'light';
   load();
 })();
 </script>
