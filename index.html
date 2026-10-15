@@ -218,7 +218,7 @@
   <select class="sym" id="symbol" aria-label="Cặp giao dịch">
     <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
     <option>SOLUSDT</option><option>XRPUSDT</option><option>DOGEUSDT</option>
-    <option>ADAUSDT</option><option>TRXUSDT</option>
+    <option>ADAUSDT</option><option>TRXUSDT</option><option value="PAXGUSDT">PAXGUSDT (Vàng)</option>
   </select>
   <span class="sep"></span>
   <div id="tfs"></div>
@@ -335,7 +335,7 @@
 (() => {
   const NAMES = {
     BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
-    XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON'
+    XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON', PAXGUSDT: 'PAX Gold'
   };
   const TFS = ['4h','6h','8h','12h','1d','2d','3d','1w','1M'];
   const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '1M':'M' };
