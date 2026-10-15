@@ -695,13 +695,18 @@
         }
       }
       const last = state.data[state.data.length - 1];
-      if (last && last.time === bar.time) state.data[state.data.length - 1] = bar;
+      // Nhảy cách quá 1 nến (mất kết nối / máy ngủ) -> tải lại dữ liệu để không bị hụt nến
+      const step = SECS[state.interval];
+      if (rp.phase === 'off' && last && step && bar.time - last.time > step * 1.5) { load(); return; }
+      const isNew = !(last && last.time === bar.time);
+      if (!isNew) state.data[state.data.length - 1] = bar;
       else state.data.push(bar);
       const p = palette();
       candles.update({ time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
       if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
       renderIndicators();
       updateQuote(bar.close);
+      if (isNew && rp.phase === 'off') resetChartView(); // có nến mới -> reset biểu đồ
     };
     ws.onclose = () => {
       if (id !== state.reqId) return;
