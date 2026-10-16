@@ -561,15 +561,18 @@
     if (i >= 0) updateLegend(i);
   });
 
+  let titlePrice = null; // giá hiển thị trên tiêu đề tab trình duyệt
   function updateTitle() {
     const base = state.symbol.replace('USDT', '');
     const tf = TF_LABEL[state.interval] || state.interval;
     $('lgName').textContent = `${NAMES[state.symbol]} / TetherUS · ${tf} · Binance`;
-    document.title = `${state.symbol} · ${tf} · Binance`;
+    document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · Binance`;
   }
   function updateQuote(price) {
     $('qSell').textContent = fmt(price);
     $('qBuy').textContent = fmt(price + 0.01);
+    titlePrice = price;
+    updateTitle();
   }
 
   /* ---------- Dữ liệu Binance ---------- */
@@ -648,6 +651,7 @@
     closeWs();
     resetReplayUI();
     syncDrawings();
+    titlePrice = null; // đổi mã / khung: bỏ giá cũ cho tới khi có giá mới
     updateTitle();
     $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
     $('loading').classList.add('show');
