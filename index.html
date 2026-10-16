@@ -180,6 +180,11 @@
     position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 25; display: none;
     pointer-events: none; border-left: 1px dashed #758696;
   }
+  #tlabel {
+    position: absolute; bottom: 0; z-index: 26; display: none; align-items: center; justify-content: center;
+    padding: 0 8px; pointer-events: none; white-space: nowrap; font-size: 12px; font-weight: 500;
+    background: #4c525e; color: #fff; border-radius: 2px; transform: translateX(-50%);
+  }
   .legend {
     position: absolute; left: 12px; top: 8px; z-index: 5; pointer-events: none;
     display: flex; flex-direction: column; gap: 3px; max-width: calc(100% - 100px);
@@ -328,6 +333,7 @@
     <canvas id="drawRsi"></canvas>
   </div>
   <div id="vsync"></div>
+  <div id="tlabel"></div>
   <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
 </div>
 
@@ -368,6 +374,12 @@
       : { bg:'#ffffff', text:'#131722', grid:'#f0f3fa', line:'#e0e3eb', up:'#089981', down:'#f23645',
           upW:'#089981', dnW:'#f23645', volUp:'rgba(8,153,129,.35)', volDn:'rgba(242,54,69,.35)' };
   }
+  // Nhãn thời gian: dd/mm/yyyy HH:mm (thời gian nến đã dịch sang UTC+7 nên đọc bằng getUTC*)
+  function fmtTime(t) {
+    const d = new Date(t * 1000), z = n => String(n).padStart(2, '0');
+    const day = `${z(d.getUTCDate())}/${z(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+    return /^\d+[dwM]$/.test(state.interval) ? day : `${day}  ${z(d.getUTCHours())}:${z(d.getUTCMinutes())}`;
+  }
   function chartOptions() {
     const p = palette();
     return {
@@ -375,6 +387,7 @@
       grid: { vertLines: { color: p.grid }, horzLines: { color: p.grid } },
       rightPriceScale: { borderColor: p.line, minimumWidth: 80 },
       timeScale: { borderColor: p.line, timeVisible: true, secondsVisible: false, rightOffset: 12 },
+      localization: { timeFormatter: fmtTime },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
       autoSize: true
     };
@@ -1580,8 +1593,24 @@
     const c = param.time != null ? chart.timeScale().timeToCoordinate(param.time) : null;
     return c != null ? c : param.point.x;
   };
-  main.subscribeCrosshairMove(param => { const x = syncX(main, param); x == null ? hideSync() : showSync(x, 'main'); });
-  rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); });
+  // Trục thời gian của khung giá bị ẩn -> hiện nhãn ngày giờ tự vẽ ở đáy khi rê chuột vào khung giá
+  const tlabel = $('tlabel');
+  function hideTLabel() { tlabel.style.display = 'none'; }
+  function showTLabel(x, time) {
+    if (x == null || time == null || $('rsiPane').classList.contains('collapsed')) { hideTLabel(); return; }
+    const tsH = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
+    tlabel.textContent = fmtTime(time);
+    tlabel.style.height = tsH + 'px';
+    tlabel.style.display = 'flex';
+    const half = tlabel.offsetWidth / 2, maxX = charts.clientWidth - 80 - half;
+    tlabel.style.left = Math.max(half, Math.min(x, maxX)) + 'px';
+  }
+  main.subscribeCrosshairMove(param => {
+    const x = syncX(main, param);
+    x == null ? hideSync() : showSync(x, 'main');
+    showTLabel(x, param.time);
+  });
+  rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); });
 
   document.documentElement.dataset.theme = 'light';
   load();
