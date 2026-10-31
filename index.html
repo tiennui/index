@@ -228,6 +228,7 @@
   <span class="sep"></span>
   <div id="tfs"></div>
   <span class="sep"></span>
+  <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
   <button class="btn" id="tgEma">EMA 20/50</button>
   <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
@@ -350,7 +351,7 @@
 
   const state = {
     symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
-    showEma: false, showVol: false, dark: false, reqId: 0
+    showEma: false, showVol: false, ha: false, dark: false, reqId: 0
   };
 
   const rp = { phase: 'off', timer: null, speed: 1000, start: 10000, balance: 10000, pos: null, trades: [], markers: [] };
@@ -535,9 +536,32 @@
     updateLegend(d.length - 1);
   }
 
+  /* ---------- Nến Heiken Ashi ---------- */
+  let haCache = [];
+  function haCalc(b, prev) {
+    const c = (b.open + b.high + b.low + b.close) / 4;
+    const o = prev ? (prev.open + prev.close) / 2 : (b.open + b.close) / 2;
+    return { time: b.time, open: o, high: Math.max(b.high, o, c), low: Math.min(b.low, o, c), close: c };
+  }
+  function buildCandles() {
+    if (!state.ha) return state.data.map(({ time, open, high, low, close }) => ({ time, open, high, low, close }));
+    haCache = [];
+    state.data.forEach((b, i) => haCache.push(haCalc(b, haCache[i - 1])));
+    return haCache.slice();
+  }
+  // Điểm nến sẽ vẽ cho state.data[i] (dùng khi cập nhật từng nến realtime / backtest)
+  function candlePoint(i) {
+    const b = state.data[i];
+    if (!state.ha) return { time: b.time, open: b.open, high: b.high, low: b.low, close: b.close };
+    if (haCache.length < i) buildCandles();
+    else haCache.length = i;
+    haCache[i] = haCalc(b, haCache[i - 1]);
+    return haCache[i];
+  }
+
   function renderAll() {
     const p = palette();
-    candles.setData(state.data.map(({ time, open, high, low, close }) => ({ time, open, high, low, close })));
+    candles.setData(buildCandles());
     vol.setData(state.showVol ? state.data.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? p.volUp : p.volDn })) : []);
     renderIndicators();
   }
@@ -719,7 +743,7 @@
       if (!isNew) state.data[state.data.length - 1] = bar;
       else state.data.push(bar);
       const p = palette();
-      candles.update({ time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+      candles.update(candlePoint(state.data.length - 1));
       if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
       renderIndicators();
       updateQuote(bar.close);
@@ -752,6 +776,7 @@
   });
   $('symbol').onchange = e => { state.symbol = e.target.value; load(); };
   $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
+  $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); renderAll(); };
   $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); renderAll(); };
   $('tgTheme').onclick = e => {
     state.dark = !state.dark;
@@ -780,7 +805,8 @@
   function tickTimer() {
     const last = state.data[state.data.length - 1];
     if (!last || rp.phase !== 'off') { timerEl.style.display = 'none'; return; }
-    const y = candles.priceToCoordinate(last.close);
+    const shown = state.ha && haCache.length === state.data.length ? haCache[haCache.length - 1] : last;
+    const y = candles.priceToCoordinate(shown.close);
     if (y == null) { timerEl.style.display = 'none'; return; }
     let left = Math.max(0, Math.floor(closeTime(last.time) - (Date.now() / 1000 + TZ)));
     const days = Math.floor(left / 86400); left -= days * 86400;
@@ -789,7 +815,7 @@
     const w = (main.priceScale('right').width && main.priceScale('right').width()) || 72;
     timerEl.style.width = w + 'px';
     timerEl.style.top = (y + 9) + 'px';
-    timerEl.style.background = last.close >= last.open ? palette().up : palette().down;
+    timerEl.style.background = shown.close >= shown.open ? palette().up : palette().down;
     timerEl.style.display = 'block';
   }
   setInterval(tickTimer, 250);
@@ -977,7 +1003,7 @@
     if (rp.phase !== 'run' || state.data.length >= state.full.length) { pausePlay(); return false; }
     const bar = state.full[state.data.length], p = palette();
     state.data.push(bar);
-    candles.update({ time: bar.time, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+    candles.update(candlePoint(state.data.length - 1));
     if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
     renderIndicators();
     updateQuote(bar.close);
