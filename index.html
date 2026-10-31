@@ -229,7 +229,7 @@
   <div id="tfs"></div>
   <span class="sep"></span>
   <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
-  <button class="btn" id="tgEma">EMA 20/50</button>
+  <button class="btn on" id="tgEma">EMA 20/50</button>
   <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
   <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
@@ -350,8 +350,8 @@
   const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
 
   const state = {
-    symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
-    showEma: false, showVol: false, ha: false, dark: false, reqId: 0
+    symbol: 'BTCUSDT', interval: '12h', data: [], ws: null, wsTimer: null,
+    showEma: true, showVol: false, ha: false, dark: false, reqId: 0
   };
 
   const rp = { phase: 'off', timer: null, speed: 1000, start: 10000, balance: 10000, pos: null, trades: [], markers: [] };
