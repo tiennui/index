@@ -103,6 +103,26 @@
   #cfg .acts { display: flex; justify-content: space-between; margin-top: 12px; }
   #cfg .acts .btn { background: var(--hover); }
   #cfg .err { color: var(--down); font-size: 12px; min-height: 16px; margin-top: 4px; }
+  #emaCfg {
+    position: fixed; top: 48px; right: 12px; z-index: 50; display: none; width: 260px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  #emaCfg.open { display: block; }
+  #emaCfg h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  #emaCfg .f { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+  #emaCfg .f label { color: var(--text); }
+  #emaCfg .f label i { font-style: normal; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  #emaCfg input {
+    width: 76px; background: var(--hover); color: var(--text); border: 1px solid var(--line);
+    border-radius: 4px; padding: 5px 7px; font: inherit; text-align: right;
+  }
+  #emaCfg input[type=checkbox] { width: auto; margin: 0 8px 0 0; vertical-align: -2px; cursor: pointer; }
+  #emaCfg input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #emaCfg .sub { color: var(--muted); font-size: 11.5px; margin: 10px 0 4px; }
+  #emaCfg .acts { display: flex; justify-content: space-between; margin-top: 12px; }
+  #emaCfg .acts .btn { background: var(--hover); }
+  #emaCfg .err { color: var(--down); font-size: 12px; min-height: 16px; margin-top: 4px; }
 
   #rbar {
     display: none; flex: none; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -170,6 +190,33 @@
   #hist table { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
   #hist th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px 4px 0; position: sticky; top: 0; background: var(--panel); }
   #hist td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); }
+  #maBt {
+    position: fixed; top: 92px; right: 12px; z-index: 50; display: none; width: 470px; max-width: calc(100% - 24px);
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.35); font-size: 12.5px;
+  }
+  #maBt.open { display: block; }
+  #maBt h4 { margin: 0 0 8px; font-size: 14px; font-weight: 600; }
+  #maBt .mrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  #maBt label { display: flex; flex-direction: column; gap: 2px; color: var(--muted); font-size: 11.5px; }
+  #maBt input, #maBt select {
+    width: 68px; padding: 4px 6px; font: inherit; color: var(--text); background: var(--bg, var(--panel));
+    border: 1px solid var(--line); border-radius: 4px;
+  }
+  #maBt label.mchk { flex-direction: row; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--text); }
+  #maBt input[type=checkbox] { width: auto; }
+  #maBt .msub { margin: 8px 0 0; color: var(--muted); font-size: 11.5px; }
+  #maBt .mstats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 10px 0; }
+  #maBt .mstats div { border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; }
+  #maBt .mstats b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+  #maBt .mstats span { color: var(--muted); font-size: 11px; }
+  #maBt .scroll { max-height: 250px; overflow: auto; }
+  #maBt table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  #maBt th { text-align: left; color: var(--muted); font-weight: 500; padding: 4px 6px 4px 0; position: sticky; top: 0; background: var(--panel); }
+  #maBt td { padding: 4px 6px 4px 0; border-top: 1px solid var(--line); white-space: nowrap; }
+  #maBt tbody tr { cursor: pointer; }
+  #maBt tbody tr:hover { background: var(--hover); }
+  #maBt .up { color: var(--up); } #maBt .down { color: var(--down); }
   #timer {
     position: absolute; right: 0; z-index: 6; display: none; pointer-events: none;
     color: #fff; font-size: 11px; font-weight: 600; text-align: center; line-height: 17px;
@@ -230,6 +277,7 @@
   <span class="sep"></span>
   <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
   <button class="btn on" id="tgEma">EMA 20/50</button>
+  <button class="btn" id="btnEma" aria-haspopup="dialog" title="Chỉnh giá trị (chu kỳ) hai đường EMA">⚙</button>
   <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
   <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
@@ -237,6 +285,7 @@
   <button class="btn" id="tgLog" title="Thang giá logarit">Log</button>
   <button class="btn on" id="tgAuto" title="Tự động co giãn trục giá theo các nến đang hiển thị (tự tắt khi bạn kéo trục giá bằng tay)">Auto</button>
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
+  <button class="btn" id="tgMaBt" title="Backtest tự động: MA nhanh cắt lên MA chậm thì vào Long, stoploss tại điểm giao nhau (chạy trên khung đang chọn)">Backtest MA</button>
   <button class="btn" id="tgTheme">Giao diện tối</button>
   <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
 </div>
@@ -246,6 +295,14 @@
     <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg>
     <span>Đặt lại biểu đồ</span><span class="k">Alt + R</span>
   </button>
+</div>
+
+<div id="emaCfg" role="dialog" aria-label="Cài đặt EMA">
+  <h4>Cài đặt đường EMA</h4>
+  <div class="f"><label><input id="eS1" type="checkbox" checked aria-label="Hiển thị EMA thứ nhất"><i style="background:#f5a623"></i>EMA thứ nhất</label><input id="eN1" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ nhất"></div>
+  <div class="f"><label><input id="eS2" type="checkbox" checked aria-label="Hiển thị EMA thứ hai"><i style="background:#2962ff"></i>EMA thứ hai</label><input id="eN2" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ hai"></div>
+  <div class="err" id="eErr"></div>
+  <div class="acts"><button class="btn" id="eReset">Mặc định</button><button class="btn on" id="eClose">Đóng</button></div>
 </div>
 
 <div id="cfg" role="dialog" aria-label="Cài đặt RSI">
@@ -294,6 +351,23 @@
     <thead><tr><th>Hướng</th><th>Giá vào</th><th>Giá ra</th><th>Lãi/lỗ (USDT)</th></tr></thead>
     <tbody id="hBody"></tbody>
   </table></div>
+</div>
+
+<div id="maBt" role="dialog" aria-label="Backtest MA cắt nhau">
+  <h4>Backtest: MA nhanh cắt lên MA chậm → Long</h4>
+  <div class="mrow">
+    <label>Loại MA<select id="mType"><option value="ema">EMA</option><option value="sma">SMA</option></select></label>
+    <label>MA nhanh<input id="mFast" type="number" min="2" max="500" value="20"></label>
+    <label>MA chậm<input id="mSlow" type="number" min="3" max="500" value="50"></label>
+    <label>Phí/chiều (%)<input id="mFee" type="number" min="0" step="0.01" value="0.05"></label>
+  </div>
+  <div class="msub" id="mInfo"></div>
+  <div class="mstats" id="mStats"></div>
+  <div class="scroll"><table>
+    <thead><tr><th>#</th><th>Vào lệnh</th><th>Giá vào</th><th>Stoploss</th><th>Lý do thoát</th><th>R</th><th>Lãi/lỗ</th></tr></thead>
+    <tbody id="mBody"></tbody>
+  </table></div>
+  <div class="msub">Vào Long tại giá đóng cửa nến MA nhanh cắt lên; stoploss đặt đúng giá tại điểm hai đường giao nhau. Lệnh thoát khi chạm stoploss, hoặc chốt tại giá đóng cửa nến MA nhanh cắt xuống MA chậm. Muốn đổi khung thời gian thì bấm các nút khung phía trên. Bấm vào một dòng để xem lệnh đó trên biểu đồ.</div>
 </div>
 
 <div class="charts">
@@ -407,11 +481,18 @@
   const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-  const EMA_DEF = [[20,'#2962ff'],[50,'#f5a623']];
+  const EMA_DEF = [[20,'#f5a623'],[50,'#2962ff']];
   const emaSeries = EMA_DEF.map(([n, c]) => ({
-    n, color: c,
+    n, color: c, show: true,
     s: main.addLineSeries({ color: c, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
   }));
+  try { // chu kỳ EMA đã lưu từ lần trước
+    let sv = JSON.parse(localStorage.getItem('emaCfg') || 'null');
+    const sh = sv && !Array.isArray(sv) ? sv.show : null;
+    if (sv && !Array.isArray(sv)) sv = sv.n;
+    if (Array.isArray(sv) && sv.length === 2 && sv.every(n => Number.isInteger(n) && n >= 1 && n <= 500)) emaSeries.forEach((e, i) => { e.n = sv[i]; });
+    if (Array.isArray(sh) && sh.length === 2) emaSeries.forEach((e, i) => { e.show = sh[i] !== false; });
+  } catch (e) {}
 
   // Các vùng nền (vẽ bằng series baseline để luôn khớp trục thời gian và trục giá)
   const zoneSeries = [0, 1, 2, 3, 4].map(() => rsiChart.addBaselineSeries({
@@ -530,7 +611,7 @@
     emaSeries.forEach(e => {
       const v = ema(c, e.n);
       e.vals = v;
-      e.s.setData(state.showEma ? toSeries(t, v) : []);
+      e.s.setData(state.showEma && e.show ? toSeries(t, v) : []);
     });
     cache = { R, E, W };
     updateLegend(d.length - 1);
@@ -562,6 +643,8 @@
   function renderAll() {
     const p = palette();
     candles.setData(buildCandles());
+    try { touch(); } catch (e) {}
+    try { mabRefresh(); } catch (e) {}
     vol.setData(state.showVol ? state.data.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? p.volUp : p.volDn })) : []);
     renderIndicators();
   }
@@ -578,7 +661,7 @@
       `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` +
       `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`;
     $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`;
-    $('lgEma').innerHTML = emaSeries.map(e =>
+    $('lgEma').innerHTML = emaSeries.filter(e => e.show).map(e =>
       `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join('');
     const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i];
     $('lgRsi').innerHTML =
@@ -748,6 +831,7 @@
       renderIndicators();
       updateQuote(bar.close);
       if (isNew && rp.phase === 'off') resetChartView(); // có nến mới -> reset biểu đồ
+      if (isNew) try { mabRefresh(); } catch (e) {} // nến vừa đóng -> tính lại backtest MA
     };
     ws.onclose = () => {
       if (id !== state.reqId) return;
@@ -776,6 +860,40 @@
   });
   $('symbol').onchange = e => { state.symbol = e.target.value; load(); };
   $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
+
+  /* ---------- Chỉnh giá trị đường EMA ---------- */
+  const emaCfg = $('emaCfg');
+  const emaLabel = () => `EMA ${emaSeries[0].n}/${emaSeries[1].n}`;
+  const refreshEmaLabel = () => { $('tgEma').textContent = emaLabel(); };
+  function applyEmaCfg() {
+    const v = ['eN1', 'eN2'].map(id => parseInt($(id).value, 10));
+    if (!v.every(n => Number.isFinite(n) && n >= 1 && n <= 500)) { $('eErr').textContent = 'Giá trị phải là số nguyên từ 1 đến 500.'; return; }
+    $('eErr').textContent = '';
+    emaSeries.forEach((e, i) => { e.n = v[i]; });
+    saveEmaCfg();
+    refreshEmaLabel();
+    renderIndicators();
+  }
+  const saveEmaCfg = () => { try { localStorage.setItem('emaCfg', JSON.stringify({ n: emaSeries.map(e => e.n), show: emaSeries.map(e => e.show) })); } catch (e) {} };
+  ['eN1', 'eN2'].forEach(id => $(id).addEventListener('input', applyEmaCfg));
+  ['eS1', 'eS2'].forEach((id, i) => $(id).addEventListener('change', e => {
+    emaSeries[i].show = e.target.checked;
+    if (e.target.checked && !state.showEma) { state.showEma = true; $('tgEma').classList.add('on'); } // bật một đường thì nút EMA chung cũng bật
+    saveEmaCfg();
+    renderIndicators();
+  }));
+  $('btnEma').onclick = e => {
+    const open = emaCfg.classList.toggle('open');
+    e.currentTarget.classList.toggle('on', open);
+    if (open) { $('cClose').click(); $('eN1').value = emaSeries[0].n; $('eN2').value = emaSeries[1].n; $('eS1').checked = emaSeries[0].show; $('eS2').checked = emaSeries[1].show; $('eErr').textContent = ''; }
+  };
+  $('eClose').onclick = () => { emaCfg.classList.remove('open'); $('btnEma').classList.remove('on'); };
+  $('eReset').onclick = () => {
+    $('eN1').value = EMA_DEF[0][0]; $('eN2').value = EMA_DEF[1][0];
+    $('eS1').checked = $('eS2').checked = true; emaSeries.forEach(e => { e.show = true; });
+    applyEmaCfg();
+  };
+  refreshEmaLabel();
   $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); renderAll(); };
   $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); renderAll(); };
   $('tgTheme').onclick = e => {
@@ -878,11 +996,11 @@
   $('btnCfg').onclick = e => {
     const open = cfg.classList.toggle('open');
     e.currentTarget.classList.toggle('on', open);
-    if (open) fillCfg();
+    if (open) { $('eClose').click(); fillCfg(); }
   };
   $('cClose').onclick = () => { cfg.classList.remove('open'); $('btnCfg').classList.remove('on'); };
   $('cReset').onclick = () => { state.rsi = { ...RSI_DEFAULT }; fillCfg(); applyCfg(); };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('cClose').click(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); } });
 
   /* ---------- Chế độ Log ---------- */
   $('tgLog').onclick = e => {
@@ -902,6 +1020,7 @@
     rp.phase = p;
     if (p === 'off') rbar.removeAttribute('data-phase'); else rbar.dataset.phase = p;
     $('tgReplay').classList.toggle('on', p !== 'off');
+    try { if (p !== 'off') mabOff(); } catch (e) {}
   }
   function pausePlay() {
     clearInterval(rp.timer); rp.timer = null; $('rPlay').textContent = '▶ Chạy';
@@ -1112,8 +1231,19 @@
   }
 
   // Quy đổi thời gian <-> chỉ số nến (kể cả vùng tương lai, nội suy theo độ dài nến)
-  const barSecs = () => state.interval === '1M' ? 2592000 : (SECS[state.interval] || 86400);
-  function timeToIdx(t) {
+  let bsKey = '', bsVal = 86400;
+  function barSecs() {
+    const d = state.data, n = d.length;
+    if (n < 2) return SECS[state.interval] || 86400;
+    const key = n + '|' + d[0].time + '|' + d[n - 1].time;
+    if (key === bsKey) return bsVal;
+    const diffs = [];
+    for (let i = Math.max(1, n - 64); i < n; i++) diffs.push(d[i].time - d[i - 1].time);
+    diffs.sort((a, b) => a - b);
+    bsKey = key; bsVal = diffs[diffs.length >> 1] || 86400;
+    return bsVal;
+  }
+  function rawTimeToIdx(t) {
     const d = state.data, n = d.length; if (n < 1) return 0;
     const bs = barSecs();
     if (n === 1 || t <= d[0].time) return (t - d[0].time) / bs;
@@ -1122,7 +1252,7 @@
     while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (d[mid].time <= t) lo = mid; else hi = mid; }
     return lo + (t - d[lo].time) / (d[hi].time - d[lo].time);
   }
-  function idxToTime(i) {
+  function rawIdxToTime(i) {
     const d = state.data, n = d.length; if (n < 1) return 0;
     const bs = barSecs();
     if (n === 1 || i <= 0) return d[0].time + i * bs;
@@ -1130,10 +1260,15 @@
     const lo = Math.floor(i);
     return d[lo].time + (i - lo) * (d[lo+1].time - d[lo].time);
   }
+  /* Thời gian mở nến nằm ở MÉP TRÁI nến, còn toạ độ logic của nến là TÂM nến (lệch 0.5 nến).
+     Bù 0.5 để mỗi nét vẽ luôn chiếm đúng khoảng thời gian thật ở mọi khung -> đổi khung không bị trôi/nhảy. */
+  const timeToIdx = t => rawTimeToIdx(t) - 0.5;
+  const idxToTime = i => rawIdxToTime(i + 0.5);
   const X = t => P.chart.timeScale().logicalToCoordinate(timeToIdx(t));
   const Y = p => P.series.priceToCoordinate(p);
   const toPx = pt => ({ x: X(pt.t), y: Y(pt.p) });
   const valid = pts => pts.every(p => p.x != null && p.y != null);
+  let retryDraw = false;
 
   function ptFromEvent(e) {
     const r = P.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
@@ -1187,7 +1322,7 @@
   }
   function drawShape(s, sel) {
     const pts = s.pts.map(toPx);
-    if (!valid(pts)) return;
+    if (!valid(pts) || pts.some(q => !isFinite(q.x) || !isFinite(q.y))) { retryDraw = true; return; }
     const [a, b] = pts, col = s.color || '#2962ff';
     cx.lineWidth = 2; cx.strokeStyle = col; cx.fillStyle = col; cx.setLineDash([]);
     if (s.type === 'brush') {
@@ -1253,13 +1388,153 @@
     }
   }
 
+  /* ---------- Backtest MA cắt nhau (tự động) ---------- */
+  const mab = { on: false, trades: [], stats: null, curve: [] };
+  function mabAvg(v, n, type) {
+    const out = new Array(v.length).fill(NaN);
+    if (v.length < n) return out;
+    let sum = 0; for (let i = 0; i < n; i++) sum += v[i];
+    out[n - 1] = sum / n;
+    if (type === 'sma') { for (let i = n; i < v.length; i++) { sum += v[i] - v[i - n]; out[i] = sum / n; } }
+    else { const k = 2 / (n + 1); for (let i = n; i < v.length; i++) out[i] = v[i] * k + out[i - 1] * (1 - k); }
+    return out;
+  }
+  // c: state.data (giá thật), o: {fast, slow, type, rr, fee, exitCross}
+  function mabRun(c, o) {
+    const close = c.map(x => x.close);
+    const f = mabAvg(close, o.fast, o.type), s = mabAvg(close, o.slow, o.type);
+    const ok = i => i > 0 && isFinite(f[i - 1]) && isFinite(s[i - 1]);
+    const up = i => ok(i) && f[i - 1] <= s[i - 1] && f[i] > s[i];
+    const dn = i => ok(i) && f[i - 1] >= s[i - 1] && f[i] < s[i];
+    const crossPrice = i => { const d0 = f[i - 1] - s[i - 1], d1 = f[i] - s[i], t = d0 / (d0 - d1); return s[i - 1] + t * (s[i] - s[i - 1]); };
+    const fee = (o.fee || 0) / 100, trades = [];
+    let pos = null;
+    const done = (i, price, reason) => {
+      trades.push({ ...pos, i1: i, t1: c[i].time, exit: price, reason, r: (price - pos.entry) / (pos.entry - pos.sl), ret: price / pos.entry - 1 - 2 * fee });
+      pos = null;
+    };
+    for (let i = 1; i < c.length; i++) {
+      if (pos) {
+        const b = c[i];
+        if (b.open <= pos.sl) done(i, b.open, 'Stoploss');
+        else if (b.low <= pos.sl) done(i, pos.sl, 'Stoploss');
+        else if (pos.tp && b.open >= pos.tp) done(i, b.open, 'Chốt lời');
+        else if (pos.tp && b.high >= pos.tp) done(i, pos.tp, 'Chốt lời');
+        else if (o.exitCross && dn(i)) done(i, b.close, 'MA cắt xuống');
+      }
+      if (!pos && up(i)) {
+        const entry = c[i].close, sl = crossPrice(i);
+        if (sl < entry) pos = { i0: i, t0: c[i].time, entry, sl, tp: o.rr > 0 ? entry + o.rr * (entry - sl) : 0 };
+      }
+    }
+    if (pos) done(c.length - 1, c[c.length - 1].close, 'Đang mở');
+    let eq = 1, peak = 1, dd = 0, gw = 0, gl = 0, wins = 0, sumR = 0;
+    trades.forEach(t => {
+      eq *= 1 + t.ret; peak = Math.max(peak, eq); dd = Math.max(dd, 1 - eq / peak);
+      if (t.ret > 0) { wins++; gw += t.ret; } else gl -= t.ret;
+      sumR += t.r;
+    });
+    const n = trades.length;
+    return { trades, stats: { n, winRate: n ? wins / n : 0, total: eq - 1, maxDD: dd, avgR: n ? sumR / n : 0, pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : 0) } };
+  }
+  function mabIdx(t) { // chỉ số nến có đúng thời gian t (state.data luôn tăng dần)
+    const d = state.data; let lo = 0, hi = d.length - 1;
+    while (lo <= hi) { const m = (lo + hi) >> 1; if (d[m].time === t) return m; if (d[m].time < t) lo = m + 1; else hi = m - 1; }
+    return -1;
+  }
+  const mabCfg = () => ({
+    type: $('mType').value, fast: +$('mFast').value, slow: +$('mSlow').value,
+    rr: 0, fee: +$('mFee').value || 0, exitCross: true // không chốt theo R: chỉ thoát khi chạm SL hoặc MA nhanh cắt xuống MA chậm
+  });
+  const mabPct = x => (x * 100).toFixed(2) + '%';
+  const mabCls = x => x > 0 ? 'up' : x < 0 ? 'down' : '';
+  const mabTime = t => new Date(t * 1000).toLocaleString('vi-VN', { timeZone: 'UTC', hour12: false, day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+  function mabRefresh() {
+    if (!mab.on) return;
+    if (rp.phase !== 'off') { mabOff(); return; }
+    const o = mabCfg();
+    if (!(o.fast >= 2 && o.slow > o.fast)) { $('mInfo').textContent = 'MA chậm phải lớn hơn MA nhanh.'; mab.trades = []; touch(); return; }
+    try { localStorage.setItem('mabCfg', JSON.stringify(o)); } catch (e) {}
+    const all = state.data, lastB = all[all.length - 1];
+    const closed = !lastB || closeTime(lastB.time) <= Date.now() / 1000 + TZ; // bỏ nến đang chạy để tín hiệu không đổi theo từng giây
+    const d = closed ? all : all.slice(0, -1);
+    const r = mabRun(d, o);
+    mab.trades = r.trades; mab.stats = r.stats;
+    $('mInfo').textContent = `${state.symbol} · ${state.interval} · ${d.length} nến` + (d.length ? ` (${mabTime(d[0].time)} → ${mabTime(d[d.length - 1].time)})` : '');
+    const s = r.stats;
+    $('mStats').innerHTML = [
+      ['Số lệnh', s.n], ['Tỷ lệ thắng', mabPct(s.winRate)],
+      ['Tổng lợi nhuận', `<span class="${mabCls(s.total)}">${mabPct(s.total)}</span>`],
+      ['Sụt vốn tối đa', mabPct(s.maxDD)], ['R trung bình', s.avgR.toFixed(2)], ['Profit factor', isFinite(s.pf) ? s.pf.toFixed(2) : '∞']
+    ].map(([k, v]) => `<div><b>${v}</b><span>${k}</span></div>`).join('');
+    $('mBody').innerHTML = r.trades.map((t, i) =>
+      `<tr data-i="${i}"><td>${i + 1}</td><td>${mabTime(t.t0)}</td><td>${fmt(t.entry)}</td><td>${fmt(t.sl)}</td><td>${t.reason}</td>` +
+      `<td class="${mabCls(t.r)}">${t.r.toFixed(2)}</td><td class="${mabCls(t.ret)}">${mabPct(t.ret)}</td></tr>`).join('') ||
+      '<tr><td colspan="7">Chưa có lệnh nào trong dữ liệu đang tải.</td></tr>';
+    touch();
+  }
+  function mabOff() {
+    mab.on = false; mab.trades = [];
+    $('maBt').classList.remove('open'); $('tgMaBt').classList.remove('on'); touch();
+  }
+  $('tgMaBt').onclick = () => {
+    if (mab.on) { mabOff(); return; }
+    if (rp.phase !== 'off') return; // đang phát lại nến: không chạy cùng lúc
+    mab.on = true; $('maBt').classList.add('open'); $('tgMaBt').classList.add('on'); mabRefresh();
+  };
+  ['mType', 'mFast', 'mSlow', 'mFee'].forEach(id => $(id).addEventListener('change', mabRefresh));
+  $('mBody').onclick = e => {
+    const tr = e.target.closest('tr[data-i]'); if (!tr) return;
+    const t = mab.trades[+tr.dataset.i]; if (!t) return;
+    const i0 = mabIdx(t.t0), i1 = mabIdx(t.t1); if (i0 < 0 || i1 < 0) return;
+    main.timeScale().setVisibleLogicalRange({ from: i0 - 30, to: i1 + 30 });
+  };
+  try {
+    const sv = JSON.parse(localStorage.getItem('mabCfg') || 'null');
+    if (sv) { $('mType').value = sv.type === 'sma' ? 'sma' : 'ema'; $('mFast').value = sv.fast; $('mSlow').value = sv.slow; $('mFee').value = sv.fee; }
+  } catch (e) {}
+
+  // Vẽ lệnh lên biểu đồ chính: vùng rủi ro (đỏ), vùng chốt lời (xanh), điểm vào / thoát
+  function drawMab() {
+    if (!mab.on || !mab.trades.length || rp.phase !== 'off') return;
+    const ts = P.chart.timeScale(), d = state.data, pal = palette();
+    let lastLx = -1e9; // nhãn R: bỏ qua nhãn nào chồng lên nhãn trước (cách nhau < 30px)
+    cx.save(); cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif'; cx.textAlign = 'center';
+    for (const t of mab.trades) {
+      const i0 = mabIdx(t.t0), i1 = mabIdx(t.t1); if (i0 < 0 || i1 < 0) continue;
+      const x0 = ts.logicalToCoordinate(i0), x1 = ts.logicalToCoordinate(i1);
+      if (x0 == null || x1 == null || x1 < -30 || x0 > W + 30) continue;
+      const yE = Y(t.entry), ySl = Y(t.sl), yTp = t.tp ? Y(t.tp) : null, yX = Y(t.exit);
+      if (yE == null || ySl == null || yX == null) continue;
+      cx.fillStyle = hexA(pal.down, 0.12); cx.fillRect(x0, Math.min(yE, ySl), x1 - x0, Math.abs(ySl - yE));
+      cx.strokeStyle = pal.down; cx.lineWidth = 1; cx.setLineDash([4, 3]);
+      cx.beginPath(); cx.moveTo(x0, ySl); cx.lineTo(x1, ySl); cx.stroke();
+      if (yTp != null) {
+        cx.fillStyle = hexA(pal.up, 0.12); cx.fillRect(x0, Math.min(yE, yTp), x1 - x0, Math.abs(yTp - yE));
+        cx.strokeStyle = pal.up; cx.beginPath(); cx.moveTo(x0, yTp); cx.lineTo(x1, yTp); cx.stroke();
+      }
+      cx.setLineDash([]);
+      const win = t.ret > 0, col = win ? pal.up : pal.down;
+      const yLow = Y(d[i0].low), yHigh = Y(d[i1].high);
+      if (yLow != null) { // mũi tên vào lệnh (dưới nến)
+        cx.fillStyle = pal.up; cx.beginPath(); cx.moveTo(x0, yLow + 5); cx.lineTo(x0 - 5, yLow + 13); cx.lineTo(x0 + 5, yLow + 13); cx.closePath(); cx.fill();
+      }
+      if (yHigh != null) { // mũi tên thoát lệnh (trên nến)
+        cx.fillStyle = col; cx.beginPath(); cx.moveTo(x1, yHigh - 5); cx.lineTo(x1 - 5, yHigh - 13); cx.lineTo(x1 + 5, yHigh - 13); cx.closePath(); cx.fill();
+        if (x1 - lastLx >= 30) { cx.fillText((t.r >= 0 ? '+' : '') + t.r.toFixed(1) + 'R', x1, yHigh - 17); lastLx = x1; }
+      }
+    }
+    cx.restore();
+  }
+
   function renderPane(p, scaleW, tsH) {
     const ts = p.chart.timeScale();
     const w = Math.max(0, p.el.clientWidth - scaleW), h = Math.max(0, p.el.clientHeight - tsH);
     const probe = p.key === 'main'
       ? [candles.priceToCoordinate(1000), candles.priceToCoordinate(50000), candles.priceToCoordinate(100000)]
       : [rsiLine.priceToCoordinate(0), rsiLine.priceToCoordinate(50), rsiLine.priceToCoordinate(100)];
-    const s = [w, h, ver, state.data.length, state.interval, state.log, state.dark,
+    const dd = state.data, s = [w, h, ver, dd.length, dd.length ? dd[0].time : 0, dd.length ? dd[dd.length - 1].time : 0, barSecs(), state.log, state.dark,
       ts.logicalToCoordinate(0), ts.logicalToCoordinate(100), ...probe].join('|');
     if (s === p.sig) return;
     p.sig = s; p.W = w; p.H = h;
@@ -1272,6 +1547,8 @@
     cx.setTransform(dpr, 0, 0, dpr, 0, 0);
     cx.clearRect(0, 0, w, h);
     cx.save(); cx.beginPath(); cx.rect(0, 0, w, h); cx.clip();
+    retryDraw = false;
+    if (p.key === 'main') drawMab();
     drawings.forEach(d => { if (paneOf(d) === p.key) drawShape(d, d.id === selId); });
     if (measure && paneOf(measure) === p.key) drawShape(measure, false);
     if (cur && paneOf(cur) === p.key) drawShape(cur, false);
@@ -1284,6 +1561,7 @@
       cx.setLineDash([]);
     }
     cx.restore();
+    if (retryDraw) p.sig = '';
   }
   function frame() {
     requestAnimationFrame(frame);
