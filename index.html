@@ -276,7 +276,7 @@
   <div id="tfs"></div>
   <span class="sep"></span>
   <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
-  <button class="btn on" id="tgEma">EMA 20/5/200</button>
+  <button class="btn on" id="tgEma">EMA 20/50/200</button>
   <button class="btn" id="btnEma" aria-haspopup="dialog" title="Chỉnh giá trị (chu kỳ) hai đường EMA">⚙</button>
   <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
@@ -300,8 +300,8 @@
 <div id="emaCfg" role="dialog" aria-label="Cài đặt EMA">
   <h4>Cài đặt đường EMA</h4>
   <div class="f"><label><input id="eS1" type="checkbox" checked aria-label="Hiển thị EMA thứ nhất"><i style="background:#f5a623"></i>EMA thứ nhất</label><input id="eN1" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ nhất"></div>
-  <div class="f"><label><input id="eS2" type="checkbox" checked aria-label="Hiển thị EMA thứ hai"><i style="background:#9c27b0"></i>EMA thứ hai</label><input id="eN2" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ hai"></div>
-  <div class="f"><label><input id="eS3" type="checkbox" checked aria-label="Hiển thị EMA thứ ba"><i style="background:#2962ff"></i>EMA thứ ba</label><input id="eN3" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ ba"></div>
+  <div class="f"><label><input id="eS2" type="checkbox" checked aria-label="Hiển thị EMA thứ hai"><i style="background:#2962ff"></i>EMA thứ hai</label><input id="eN2" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ hai"></div>
+  <div class="f"><label><input id="eS3" type="checkbox" checked aria-label="Hiển thị EMA thứ ba"><i style="background:#9c27b0"></i>EMA thứ ba</label><input id="eN3" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ ba"></div>
   <div class="err" id="eErr"></div>
   <div class="acts"><button class="btn" id="eReset">Mặc định</button><button class="btn on" id="eClose">Đóng</button></div>
 </div>
@@ -425,7 +425,7 @@
   const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
 
   const state = {
-    symbol: 'BTCUSDT', interval: '12h', data: [], ws: null, wsTimer: null,
+    symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
     showEma: true, showVol: false, ha: false, dark: false, reqId: 0
   };
 
@@ -482,13 +482,13 @@
   const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-  const EMA_DEF = [[20,'#f5a623'],[5,'#9c27b0'],[200,'#2962ff']];
+  const EMA_DEF = [[20,'#f5a623'],[50,'#2962ff'],[200,'#9c27b0']];
   const emaSeries = EMA_DEF.map(([n, c]) => ({
     n, color: c, show: true,
     s: main.addLineSeries({ color: c, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
   }));
   try { // chu kỳ EMA đã lưu từ lần trước
-    let sv = JSON.parse(localStorage.getItem('emaCfg') || 'null');
+    let sv = JSON.parse(localStorage.getItem('emaCfg3') || 'null');
     const sh = sv && !Array.isArray(sv) ? sv.show : null;
     if (sv && !Array.isArray(sv)) sv = sv.n;
     if (Array.isArray(sv) && sv.length === emaSeries.length && sv.every(n => Number.isInteger(n) && n >= 1 && n <= 500)) emaSeries.forEach((e, i) => { e.n = sv[i]; });
@@ -870,7 +870,7 @@
   const eNs = emaSeries.map((_, i) => $('eN' + (i + 1))), eSs = emaSeries.map((_, i) => $('eS' + (i + 1)));
   const emaLabel = () => 'EMA ' + emaSeries.map(e => e.n).join('/');
   const refreshEmaLabel = () => { $('tgEma').textContent = emaLabel(); };
-  const saveEmaCfg = () => { try { localStorage.setItem('emaCfg', JSON.stringify({ n: emaSeries.map(e => e.n), show: emaSeries.map(e => e.show) })); } catch (e) {} };
+  const saveEmaCfg = () => { try { localStorage.setItem('emaCfg3', JSON.stringify({ n: emaSeries.map(e => e.n), show: emaSeries.map(e => e.show) })); } catch (e) {} };
   const fillEmaCfg = () => emaSeries.forEach((e, i) => { eNs[i].value = e.n; eSs[i].checked = e.show; });
   function applyEmaCfg() {
     const v = eNs.map(el => parseInt(el.value, 10));
