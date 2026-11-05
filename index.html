@@ -276,7 +276,7 @@
   <div id="tfs"></div>
   <span class="sep"></span>
   <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
-  <button class="btn on" id="tgEma">EMA 20/50/200</button>
+  <button class="btn on" id="tgEma">EMA 20/5/200</button>
   <button class="btn" id="btnEma" aria-haspopup="dialog" title="Chỉnh giá trị (chu kỳ) hai đường EMA">⚙</button>
   <button class="btn" id="tgVol">Vol</button>
   <button class="btn on" id="tgRsi">RSI</button>
@@ -419,13 +419,13 @@
     BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
     XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON', PAXGUSDT: 'PAX Gold'
   };
-  const TFS = ['1h','2h','4h','6h','8h','12h','1d','2d','3d','1w','1M'];
-  const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '1M':'M' };
+  const TFS = ['1h','2h','4h','6h','8h','12h','1d','2d','3d','1w','2w','1M'];
+  const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '2w':'2W', '1M':'M' };
   const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
   const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
 
   const state = {
-    symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
+    symbol: 'BTCUSDT', interval: '12h', data: [], ws: null, wsTimer: null,
     showEma: true, showVol: false, ha: false, dark: false, reqId: 0
   };
 
@@ -482,7 +482,7 @@
   const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
-  const EMA_DEF = [[20,'#f5a623'],[50,'#9c27b0'],[200,'#2962ff']];
+  const EMA_DEF = [[20,'#f5a623'],[5,'#9c27b0'],[200,'#2962ff']];
   const emaSeries = EMA_DEF.map(([n, c]) => ({
     n, color: c, show: true,
     s: main.addLineSeries({ color: c, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
@@ -708,13 +708,16 @@
     }
     throw lastErr;
   }
-  /* Binance không có khung 2d -> ghép từ nến 1d (mỗi 2 ngày UTC, mốc từ 01/01/1970) */
-  const apiInterval = tf => tf === '2d' ? '1d' : tf;
-  const bucket2d = t => Math.floor((t - TZ) / 172800) * 172800 + TZ;
-  function aggregate2d(bars) {
+  /* Binance không có khung 2d và 2w -> ghép từ nến 1d / 1w.
+     2d: mỗi 2 ngày UTC, mốc từ 01/01/1970. 2w: mỗi 2 tuần, mốc là thứ Hai 05/01/1970 (khớp nến tuần của Binance mở cửa thứ Hai). */
+  const DERIVED = { '2d': { src: '1d', step: 172800, anchor: 0 }, '2w': { src: '1w', step: 1209600, anchor: 345600 } };
+  const isDerived = tf => !!DERIVED[tf];
+  const apiInterval = tf => DERIVED[tf] ? DERIVED[tf].src : tf;
+  const bucketTf = (tf, t) => { const d = DERIVED[tf]; return Math.floor((t - TZ - d.anchor) / d.step) * d.step + d.anchor + TZ; };
+  function aggregateTf(bars, tf) {
     const out = [];
     for (const b of bars) {
-      const k = bucket2d(b.time), last = out[out.length - 1];
+      const k = bucketTf(tf, b.time), last = out[out.length - 1];
       if (last && last.time === k) {
         last.high = Math.max(last.high, b.high);
         last.low = Math.min(last.low, b.low);
@@ -724,7 +727,7 @@
         out.push({ time: k, open: b.open, high: b.high, low: b.low, close: b.close, volume: b.volume, _first: b.time });
       }
     }
-    if (out.length && out[0]._first !== out[0].time) out.shift(); // bỏ nến đầu nếu thiếu nửa ngày
+    if (out.length && out[0]._first !== out[0].time) out.shift(); // bỏ nến đầu nếu thiếu một phần
     out.forEach(o => delete o._first);
     return out;
   }
@@ -738,8 +741,8 @@
   /* Tải thêm lịch sử: mỗi lần Binance chỉ trả 1000 nến nên lùi dần theo endTime (tối đa HIST_PAGES trang) */
   const HIST_PAGES = 20;
   async function loadHistory(id) {
-    const is2d = state.interval === '2d';
-    const src = is2d ? state.base : state.data;
+    const isD = isDerived(state.interval);
+    const src = isD ? state.base : state.data;
     if (!src || !src.length) return;
     let endMs = (src[0].time - TZ) * 1000 - 1;
     let acc = [];
@@ -747,7 +750,7 @@
       if (!acc.length || id !== state.reqId || rp.phase !== 'off') return;
       const rng = main.timeScale().getVisibleLogicalRange();
       const n0 = state.data.length;
-      if (is2d) { state.base = acc.concat(state.base); state.data = aggregate2d(state.base); }
+      if (isD) { state.base = acc.concat(state.base); state.data = aggregateTf(state.base, state.interval); }
       else state.data = acc.concat(state.data);
       const add = state.data.length - n0;
       acc = [];
@@ -781,7 +784,7 @@
       const raw = await fetchKlines(state.symbol, state.interval);
       if (id !== state.reqId) return;
       state.data = raw.map(mapKline);
-      if (state.interval === '2d') { state.base = state.data; state.data = aggregate2d(state.base); }
+      if (isDerived(state.interval)) { state.base = state.data; state.data = aggregateTf(state.base, state.interval); }
       renderAll();
       main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
       updateQuote(state.data[state.data.length - 1].close);
@@ -808,14 +811,14 @@
     ws.onmessage = ev => {
       const k = JSON.parse(ev.data).k; if (!k) return;
       let bar = { time: Math.floor(k.t / 1000) + TZ, open: +k.o, high: +k.h, low: +k.l, close: +k.c, volume: +k.v };
-      if (state.interval === '2d' && state.base) {
+      if (isDerived(state.interval) && state.base) {
         const b1 = state.base, lb = b1[b1.length - 1];
         if (lb && lb.time === bar.time) b1[b1.length - 1] = bar; else b1.push(bar);
-        const key = bucket2d(bar.time);
-        const part = aggregate2d(b1.filter(x => bucket2d(x.time) === key).map(x => ({ ...x })));
+        const tfk = state.interval, key = bucketTf(tfk, bar.time);
+        const part = aggregateTf(b1.filter(x => bucketTf(tfk, x.time) === key).map(x => ({ ...x })), tfk);
         if (part.length) bar = part[0];
         else {
-          const g = b1.filter(x => bucket2d(x.time) === key);
+          const g = b1.filter(x => bucketTf(tfk, x.time) === key);
           bar = { time: key, open: g[0].open, high: Math.max(...g.map(x => x.high)), low: Math.min(...g.map(x => x.low)), close: g[g.length - 1].close, volume: g.reduce((a, x) => a + x.volume, 0) };
         }
       }
@@ -912,7 +915,7 @@
   };
 
   /* ---------- Đếm ngược đóng nến (dưới nhãn giá) ---------- */
-  const SECS = { '1h':3600, '2h':7200, '4h':14400, '6h':21600, '8h':28800, '12h':43200, '1d':86400, '2d':172800, '3d':259200, '1w':604800 };
+  const SECS = { '1h':3600, '2h':7200, '4h':14400, '6h':21600, '8h':28800, '12h':43200, '1d':86400, '2d':172800, '3d':259200, '1w':604800, '2w':1209600 };
   const timerEl = $('timer');
   function closeTime(openSec) {
     if (state.interval === '1M') {
@@ -1089,7 +1092,7 @@
           if (raw.length < 1000) break;
         }
       }
-      if (tf === '2d') { state.base = bars; bars = aggregate2d(bars); }
+      if (isDerived(tf)) { state.base = bars; bars = aggregateTf(bars, tf); }
       let cut = bars.length;
       if (cur != null) {
         cut = 0;
