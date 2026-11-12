@@ -475,10 +475,11 @@
   const rsiChart = LightweightCharts.createChart($('rsi'), chartOptions());
 
   const p0 = palette();
-  const candles = main.addCandlestickSeries({
-    upColor: p0.up, downColor: p0.down, borderVisible: false, wickUpColor: p0.up, wickDownColor: p0.down,
-    priceLineColor: ''
-  });
+  /* Nến kiểu trắng đen: nến tăng rỗng (viền đen), nến giảm đặc (xám đậm). Giao diện tối thì đảo màu. */
+  const candleOpts = () => state.dark
+    ? { upColor: palette().bg, downColor: '#b2b5be', borderUpColor: '#d1d4dc', borderDownColor: '#b2b5be', wickUpColor: '#d1d4dc', wickDownColor: '#b2b5be', priceLineColor: '#d1d4dc' }
+    : { upColor: '#ffffff', downColor: '#444444', borderUpColor: '#000000', borderDownColor: '#000000', wickUpColor: '#000000', wickDownColor: '#000000', priceLineColor: '#131722' };
+  const candles = main.addCandlestickSeries({ borderVisible: true, ...candleOpts() });
   const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
@@ -910,7 +911,7 @@
     main.applyOptions({ timeScale: { visible: $('rsiPane').classList.contains('collapsed') } });
     rsiChart.applyOptions(chartOptions());
     setLevels();
-    candles.applyOptions({ upColor: p.up, downColor: p.down, wickUpColor: p.up, wickDownColor: p.down });
+    candles.applyOptions(candleOpts());
     renderAll();
   };
 
