@@ -1236,41 +1236,58 @@
     selId = null; cur = null; measure = null; brushing = false; touch();
   }
 
-  // Quy đổi thời gian <-> chỉ số nến (kể cả vùng tương lai, nội suy theo độ dài nến)
-  let bsKey = '', bsVal = 86400;
-  function barSecs() {
+  // Chuyển đổi trực tiếp giữa thời gian thực (t) <-> toạ độ X của Lightweight Charts
+  // Hỗ trợ cả vùng tương lai (t > nến cuối) và các điểm nằm giữa 2 nến (như nét cọ vẽ tự do)
+  function timeToX(t) {
     const d = state.data, n = d.length;
-    if (n < 2) return SECS[state.interval] || 86400;
-    const key = n + '|' + d[0].time + '|' + d[n - 1].time;
-    if (key === bsKey) return bsVal;
-    const diffs = [];
-    for (let i = Math.max(1, n - 64); i < n; i++) diffs.push(d[i].time - d[i - 1].time);
-    diffs.sort((a, b) => a - b);
-    bsKey = key; bsVal = diffs[diffs.length >> 1] || 86400;
-    return bsVal;
-  }
-  function rawTimeToIdx(t) {
-    const d = state.data, n = d.length; if (n < 1) return 0;
-    const bs = barSecs();
-    if (n === 1 || t <= d[0].time) return (t - d[0].time) / bs;
-    if (t >= d[n-1].time) return n - 1 + (t - d[n-1].time) / bs;
+    if (n === 0) return null;
+    const ts = P.chart.timeScale();
+    const direct = ts.timeToCoordinate(t);
+    if (direct != null) return direct;
+
+    const bs = SECS[state.interval] || 86400;
+    if (t < d[0].time) {
+      const x0 = ts.logicalToCoordinate(0);
+      if (x0 == null) return null;
+      const x1 = n > 1 ? ts.logicalToCoordinate(1) : null;
+      const barW = x1 != null ? (x1 - x0) : 8;
+      return x0 + ((t - d[0].time) / bs) * barW;
+    }
+    if (t > d[n - 1].time) {
+      const xn = ts.logicalToCoordinate(n - 1);
+      if (xn == null) return null;
+      const xp = n > 1 ? ts.logicalToCoordinate(n - 2) : null;
+      const barW = xp != null ? (xn - xp) : 8;
+      return xn + ((t - d[n - 1].time) / bs) * barW;
+    }
+    // Nằm giữa 2 nến (ví dụ: vẽ ở khung 1h rồi chuyển sang 1d) -> nội suy tuyến tính giữa 2 nến kề nhau
     let lo = 0, hi = n - 1;
-    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (d[mid].time <= t) lo = mid; else hi = mid; }
-    return lo + (t - d[lo].time) / (d[hi].time - d[lo].time);
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1;
+      if (d[mid].time <= t) lo = mid; else hi = mid;
+    }
+    const xLo = ts.logicalToCoordinate(lo);
+    const xHi = ts.logicalToCoordinate(hi);
+    if (xLo == null || xHi == null) return null;
+    const ratio = (t - d[lo].time) / (d[hi].time - d[lo].time);
+    return xLo + ratio * (xHi - xLo);
   }
-  function rawIdxToTime(i) {
-    const d = state.data, n = d.length; if (n < 1) return 0;
-    const bs = barSecs();
-    if (n === 1 || i <= 0) return d[0].time + i * bs;
-    if (i >= n - 1) return d[n-1].time + (i - (n - 1)) * bs;
-    const lo = Math.floor(i);
-    return d[lo].time + (i - lo) * (d[lo+1].time - d[lo].time);
+
+  function xToTime(x) {
+    const d = state.data, n = d.length;
+    if (n === 0) return null;
+    const ts = P.chart.timeScale();
+    const lg = ts.coordinateToLogical(x);
+    if (lg == null) return null;
+    const bs = SECS[state.interval] || 86400;
+    if (lg <= 0) return d[0].time + lg * bs;
+    if (lg >= n - 1) return d[n - 1].time + (lg - (n - 1)) * bs;
+    const lo = Math.floor(lg);
+    const frac = lg - lo;
+    return d[lo].time + frac * (d[lo + 1].time - d[lo].time);
   }
-  /* Thời gian mở nến nằm ở MÉP TRÁI nến, còn toạ độ logic của nến là TÂM nến (lệch 0.5 nến).
-     Bù 0.5 để mỗi nét vẽ luôn chiếm đúng khoảng thời gian thật ở mọi khung -> đổi khung không bị trôi/nhảy. */
-  const timeToIdx = t => rawTimeToIdx(t) - 0.5;
-  const idxToTime = i => rawIdxToTime(i + 0.5);
-  const X = t => P.chart.timeScale().logicalToCoordinate(timeToIdx(t));
+
+  const X = t => timeToX(t);
   const Y = p => P.series.priceToCoordinate(p);
   const toPx = pt => ({ x: X(pt.t), y: Y(pt.p) });
   const valid = pts => pts.every(p => p.x != null && p.y != null);
@@ -1278,21 +1295,28 @@
 
   function ptFromEvent(e) {
     const r = P.cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
-    let lg = P.chart.timeScale().coordinateToLogical(x), price = P.series.coordinateToPrice(y);
-    if (lg == null || price == null) return null;
+    let time = xToTime(x);
+    let price = P.series.coordinateToPrice(y);
+    if (time == null || price == null) return null;
+
     if (magnet && P.key === 'main' && tool !== 'brush') {
-      lg = Math.round(lg);
-      const b = state.data[lg];
-      if (b) {
+      // Hít vào nến gần nhất và giá O/H/L/C gần chuột nhất
+      let minDiff = Infinity, closestBar = null;
+      for (const b of state.data) {
+        const diff = Math.abs(b.time - time);
+        if (diff < minDiff) { minDiff = diff; closestBar = b; }
+      }
+      if (closestBar) {
+        time = closestBar.time;
         let best = null, bd = 14;
-        for (const v of [b.open, b.high, b.low, b.close]) {
+        for (const v of [closestBar.open, closestBar.high, closestBar.low, closestBar.close]) {
           const yy = Y(v);
           if (yy != null && Math.abs(yy - y) < bd) { bd = Math.abs(yy - y); best = v; }
         }
         if (best != null) price = best;
       }
     }
-    return { t: idxToTime(lg), p: price };
+    return { t: time, p: price };
   }
   const xyOf = e => { const r = P.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
@@ -1379,9 +1403,15 @@
       arrow(a.x, (a.y + b.y) / 2, b.x, (a.y + b.y) / 2);
       arrow((a.x + b.x) / 2, a.y, (a.x + b.x) / 2, b.y);
       const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
-      const bars = Math.round(timeToIdx(s.pts[1].t) - timeToIdx(s.pts[0].t));
+      let bars = 0;
+      if (state.data && state.data.length > 0) {
+        const minTime = Math.min(s.pts[0].t, s.pts[1].t);
+        const maxTime = Math.max(s.pts[0].t, s.pts[1].t);
+        bars = state.data.filter(bar => bar.time >= minTime && bar.time <= maxTime).length;
+        if (bars > 0) bars -= 1;
+      }
       const secs = Math.abs(s.pts[1].t - s.pts[0].t);
-      tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${Math.abs(bars)} nến, ${fmtDur(secs)}`],
+      tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${bars} nến, ${fmtDur(secs)}`],
         (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
     }
     if (sel) {
@@ -1540,7 +1570,7 @@
     const probe = p.key === 'main'
       ? [candles.priceToCoordinate(1000), candles.priceToCoordinate(50000), candles.priceToCoordinate(100000)]
       : [rsiLine.priceToCoordinate(0), rsiLine.priceToCoordinate(50), rsiLine.priceToCoordinate(100)];
-    const dd = state.data, s = [w, h, ver, dd.length, dd.length ? dd[0].time : 0, dd.length ? dd[dd.length - 1].time : 0, barSecs(), state.log, state.dark,
+    const dd = state.data, s = [w, h, ver, dd.length, dd.length ? dd[0].time : 0, dd.length ? dd[dd.length - 1].time : 0, state.log, state.dark,
       ts.logicalToCoordinate(0), ts.logicalToCoordinate(100), ...probe].join('|');
     if (s === p.sig) return;
     p.sig = s; p.W = w; p.H = h;
@@ -1728,10 +1758,10 @@
         const s = drawings.find(d => d.id === drag.id); if (!s) return;
         if (drag.handle >= 0) { const pt = ptFromEvent(e); if (pt) s.pts[drag.handle] = pt; }
         else {
-          const dx = x - drag.sx, dy = y - drag.sy, ts = P.chart.timeScale();
+          const dx = x - drag.sx, dy = y - drag.sy;
           const np = drag.orig.map(o => {
-            const lg = ts.coordinateToLogical(o.x + dx), pr = P.series.coordinateToPrice(o.y + dy);
-            return lg == null || pr == null ? null : { t: idxToTime(lg), p: pr };
+            const tm = xToTime(o.x + dx), pr = P.series.coordinateToPrice(o.y + dy);
+            return tm == null || pr == null ? null : { t: tm, p: pr };
           });
           if (np.every(Boolean)) s.pts = np;
         }
