@@ -691,19 +691,19 @@
     const diff = prev ? d.close - prev.close : d.close - d.open;
     const pct = prev ? diff / prev.close * 100 : 0;
     const cls = diff >= 0 ? 'up' : 'down';
-    $('lgOhlc').innerHTML =
-      `<span>O<b class="${cls}"> ${fmt(d.open)}</b></span><span>H<b class="${cls}"> ${fmt(d.high)}</b></span>` +
-      `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` +
-      `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`;
-    $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`;
-    $('lgEma').innerHTML = emaSeries.filter(e => e.show).map(e =>
-      `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join('');
-    const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i];
-    $('lgRsi').innerHTML =
-      `<span>RSI close ${state.rsi.len} ${state.rsi.xhi} ${state.rsi.xlo}</span>` +
-      `<span style="color:#ab47bc">${r != null ? fmt(r) : '–'}</span>` +
-      `<span style="color:#66bb6a">${e9 != null ? fmt(e9) : '–'}</span>` +
-      `<span style="color:#42a5f5">${w != null ? fmt(w) : '–'}</span>`;
+    <!-- $('lgOhlc').innerHTML = -->
+      <!-- `<span>O<b class="${cls}"> ${fmt(d.open)}</b></span><span>H<b class="${cls}"> ${fmt(d.high)}</b></span>` + -->
+      <!-- `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` + -->
+      <!-- `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`; -->
+    <!-- $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`; -->
+    <!-- $('lgEma').innerHTML = emaSeries.filter(e => e.show).map(e => -->
+      <!-- `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join(''); -->
+    <!-- const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i]; -->
+    <!-- $('lgRsi').innerHTML = -->
+      <!-- `<span>RSI close ${state.rsi.len} ${state.rsi.xhi} ${state.rsi.xlo}</span>` + -->
+      <!-- `<span style="color:#ab47bc">${r != null ? fmt(r) : '–'}</span>` + -->
+      <!-- `<span style="color:#66bb6a">${e9 != null ? fmt(e9) : '–'}</span>` + -->
+      <!-- `<span style="color:#42a5f5">${w != null ? fmt(w) : '–'}</span>`; -->
   }
   main.subscribeCrosshairMove(param => {
     if (!param.time) { updateLegend(state.data.length - 1); return; }
