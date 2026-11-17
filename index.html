@@ -404,6 +404,7 @@
     <button class="tb on" data-tool="cursor" data-tip="Con trỏ (Esc)" aria-label="Con trỏ"><svg viewBox="0 0 28 28"><path d="M8 5l13 9-5.6 1.4L12.6 21z"/></svg></button>
     <div class="hr"></div>
     <button class="tb" data-tool="trend" data-tip="Đường xu hướng" aria-label="Đường xu hướng"><svg viewBox="0 0 28 28"><path d="M7.5 21L21 7.5"/><circle cx="6.5" cy="22" r="2.2"/><circle cx="22" cy="6.5" r="2.2"/></svg></button>
+    <button class="tb" data-tool="arrow" data-tip="Mũi tên" aria-label="Mũi tên"><svg viewBox="0 0 28 28"><path d="M8 20L21 7"/><path d="M14.5 7H21v6.5"/><circle cx="6.5" cy="21.5" r="2.2"/></svg></button>
     <button class="tb" data-tool="hline" data-tip="Đường ngang" aria-label="Đường ngang"><svg viewBox="0 0 28 28"><path d="M4 14h20"/><circle cx="14" cy="14" r="2.4"/></svg></button>
     <button class="tb" data-tool="plabel" data-tip="Nhãn giá" aria-label="Nhãn giá"><svg viewBox="0 0 28 28"><path d="M5 23V9a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 23 9v7a1.5 1.5 0 0 1-1.5 1.5H11z"/></svg></button>
     <button class="tb" data-tool="prange" data-tip="Khoảng giá" aria-label="Khoảng giá"><svg viewBox="0 0 28 28"><path d="M5 7h16M7 21h16M14 7v14M11 10l3-3 3 3M11 18l3 3 3-3"/><circle cx="23" cy="7" r="2"/><circle cx="5" cy="21" r="2"/></svg></button>
@@ -1522,6 +1523,19 @@
     }
     if (s.type === 'trend') {
       cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke();
+    } else if (s.type === 'arrow') {
+      const ang = Math.atan2(b.y - a.y, b.x - a.x), hs = 14, len = Math.hypot(b.x - a.x, b.y - a.y);
+      cx.lineWidth = 2; cx.lineCap = 'round';
+      cx.beginPath(); cx.moveTo(a.x, a.y);
+      const k = len > hs ? hs * 0.8 : 0;            // dừng đường thẳng trước đầu mũi tên cho gọn
+      cx.lineTo(b.x - k * Math.cos(ang), b.y - k * Math.sin(ang)); cx.stroke();
+      if (len > 2) {
+        cx.beginPath(); cx.moveTo(b.x, b.y);
+        cx.lineTo(b.x - hs * Math.cos(ang - 0.42), b.y - hs * Math.sin(ang - 0.42));
+        cx.lineTo(b.x - hs * Math.cos(ang + 0.42), b.y - hs * Math.sin(ang + 0.42));
+        cx.closePath(); cx.fill();
+      }
+      cx.lineCap = 'butt';
     } else if (s.type === 'hline') {
       cx.beginPath(); cx.moveTo(0, a.y); cx.lineTo(W, a.y); cx.stroke();
       tag([fmt(s.pts[0].p)], W - 4, a.y, col, 'r', 'mid');
@@ -1804,7 +1818,7 @@
       for (let i = 1; i < pts.length; i++) if (distSeg(x, y, pts[i-1].x, pts[i-1].y, pts[i].x, pts[i].y) <= tol) return true;
       return false;
     }
-    if (s.type === 'trend') return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
+    if (s.type === 'trend' || s.type === 'arrow') return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
     if (s.type === 'hline') return Math.abs(y - a.y) <= 6;
     if (s.type === 'prange') {
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
@@ -1851,6 +1865,7 @@
   const HINTS = {
     trend: 'Bấm điểm đầu rồi bấm điểm cuối của đường xu hướng',
     hline: 'Bấm để đặt đường ngang',
+    arrow: 'Bấm điểm đầu rồi bấm điểm cuối (đầu mũi tên)',
     plabel: 'Bấm để đặt nhãn giá tại điểm đó',
     prange: 'Bấm hai điểm để đo khoảng giá',
     rect: 'Bấm hai góc của hình chữ nhật',
