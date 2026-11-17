@@ -261,9 +261,16 @@
   .legend .row { color: var(--muted); font-size: 12px; display: flex; gap: 12px; flex-wrap: wrap; }
   .legend .row span i { font-style: normal; }
   .up { color: var(--up); } .down { color: var(--down); }
-  .quote {
-    position: absolute; left: 12px; top: 74px; z-index: 5; display: flex; gap: 6px;
+  .quote { display: flex; gap: 6px; margin-top: 6px; }
+  .lgtog {
+    pointer-events: auto; width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 4px; color: var(--muted); cursor: pointer;
   }
+  .lgtog:hover { background: var(--hover); color: var(--text); }
+  .lgtog:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .lgtog svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+  .legend.collapsed .lgtog svg { transform: rotate(180deg); }
+  .legend.collapsed .row, .legend.collapsed .quote { display: none; }
   .quote div {
     border: 1px solid; border-radius: 4px; padding: 3px 9px; background: var(--panel);
     font-size: 12px; line-height: 1.25; text-align: center; min-width: 84px;
@@ -278,7 +285,6 @@
   }
   .loading.show { display: flex; }
   @media (max-width: 640px) {
-    .quote { top: 96px; }
     #rsiPane { height: 32%; }
   }
 </style>
@@ -290,6 +296,7 @@
     <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
     <option>SOLUSDT</option><option>XRPUSDT</option><option>DOGEUSDT</option>
     <option>ADAUSDT</option><option>TRXUSDT</option><option value="PAXGUSDT">PAXGUSDT (Vàng)</option>
+    <option value="RC1!">RC1! · Robusta Coffee (ICEEUR)</option>
   </select>
   <span class="sep"></span>
   <div id="tfs"></div>
@@ -306,6 +313,8 @@
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
   <button class="btn" id="tgMaBt" title="Backtest tự động: MA nhanh cắt lên MA chậm thì vào Long, stoploss tại điểm giao nhau (chạy trên khung đang chọn)">Backtest MA</button>
   <button class="btn" id="tgTheme">Giao diện tối</button>
+  <button class="btn" id="btnImport" style="display:none" title="Nhập file CSV nến (time, open, high, low, close, volume) cho mã này">⬆ Nhập CSV</button>
+  <input type="file" id="csvFile" accept=".csv,.txt,.tsv,text/csv" hidden>
   <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
 </div>
 
@@ -410,13 +419,13 @@
   </div>
   <div class="pane" id="mainPane">
     <div class="legend">
-      <div class="title"><span id="lgName">Bitcoin / TetherUS · 1D · Binance</span><span class="ohlc" id="lgOhlc"></span></div>
+      <div class="title"><span id="lgName">Bitcoin / TetherUS · 1D · Binance</span><span class="ohlc" id="lgOhlc"></span><button class="lgtog" id="lgToggle" type="button" aria-expanded="true" aria-label="Thu gọn thông tin" title="Thu gọn"><svg viewBox="0 0 16 16"><path d="M3.5 10.5L8 6l4.5 4.5"/></svg></button></div>
       <div class="row" id="lgVol"></div>
       <div class="row" id="lgEma"></div>
-    </div>
-    <div class="quote">
-      <div class="sell"><span id="qSell">–</span><small>BÁN</small></div>
-      <div class="buy"><span id="qBuy">–</span><small>MUA</small></div>
+      <div class="quote">
+        <div class="sell"><span id="qSell">–</span><small>BÁN</small></div>
+        <div class="buy"><span id="qBuy">–</span><small>MUA</small></div>
+      </div>
     </div>
     <div class="loading" id="loading">Đang tải dữ liệu từ Binance…</div>
     <div class="chart" id="main"></div>
@@ -441,6 +450,8 @@
     BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
     XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON', PAXGUSDT: 'PAX Gold'
   };
+  // Mã không có trên Binance: dữ liệu nhập từ file CSV (lưu trong trình duyệt)
+  const CUSTOM = { 'RC1!': { name: 'Robusta Coffee Futures', ex: 'ICEEUR' } };
   const TFS = ['1h','2h','4h','6h','8h','12h','1d','2d','3d','1w','2w','1M'];
   const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '2w':'2W', '1M':'M' };
   const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
@@ -709,8 +720,10 @@
   function updateTitle() {
     const base = state.symbol.replace('USDT', '');
     const tf = TF_LABEL[state.interval] || state.interval;
-    $('lgName').textContent = `${NAMES[state.symbol]} / TetherUS · ${tf} · Binance`;
-    document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · Binance`;
+    const cu = CUSTOM[state.symbol];
+    const src = cu ? cu.ex : 'Binance';
+    $('lgName').textContent = cu ? `${cu.name} · ${tf} · ${cu.ex}` : `${NAMES[state.symbol]} / TetherUS · ${tf} · Binance`;
+    document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · ${src}`;
   }
   function updateQuote(price) {
     $('qSell').textContent = fmt(price);
@@ -720,7 +733,75 @@
   }
 
   /* ---------- Dữ liệu Binance ---------- */
+  /* ---------- Dữ liệu nhập từ CSV (mã ngoài Binance) ---------- */
+  const csvKey = sym => 'csv_' + sym;
+  function loadCsvBars(sym) {
+    try { return JSON.parse(localStorage.getItem(csvKey(sym)) || '[]'); } catch (e) { return []; }
+  }
+  function splitCsvLine(line, d) {
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') q = !q;
+      else if (c === d && !q) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(x => x.trim());
+  }
+  const csvNum = v => { const n = parseFloat(String(v ?? '').replace(/,/g, '').replace(/[^\d.eE+-]/g, '')); return Number.isFinite(n) ? n : NaN; };
+  function csvTime(v) {
+    v = String(v).trim();
+    if (/^\d+(\.\d+)?$/.test(v)) { const n = +v; return n > 1e11 ? Math.floor(n) : Math.floor(n * 1000); }
+    const t = Date.parse(v);
+    return Number.isFinite(t) ? t : NaN;
+  }
+  // Trả về mảng [tsMs, o, h, l, c, v] đã sắp xếp; ném lỗi nếu file không đọc được
+  function parseCsv(text) {
+    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) throw new Error('File trống');
+    const d = [',', ';', '\t'].map(c => [c, lines[0].split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+    const head = splitCsvLine(lines[0], d).map(h => h.toLowerCase());
+    const find = (...names) => head.findIndex(h => names.some(n => h === n || h.startsWith(n)));
+    const ix = { t: find('time', 'date', 'datetime', 'ngày'), o: find('open', 'mở'), h: find('high', 'cao'), l: find('low', 'thấp'), c: find('close', 'price', 'đóng'), v: find('volume', 'vol') };
+    if (ix.t < 0 || ix.o < 0 || ix.h < 0 || ix.l < 0 || ix.c < 0) throw new Error('Thiếu cột. Cần dòng tiêu đề có: time/date, open, high, low, close');
+    const map = new Map();
+    for (let i = 1; i < lines.length; i++) {
+      const f = splitCsvLine(lines[i], d);
+      const t = csvTime(f[ix.t]), o = csvNum(f[ix.o]), h = csvNum(f[ix.h]), l = csvNum(f[ix.l]), c = csvNum(f[ix.c]);
+      if (![t, o, h, l, c].every(Number.isFinite)) continue;
+      const v = ix.v >= 0 ? csvNum(f[ix.v]) : 0;
+      map.set(t, [t, o, h, l, c, Number.isFinite(v) ? v : 0]);
+    }
+    const rows = [...map.values()].sort((a, b) => a[0] - b[0]);
+    if (rows.length < 2) throw new Error('Không đọc được dòng dữ liệu nào (kiểm tra định dạng ngày: yyyy-mm-dd hoặc mốc unix)');
+    return rows;
+  }
+  // Gộp nến ngày thành tuần / tháng (UTC); khung khác ngoài D/W/M thì báo lỗi
+  function csvBars(sym, interval) {
+    const raw = loadCsvBars(sym);
+    if (!raw.length) throw new Error('empty');
+    const api = apiInterval(interval);
+    if (api === '1d') return raw;
+    let key;
+    if (api === '1w') key = ms => { const dd = Math.floor(ms / 864e5); return (dd - (dd + 3) % 7) * 864e5; };
+    else if (api === '1M') key = ms => { const x = new Date(ms); return Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), 1); };
+    else throw new Error('tf');
+    const out = [];
+    for (const r of raw) {
+      const k = key(r[0]), last = out[out.length - 1];
+      if (last && last[0] === k) { last[2] = Math.max(last[2], r[2]); last[3] = Math.min(last[3], r[3]); last[4] = r[4]; last[5] += r[5]; }
+      else out.push([k, r[1], r[2], r[3], r[4], r[5]]);
+    }
+    return out;
+  }
   async function fetchKlines(symbol, interval, endTime, startTime) {
+    if (CUSTOM[symbol]) {
+      let b = csvBars(symbol, interval);
+      if (endTime) b = b.filter(x => x[0] <= endTime);
+      if (startTime) b = b.filter(x => x[0] >= startTime);
+      return b;
+    }
     let lastErr;
     for (const host of HOSTS) {
       try {
@@ -812,10 +893,18 @@
       main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
       updateQuote(state.data[state.data.length - 1].close);
       $('loading').classList.remove('show');
+      if (CUSTOM[state.symbol]) { setStatus('', 'Dữ liệu CSV (không realtime)'); return; }
       openWs(id);
       loadHistory(id);
     } catch (e) {
       if (id !== state.reqId) return;
+      if (CUSTOM[state.symbol]) {
+        $('loading').innerHTML = e.message === 'tf'
+          ? 'Mã này chỉ có các khung D, 2D, W, 2W, M (dữ liệu từ file CSV).<br>Hãy chọn một trong các khung đó.'
+          : 'Chưa có dữ liệu cho ' + state.symbol + '.<br>Bấm “⬆ Nhập CSV” trên thanh công cụ để nạp nến (cột: time, open, high, low, close, volume).';
+        setStatus('err', e.message === 'tf' ? 'Sai khung' : 'Chưa có dữ liệu');
+        return;
+      }
       $('loading').innerHTML = 'Không tải được dữ liệu từ Binance.<br>Hãy kiểm tra kết nối mạng, hoặc mở file này trực tiếp bằng trình duyệt (Binance có thể chặn một số quốc gia/mạng).';
       setStatus('err', 'Lỗi kết nối');
     }
@@ -885,7 +974,33 @@
     };
     tfBox.appendChild(b);
   });
-  $('symbol').onchange = e => { state.symbol = e.target.value; load(); };
+  const syncImportBtn = () => { $('btnImport').style.display = CUSTOM[state.symbol] ? '' : 'none'; };
+  const lgBox = $('lgToggle').closest('.legend');
+  function setLegendCollapsed(c) {
+    lgBox.classList.toggle('collapsed', c);
+    const b = $('lgToggle');
+    b.setAttribute('aria-expanded', String(!c));
+    b.title = c ? 'Mở rộng' : 'Thu gọn';
+    b.setAttribute('aria-label', c ? 'Mở rộng thông tin' : 'Thu gọn thông tin');
+    try { localStorage.setItem('lgCollapsed', c ? '1' : '0'); } catch (e) {}
+  }
+  $('lgToggle').onclick = () => setLegendCollapsed(!lgBox.classList.contains('collapsed'));
+  try { if (localStorage.getItem('lgCollapsed') === '1') setLegendCollapsed(true); } catch (e) {}
+  $('symbol').onchange = e => { state.symbol = e.target.value; syncImportBtn(); load(); };
+  $('btnImport').onclick = () => { $('csvFile').value = ''; $('csvFile').click(); };
+  $('csvFile').onchange = async e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const rows = parseCsv(await f.text());
+      localStorage.setItem(csvKey(state.symbol), JSON.stringify(rows));
+      const day = t => new Date(t).toISOString().slice(0, 10);
+      alert('Đã nạp ' + rows.length + ' nến (' + day(rows[0][0]) + ' → ' + day(rows[rows.length - 1][0]) + '). Dữ liệu được hiểu là nến NGÀY; các khung W/M được gộp từ đó.');
+      load();
+    } catch (err) {
+      alert('Không nạp được file: ' + err.message);
+    }
+  };
   $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
 
   /* ---------- Chỉnh giá trị đường EMA ---------- */
@@ -1975,6 +2090,7 @@
   rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); });
 
   document.documentElement.dataset.theme = 'light';
+  syncImportBtn();
   load();
 })();
 </script>
