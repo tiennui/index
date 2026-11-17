@@ -405,6 +405,8 @@
     <div class="hr"></div>
     <button class="tb" data-tool="trend" data-tip="Đường xu hướng" aria-label="Đường xu hướng"><svg viewBox="0 0 28 28"><path d="M7.5 21L21 7.5"/><circle cx="6.5" cy="22" r="2.2"/><circle cx="22" cy="6.5" r="2.2"/></svg></button>
     <button class="tb" data-tool="hline" data-tip="Đường ngang" aria-label="Đường ngang"><svg viewBox="0 0 28 28"><path d="M4 14h20"/><circle cx="14" cy="14" r="2.4"/></svg></button>
+    <button class="tb" data-tool="plabel" data-tip="Nhãn giá" aria-label="Nhãn giá"><svg viewBox="0 0 28 28"><path d="M5 23V9a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 23 9v7a1.5 1.5 0 0 1-1.5 1.5H11z"/></svg></button>
+    <button class="tb" data-tool="prange" data-tip="Khoảng giá" aria-label="Khoảng giá"><svg viewBox="0 0 28 28"><path d="M5 7h16M7 21h16M14 7v14M11 10l3-3 3 3M11 18l3 3 3-3"/><circle cx="23" cy="7" r="2"/><circle cx="5" cy="21" r="2"/></svg></button>
     <button class="tb" data-tool="fib" data-tip="Fibonacci retracement" aria-label="Fibonacci retracement"><svg viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg></button>
     <button class="tb" data-tool="rect" data-tip="Hình chữ nhật" aria-label="Hình chữ nhật"><svg viewBox="0 0 28 28"><rect x="6" y="8" width="16" height="12" rx="1"/></svg></button>
     <button class="tb" data-tool="brush" data-tip="Cọ vẽ tự do" aria-label="Cọ vẽ tự do"><svg viewBox="0 0 28 28"><path d="M11 14.5l9.2-9.2a2.4 2.4 0 0 1 3.4 3.4L14.4 17.9"/><path d="M9.6 17.4c-1.8 0-3.2 1.4-3.2 3.2 0 1.4-2.2 1.6-1.8 2 1.1 1.1 2.6 1.9 4.4 1.9 2.4 0 4.2-1.9 4.2-4.2a2.9 2.9 0 0 0-3.6-2.9z"/></svg></button>
@@ -1487,6 +1489,16 @@
     cx.lineTo(x2 - s * Math.cos(a + 0.45), y2 - s * Math.sin(a + 0.45));
     cx.closePath(); cx.fillStyle = cx.strokeStyle; cx.fill();
   }
+  // Nhãn giá: hộp chữ có đuôi nhọn chỉ vào điểm neo (thời gian, giá)
+  function plGeom(s, a) {
+    cx.font = '600 12px -apple-system, "Trebuchet MS", Roboto, sans-serif';
+    const text = fmt(s.pts[0].p);
+    const w = Math.ceil(cx.measureText(text).width) + 16, h = 22, gap = 9;
+    const flipX = a.x + w > W - 4, flipY = a.y - gap - h < 2;
+    const left = flipX ? a.x - w : a.x;
+    const top = flipY ? a.y + gap : a.y - gap - h;
+    return { text, w, h, gap, left, top, flipX, flipY };
+  }
   function drawShape(s, sel) {
     const pts = s.pts.map(toPx);
     if (!valid(pts) || pts.some(q => !isFinite(q.x) || !isFinite(q.y))) { retryDraw = true; return; }
@@ -1513,6 +1525,26 @@
     } else if (s.type === 'hline') {
       cx.beginPath(); cx.moveTo(0, a.y); cx.lineTo(W, a.y); cx.stroke();
       tag([fmt(s.pts[0].p)], W - 4, a.y, col, 'r', 'mid');
+    } else if (s.type === 'prange') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const up = s.pts[1].p >= s.pts[0].p;
+      cx.fillStyle = hexA(col, 0.15);
+      cx.fillRect(x0, Math.min(a.y, b.y), x1 - x0, Math.abs(b.y - a.y));
+      cx.lineWidth = 1.5;
+      cx.beginPath(); cx.moveTo(x0, a.y); cx.lineTo(x1, a.y); cx.moveTo(x0, b.y); cx.lineTo(x1, b.y); cx.stroke();
+      arrow(mx, a.y, mx, b.y);
+      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
+      tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`],
+        mx, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, col, 'c', up ? 'above' : 'top');
+    } else if (s.type === 'plabel') {
+      const g = plGeom(s, a), edgeY = g.flipY ? g.top + 1 : g.top + g.h - 1, dx = g.flipX ? -12 : 12;
+      cx.fillStyle = col;
+      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(a.x, edgeY); cx.lineTo(a.x + dx, edgeY); cx.closePath(); cx.fill();
+      cx.beginPath();
+      if (cx.roundRect) cx.roundRect(g.left, g.top, g.w, g.h, 4); else cx.rect(g.left, g.top, g.w, g.h);
+      cx.fill();
+      cx.fillStyle = '#fff'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
+      cx.fillText(g.text, g.left + 8, g.top + g.h / 2 + 0.5);
     } else if (s.type === 'rect') {
       const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
       cx.fillStyle = hexA(col, 0.15); cx.fillRect(x, y, w, h); cx.strokeRect(x, y, w, h);
@@ -1774,6 +1806,16 @@
     }
     if (s.type === 'trend') return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
     if (s.type === 'hline') return Math.abs(y - a.y) <= 6;
+    if (s.type === 'prange') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      return (x >= x0 - 6 && x <= x1 + 6 && (Math.abs(y - a.y) <= 6 || Math.abs(y - b.y) <= 6)) ||
+             (Math.abs(x - mx) <= 6 && y >= y0 - 6 && y <= y1 + 6);
+    }
+    if (s.type === 'plabel') {
+      const g = plGeom(s, a);
+      return (x >= g.left - 3 && x <= g.left + g.w + 3 && y >= g.top - 3 && y <= g.top + g.h + 3) || Math.hypot(x - a.x, y - a.y) <= 8;
+    }
     if (s.type === 'rect') {
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
       return ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
@@ -1809,6 +1851,8 @@
   const HINTS = {
     trend: 'Bấm điểm đầu rồi bấm điểm cuối của đường xu hướng',
     hline: 'Bấm để đặt đường ngang',
+    plabel: 'Bấm để đặt nhãn giá tại điểm đó',
+    prange: 'Bấm hai điểm để đo khoảng giá',
     rect: 'Bấm hai góc của hình chữ nhật',
     fib: 'Bấm điểm đầu và điểm cuối của sóng',
     measure: 'Bấm hai điểm để đo giá và thời gian',
@@ -1859,8 +1903,8 @@
           cur = { id: uid(), type: 'brush', pane: p.key, pts: [pt], color: dColor, w: brushW };
           brushing = true; brushLast = { x, y }; touch(); return;
         }
-        if (tool === 'hline') {
-          const d = { id: uid(), type: 'hline', pane: p.key, pts: [pt], color: dColor };
+        if (tool === 'hline' || tool === 'plabel') {
+          const d = { id: uid(), type: tool, pane: p.key, pts: [pt], color: dColor };
           drawings.push(d); selId = d.id; saveDrawings(); setTool('cursor'); return;
         }
         if (!cur) {
