@@ -235,6 +235,7 @@
   #wlPop button.on { color: var(--accent); font-weight: 600; }
   #wlPop .hr { height: 1px; background: var(--line); margin: 4px 0; }
   @media (max-width: 720px) { #wlPanel { width: 230px; min-width: 185px; } #rRail { width: 38px; } }
+  /* Đồng hồ ở góc dưới cùng bên phải */
   #clock {
     position: absolute; right: 0; bottom: 0; z-index: 30; height: 26px; padding: 0 8px; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
@@ -244,6 +245,21 @@
   #clock b { color: var(--text); font-weight: 600; }
   #clock span { color: var(--muted); }
   #clock:hover span { color: var(--accent); }
+  /* Nút log / auto đặt tại góc dưới trục giá của khung biểu đồ giá (#mainPane) */
+  #scaleBtns {
+    position: absolute; right: 0; bottom: 0; z-index: 12; height: 24px;
+    display: flex; align-items: center; justify-content: center; gap: 2px;
+    min-width: 80px; padding: 0 4px; user-select: none;
+    background: var(--bg); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
+  }
+  #scaleBtns .sc-btn {
+    border: 0; background: none; color: var(--muted); padding: 2px 6px; border-radius: 3px;
+    font: inherit; font-size: 11.5px; font-weight: 600; line-height: 16px; cursor: pointer;
+    transition: background .12s, color .12s;
+  }
+  #scaleBtns .sc-btn:hover { background: var(--hover); color: var(--text); }
+  #scaleBtns .sc-btn.on { color: var(--accent); background: var(--active); }
+  #scaleBtns .sc-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
   .pane { position: relative; min-height: 0; }
   #mainPane { flex: 1; }
   #rsiPane { height: 28%; max-height: 75%; flex: none; }
@@ -368,34 +384,115 @@
   #dTools .tb-grp:hover .tb-more, #dTools .tb-grp.open .tb-more { opacity: 1; color: var(--text); }
   #dTools .tb-more:hover, #dTools .tb-grp.open .tb-more { background: var(--hover); }
   #dTools .tb-more:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
-  /* Menu con Công cụ đo */
-  #rangeMenu {
+  /* Menu con công cụ vẽ (Công cụ đo, Fibonacci) */
+  #rangeMenu, #fibMenu {
     position: fixed; z-index: 95; display: none; min-width: 248px; padding: 6px 0;
     background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
     box-shadow: 0 8px 28px rgba(0,0,0,.25); user-select: none;
   }
-  #rangeMenu.open { display: block; }
-  #rangeMenu .tm-hd {
+  #rangeMenu.open, #fibMenu.open { display: block; }
+  .tm-hd {
     padding: 4px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--muted);
   }
-  #rangeMenu .tm-row {
+  .tm-row {
     display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 12px; cursor: pointer;
     font-size: 13px; color: var(--text);
   }
-  #rangeMenu .tm-row:hover, #rangeMenu .tm-row:focus-visible { background: var(--hover); outline: none; }
-  #rangeMenu .tm-row.on { background: var(--active); color: var(--accent); }
-  #rangeMenu .tm-ic {
+  .tm-row:hover, .tm-row:focus-visible { background: var(--hover); outline: none; }
+  .tm-row.on { background: var(--active); color: var(--accent); }
+  .tm-ic {
     width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor;
     stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
   }
-  #rangeMenu .tm-lb { flex: 1; white-space: nowrap; }
-  #rangeMenu .tm-star {
+  .tm-lb { flex: 1; white-space: nowrap; }
+  .tm-star {
     background: none; border: 0; padding: 2px 4px; cursor: pointer; font-size: 16px; line-height: 1;
     color: var(--muted); opacity: 0; transition: opacity .12s, color .12s, transform .1s;
   }
-  #rangeMenu .tm-row:hover .tm-star, #rangeMenu .tm-star:focus-visible { opacity: .65; }
-  #rangeMenu .tm-star:hover { opacity: 1; transform: scale(1.1); }
-  #rangeMenu .tm-star.fav { opacity: 1; color: var(--text); }
+  .tm-row:hover .tm-star, .tm-star:focus-visible { opacity: .65; }
+  .tm-star:hover { opacity: 1; transform: scale(1.1); }
+  .tm-star.fav { opacity: 1; color: var(--text); }
+  .tm-hr { height: 1px; background: var(--line); margin: 5px 0; }
+  /* Thanh thao tác nhanh khi chọn Fib Channel */
+  #selBar {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 16; display: none;
+    align-items: center; gap: 4px; padding: 3px 6px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: 12px; user-select: none;
+  }
+  #selBar.show { display: flex; }
+  #selBar .sb-lbl { color: var(--muted); font-weight: 600; padding: 0 4px; }
+  #selBar .sb-btn {
+    border: 0; background: var(--hover); color: var(--text); padding: 4px 8px; border-radius: 4px;
+    font: inherit; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+  }
+  #selBar .sb-btn:hover { background: var(--active); color: var(--accent); }
+  #selBar .sb-btn.del:hover { background: var(--down); color: #fff; }
+  /* Hộp thoại cài đặt Fib Channel */
+  #fibChCfg {
+    position: fixed; top: 56px; left: 50%; transform: translateX(-50%); z-index: 110; display: none;
+    width: 420px; max-width: calc(100vw - 24px); max-height: calc(100vh - 76px);
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 12px 36px rgba(0,0,0,.35); flex-direction: column; overflow: hidden;
+  }
+  #fibChCfg.open { display: flex; }
+  .fc-head {
+    display: flex; align-items: center; justify-content: space-between; padding: 11px 14px;
+    border-bottom: 1px solid var(--line); flex: none;
+  }
+  .fc-head h4 { margin: 0; font-size: 14px; font-weight: 600; }
+  .fc-head small { color: var(--muted); font-weight: 400; margin-left: 6px; font-size: 11.5px; }
+  .fc-x {
+    border: 0; background: none; color: var(--muted); font-size: 18px; line-height: 1;
+    width: 26px; height: 26px; border-radius: 4px; cursor: pointer;
+  }
+  .fc-x:hover { background: var(--hover); color: var(--text); }
+  .fc-body { padding: 10px 14px; overflow-y: auto; flex: 1; min-height: 0; }
+  .fc-sec { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin: 10px 0 6px; }
+  .fc-sec:first-child { margin-top: 0; }
+  .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+  .fc-lv {
+    display: flex; align-items: center; gap: 6px; padding: 3px 5px; border-radius: 4px;
+    background: color-mix(in srgb, var(--hover) 55%, transparent);
+  }
+  .fc-lv input[type=checkbox] { margin: 0; cursor: pointer; flex: none; }
+  .fc-lv input[type=number] {
+    width: 72px; min-width: 0; flex: 1; padding: 3px 6px; font: inherit; font-size: 12.5px;
+    color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+  .fc-lv input[type=color] {
+    width: 22px; height: 22px; padding: 0; border: 1px solid var(--line); border-radius: 4px;
+    background: none; cursor: pointer; flex: none;
+  }
+  .fc-lv .fc-del {
+    border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 3px; font-size: 14px; line-height: 1;
+  }
+  .fc-lv .fc-del:hover { color: var(--down); }
+  .fc-addrow { display: flex; gap: 6px; margin-top: 8px; }
+  .fc-addrow input[type=number] {
+    width: 96px; padding: 4px 7px; font: inherit; font-size: 12.5px; color: var(--text);
+    background: var(--hover); border: 1px solid var(--line); border-radius: 4px;
+  }
+  .fc-addrow input[type=color] {
+    width: 28px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: none; cursor: pointer;
+  }
+  .fc-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; }
+  .fc-chk { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; }
+  .fc-chk input { margin: 0; cursor: pointer; }
+  .fc-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; font-size: 12.5px; }
+  .fc-row select {
+    background: var(--hover); color: var(--text); border: 1px solid var(--line); border-radius: 4px;
+    padding: 4px 8px; font: inherit; font-size: 12.5px;
+  }
+  .fc-row input[type=range] { flex: 1; max-width: 170px; cursor: pointer; }
+  .fc-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 9px 14px; border-top: 1px solid var(--line); flex: none;
+  }
+  .fc-foot .btn { background: var(--hover); font-size: 12.5px; padding: 5px 10px; }
+  .fc-foot .btn.on { background: var(--accent); color: #fff; }
+  .fc-foot .fc-r { display: flex; gap: 6px; }
   /* Thanh công cụ yêu thích nổi (hiện khi bấm sao ★) */
   #favBar {
     position: absolute; top: 8px; right: 92px; z-index: 15; display: none;
@@ -546,8 +643,6 @@
   <button class="btn on" id="tgRsi">RSI</button>
   <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
   <span class="sep"></span>
-  <button class="btn" id="tgLog" title="Thang giá logarit">Log</button>
-  <button class="btn on" id="tgAuto" title="Tự động co giãn trục giá theo các nến đang hiển thị (tự tắt khi bạn kéo trục giá bằng tay)">Auto</button>
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
   <button class="btn" id="tgMaBt" title="Backtest tự động: MA nhanh cắt lên MA chậm thì vào Long, stoploss tại điểm giao nhau (chạy trên khung đang chọn)">Backtest MA</button>
   <button class="btn" id="tgTheme">Giao diện tối</button>
@@ -648,7 +743,10 @@
       <button class="tb" id="btnRange" data-tool="prange" data-tip="Phạm vi giá (bấm ▸ để mở Công cụ đo)" aria-label="Phạm vi giá"><svg viewBox="0 0 28 28"><path d="M5 7h15M8 21h15M14 7.5v13.5M10.5 11l3.5-3.5 3.5 3.5"/><circle cx="22" cy="7" r="2"/><circle cx="6" cy="21" r="2"/></svg></button>
       <button class="tb-more" id="btnRangeMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mở menu Công cụ đo" title="Công cụ đo"><svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4"/></svg></button>
     </div>
-    <button class="tb" data-tool="fib" data-tip="Fibonacci retracement" aria-label="Fibonacci retracement"><svg viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg></button>
+    <div class="tb-grp" id="grpFib">
+      <button class="tb" id="btnFib" data-tool="fibch" data-tip="Fib Channel (bấm ▸ để mở menu Fibonacci)" aria-label="Fib Channel"><svg viewBox="0 0 28 28"><path d="M8.2 12.2L20.2 6.8M8.2 18.2L20.5 12.6M6.5 23.2L20.5 16.8"/><circle cx="6.5" cy="13" r="2"/><circle cx="22" cy="6" r="2"/><circle cx="6.5" cy="19" r="2"/></svg></button>
+      <button class="tb-more" id="btnFibMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mở menu Fibonacci" title="Fibonacci"><svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4"/></svg></button>
+    </div>
     <button class="tb" data-tool="rect" data-tip="Hình chữ nhật" aria-label="Hình chữ nhật"><svg viewBox="0 0 28 28"><rect x="6" y="8" width="16" height="12" rx="1"/></svg></button>
     <button class="tb" data-tool="brush" data-tip="Cọ vẽ tự do" aria-label="Cọ vẽ tự do"><svg viewBox="0 0 28 28"><path d="M11 14.5l9.2-9.2a2.4 2.4 0 0 1 3.4 3.4L14.4 17.9"/><path d="M9.6 17.4c-1.8 0-3.2 1.4-3.2 3.2 0 1.4-2.2 1.6-1.8 2 1.1 1.1 2.6 1.9 4.4 1.9 2.4 0 4.2-1.9 4.2-4.2a2.9 2.9 0 0 0-3.6-2.9z"/></svg></button>
     <button class="tb" data-tool="measure" data-tip="Thước đo giá / thời gian" aria-label="Thước đo giá / thời gian"><svg viewBox="0 0 28 28"><path d="M14 4v20M10 8l4-4 4 4M10 20l4 4 4-4M4 14h4M20 14h4"/></svg></button>
@@ -675,6 +773,10 @@
     <div id="timer"></div>
     <canvas id="draw"></canvas>
     <div id="dHint"></div>
+    <div id="scaleBtns" role="group" aria-label="Chế độ trục giá">
+      <button class="sc-btn" id="tgLog" type="button" title="Thang giá logarit (Log)">log</button>
+      <button class="sc-btn on" id="tgAuto" type="button" title="Tự động co giãn trục giá theo các nến đang hiển thị (tự tắt khi bạn kéo trục giá bằng tay)">auto</button>
+    </div>
   </div>
   <div id="splitter" role="separator" aria-orientation="horizontal" title="Kéo để đổi kích thước · bấm đúp để đặt lại"></div>
   <div class="pane" id="rsiPane">
@@ -685,9 +787,14 @@
   <div id="vsync"></div>
   <div id="tlabel"></div>
   <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
-  <div id="favBar" role="toolbar" aria-label="Công cụ đo yêu thích">
+  <div id="favBar" role="toolbar" aria-label="Công cụ vẽ yêu thích">
     <span class="fav-grip" id="favGrip" title="Kéo để di chuyển"><svg viewBox="0 0 8 16"><circle cx="2" cy="3" r="1.1"/><circle cx="6" cy="3" r="1.1"/><circle cx="2" cy="8" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="2" cy="13" r="1.1"/><circle cx="6" cy="13" r="1.1"/></svg></span>
     <span id="favItems" style="display:flex;align-items:center;gap:2px"></span>
+  </div>
+  <div id="selBar" role="toolbar" aria-label="Tùy chỉnh hình vẽ đang chọn">
+    <span class="sb-lbl" id="sbTitle">Fib Channel</span>
+    <button class="sb-btn" id="sbCfg" type="button" title="Chỉnh sửa thông số Fib Channel (hoặc bấm đúp vào kênh)">⚙ Cài đặt</button>
+    <button class="sb-btn del" id="sbDel" type="button" title="Xoá (Delete)">🗑</button>
   </div>
 </div>
 <div id="wlSplitter" role="separator" aria-orientation="vertical" title="Kéo để đổi chiều rộng · bấm đúp để đặt lại"></div>
@@ -750,6 +857,68 @@
     <svg class="tm-ic" viewBox="0 0 28 28"><path d="M7 19V7h12M21 9v12H9M14 8v12M11 11l3-3 3 3M8 14h12M17 11l3 3-3 3"/><circle cx="7" cy="21" r="2"/><circle cx="21" cy="7" r="2"/></svg>
     <span class="tm-lb">Phạm vi ngày và giá</span>
     <button class="tm-star" type="button" data-star="dprange" aria-label="Yêu thích Phạm vi ngày và giá" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
+</div>
+
+<div id="fibMenu" role="menu" aria-label="Công cụ Fibonacci">
+  <div class="tm-hd">FIBONACCI</div>
+  <div class="tm-row" data-ftool="fib" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg>
+    <span class="tm-lb">Fib Retracement</span>
+    <button class="tm-star" type="button" data-star="fib" aria-label="Yêu thích Fib Retracement" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
+  <div class="tm-row" data-ftool="fibch" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><path d="M8.2 12.2L20.2 6.8M8.2 18.2L20.5 12.6M6.5 23.2L20.5 16.8"/><circle cx="6.5" cy="13" r="2"/><circle cx="22" cy="6" r="2"/><circle cx="6.5" cy="19" r="2"/></svg>
+    <span class="tm-lb">Fib channel</span>
+    <button class="tm-star" type="button" data-star="fibch" aria-label="Yêu thích Fib channel" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
+  <div class="tm-hr"></div>
+  <div class="tm-row" id="fibMenuCfg" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="3.5"/><path d="M14 5v2.2M14 20.8V23M5 14h2.2M20.8 14H23M7.6 7.6l1.6 1.6M18.8 18.8l1.6 1.6M20.4 7.6l-1.6 1.6M9.2 18.8l-1.6 1.6"/></svg>
+    <span class="tm-lb">Cài đặt Fib channel…</span>
+  </div>
+</div>
+
+<div id="fibChCfg" role="dialog" aria-label="Cài đặt Fib Channel">
+  <div class="fc-head">
+    <h4>Cài đặt Fib Channel<small id="fcScope"></small></h4>
+    <button class="fc-x" id="fcX" type="button" aria-label="Đóng">×</button>
+  </div>
+  <div class="fc-body">
+    <div class="fc-sec">Các mức Fibonacci (bật / giá trị / màu)</div>
+    <div class="fc-grid" id="fcLevels"></div>
+    <div class="fc-addrow">
+      <input id="fcNewVal" type="number" step="0.001" placeholder="Mức mới (VD: 0.886)">
+      <input id="fcNewCol" type="color" value="#ff9800" title="Màu mức mới">
+      <button class="btn" id="fcAddBtn" type="button" style="background:var(--hover)">+ Thêm mức</button>
+    </div>
+    <div class="fc-sec">Hiển thị & Mở rộng</div>
+    <div class="fc-opts">
+      <label class="fc-chk"><input id="fcExtL" type="checkbox"> Mở rộng trái</label>
+      <label class="fc-chk"><input id="fcExtR" type="checkbox"> Mở rộng phải</label>
+      <label class="fc-chk"><input id="fcRev" type="checkbox"> Đảo ngược mức</label>
+      <label class="fc-chk"><input id="fcLbl" type="checkbox"> Hiện nhãn mức</label>
+      <label class="fc-chk"><input id="fcPrc" type="checkbox"> Hiện giá</label>
+      <label class="fc-chk"><input id="fcFill" type="checkbox"> Tô màu nền</label>
+    </div>
+    <div class="fc-row">
+      <span>Độ mờ nền (<b id="fcAlphaTxt">10%</b>)</span>
+      <input id="fcAlpha" type="range" min="0" max="40" step="1" value="10">
+    </div>
+    <div class="fc-row">
+      <span>Độ dày & kiểu đường</span>
+      <span style="display:flex;gap:6px">
+        <select id="fcWidth" aria-label="Độ dày đường"><option value="1">1px</option><option value="1.5">1.5px</option><option value="2">2px</option><option value="3">3px</option></select>
+        <select id="fcStyle" aria-label="Kiểu đường"><option value="solid">Nét liền</option><option value="dashed">Nét đứt</option><option value="dotted">Chấm</option></select>
+      </span>
+    </div>
+  </div>
+  <div class="fc-foot">
+    <button class="btn" id="fcReset" type="button">Mặc định</button>
+    <div class="fc-r">
+      <button class="btn" id="fcSaveDef" type="button" title="Dùng cấu hình này cho các Fib Channel vẽ mới">Lưu mặc định</button>
+      <button class="btn on" id="fcClose" type="button">Đóng</button>
+    </div>
   </div>
 </div>
 
@@ -1342,6 +1511,7 @@
     e.currentTarget.classList.toggle('on', on);
     splitter.classList.toggle('hidden', !on);
     main.applyOptions({ timeScale: { visible: !on } });
+    try { tickClock(); } catch (_) {}
   };
 
   /* ---------- Bảng cài đặt RSI ---------- */
@@ -1601,7 +1771,9 @@
     if (drawSym === state.symbol) return;
     drawSym = state.symbol;
     try { drawings = JSON.parse(localStorage.getItem(dKey()) || '[]') || []; } catch (e) { drawings = []; }
-    selId = null; cur = null; measure = null; brushing = false; touch();
+    selId = null; cur = null; measure = null; brushing = false;
+    try { closeFibChCfg(); syncSelBar(); } catch (e) {}
+    touch();
   }
 
   // Chuyển đổi trực tiếp giữa thời gian thực (t) <-> toạ độ X của Lightweight Charts
@@ -1691,6 +1863,74 @@
   /* --- Vẽ --- */
   const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
   const FIBC = ['#787b86', '#f23645', '#ff9800', '#4caf50', '#089981', '#00bcd4', '#787b86'];
+  const FIBCH_DEFAULT = {
+    levels: [
+      { on: false, v: -0.618, c: '#787b86' },
+      { on: false, v: -0.236, c: '#787b86' },
+      { on: true,  v: 0,      c: '#787b86' },
+      { on: true,  v: 0.236,  c: '#f23645' },
+      { on: true,  v: 0.382,  c: '#ff9800' },
+      { on: true,  v: 0.5,    c: '#4caf50' },
+      { on: true,  v: 0.618,  c: '#089981' },
+      { on: true,  v: 0.786,  c: '#00bcd4' },
+      { on: true,  v: 1,      c: '#787b86' },
+      { on: true,  v: 1.618,  c: '#2962ff' },
+      { on: true,  v: 2.618,  c: '#f23645' },
+      { on: false, v: 3.618,  c: '#9c27b0' },
+      { on: false, v: 4.236,  c: '#e91e63' }
+    ],
+    extendLeft: false, extendRight: true, reverse: false,
+    showLabels: true, showPrices: false,
+    lineWidth: 1.5, lineStyle: 'solid', fill: true, fillAlpha: 0.1
+  };
+  function cloneFibChCfg(c) {
+    const src = c || FIBCH_DEFAULT;
+    return {
+      levels: (Array.isArray(src.levels) && src.levels.length ? src.levels : FIBCH_DEFAULT.levels)
+        .map(l => ({ on: l.on !== false, v: +l.v || 0, c: l.c || '#787b86' })),
+      extendLeft: !!src.extendLeft,
+      extendRight: src.extendRight !== false,
+      reverse: !!src.reverse,
+      showLabels: src.showLabels !== false,
+      showPrices: !!src.showPrices,
+      lineWidth: Number.isFinite(+src.lineWidth) ? +src.lineWidth : 1.5,
+      lineStyle: src.lineStyle === 'dashed' || src.lineStyle === 'dotted' ? src.lineStyle : 'solid',
+      fill: src.fill !== false,
+      fillAlpha: Number.isFinite(+src.fillAlpha) ? Math.max(0, Math.min(0.4, +src.fillAlpha)) : 0.1
+    };
+  }
+  let fibChDef = cloneFibChCfg(FIBCH_DEFAULT);
+  try {
+    const sv = JSON.parse(localStorage.getItem('fibChCfg_v1') || 'null');
+    if (sv && typeof sv === 'object') fibChDef = cloneFibChCfg(sv);
+  } catch (e) {}
+  const saveFibChDef = () => { try { localStorage.setItem('fibChCfg_v1', JSON.stringify(fibChDef)); } catch (e) {} };
+  function fibChLines(s, pts) {
+    const cfg = s.cfg || fibChDef;
+    const [a, b, c] = pts;
+    const bdx = b.x - a.x, bdy = b.y - a.y, vert = Math.abs(bdx) < 1e-4;
+    const slope = vert ? 0 : bdy / bdx;
+    const dx = vert ? (c.x - a.x) : 0;
+    const dy = vert ? 0 : (c.y - (a.y + slope * (c.x - a.x)));
+    const enabled = (cfg.levels || []).filter(l => l.on !== false && Number.isFinite(+l.v));
+    return enabled.map(lv => {
+      const eff = cfg.reverse ? (1 - lv.v) : lv.v;
+      const ox = eff * dx, oy = eff * dy;
+      const ax = a.x + ox, ay = a.y + oy, bx = b.x + ox, by = b.y + oy;
+      let p1 = ax <= bx ? { x: ax, y: ay } : { x: bx, y: by };
+      let p2 = ax <= bx ? { x: bx, y: by } : { x: ax, y: ay };
+      const lblPt = { x: p1.x, y: p1.y }, rightPt = { x: p2.x, y: p2.y };
+      if (!vert) {
+        if (cfg.extendLeft && p1.x > 0) p1 = { x: 0, y: p1.y + slope * (0 - p1.x) };
+        if (cfg.extendRight && p2.x < W) p2 = { x: W, y: p2.y + slope * (W - p2.x) };
+      } else {
+        const y0 = Math.min(ay, by), y1 = Math.max(ay, by);
+        p1 = { x: ax, y: cfg.extendLeft ? 0 : y0 };
+        p2 = { x: ax, y: cfg.extendRight ? H : y1 };
+      }
+      return { v: lv.v, eff, c: lv.c || '#787b86', p1, p2, lblPt, rightPt };
+    }).sort((u, w) => u.eff - w.eff);
+  }
   const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
   const fmtDur = s => {
     const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), o = [];
@@ -1861,6 +2101,50 @@
       }
       cx.strokeStyle = '#787b86'; cx.lineWidth = 1; cx.setLineDash([4, 4]);
       cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.setLineDash([]);
+    } else if (s.type === 'fibch') {
+      const cfg = s.cfg || fibChDef;
+      if (pts.length < 3) {
+        cx.strokeStyle = col; cx.lineWidth = cfg.lineWidth || 1.5; cx.setLineDash([5, 4]);
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.setLineDash([]);
+        pts.forEach(p => { cx.beginPath(); cx.arc(p.x, p.y, 4, 0, Math.PI * 2); cx.fillStyle = '#fff'; cx.fill(); cx.stroke(); });
+      } else {
+        const segs = fibChLines(s, pts);
+        if (cfg.fill && cfg.fillAlpha > 0 && segs.length > 1) {
+          for (let i = 0; i < segs.length - 1; i++) {
+            const u = segs[i], w = segs[i + 1];
+            cx.fillStyle = hexA(w.c, cfg.fillAlpha);
+            cx.beginPath();
+            cx.moveTo(u.p1.x, u.p1.y); cx.lineTo(u.p2.x, u.p2.y);
+            cx.lineTo(w.p2.x, w.p2.y); cx.lineTo(w.p1.x, w.p1.y);
+            cx.closePath(); cx.fill();
+          }
+        }
+        const dash = cfg.lineStyle === 'dashed' ? [6, 4] : cfg.lineStyle === 'dotted' ? [2, 3] : [];
+        cx.lineWidth = cfg.lineWidth || 1.5;
+        cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif';
+        cx.textBaseline = 'bottom';
+        segs.forEach(g => {
+          cx.strokeStyle = g.c; cx.setLineDash(dash);
+          cx.beginPath(); cx.moveTo(g.p1.x, g.p1.y); cx.lineTo(g.p2.x, g.p2.y); cx.stroke();
+          if (cfg.showLabels) {
+            let txt = String(g.v);
+            if (cfg.showPrices) {
+              const pr = P.series.coordinateToPrice(g.lblPt.y);
+              if (pr != null) txt += ` (${fmt(pr)})`;
+            }
+            const lx = Math.max(4, Math.min(g.lblPt.x + 4, W - 70));
+            const ly = Math.max(13, Math.min(g.lblPt.y - 3, H - 3));
+            cx.fillStyle = g.c; cx.textAlign = 'left';
+            cx.fillText(txt, lx, ly);
+          }
+        });
+        cx.setLineDash([]);
+        if (sel) {
+          cx.strokeStyle = '#787b86'; cx.lineWidth = 1; cx.setLineDash([3, 3]);
+          cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(pts[2].x, pts[2].y); cx.stroke();
+          cx.setLineDash([]);
+        }
+      }
     } else if (s.type === 'measure') {
       const up = s.pts[1].p >= s.pts[0].p, mc = up ? '#2962ff' : '#f23645';
       cx.fillStyle = hexA(mc, 0.15);
@@ -2135,6 +2419,11 @@
         return yy != null && Math.abs(y - yy) <= 6 && x >= x0 - 6 && x <= x1 + 6;
       });
     }
+    if (s.type === 'fibch') {
+      if (pts.length < 3) return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
+      if (distSeg(x, y, a.x, a.y, pts[2].x, pts[2].y) <= 7) return true;
+      return fibChLines(s, pts).some(g => distSeg(x, y, g.p1.x, g.p1.y, g.p2.x, g.p2.y) <= 7);
+    }
     return false;
   }
   function hit(x, y) {
@@ -2168,12 +2457,25 @@
       svg: '<svg viewBox="0 0 28 28"><path d="M7 19V7h12M21 9v12H9M14 8v12M11 11l3-3 3 3M8 14h12M17 11l3 3-3 3"/><circle cx="7" cy="21" r="2"/><circle cx="21" cy="7" r="2"/></svg>'
     }
   };
+  const FIB_META = {
+    fib: {
+      name: 'Fib Retracement',
+      svg: '<svg viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg>'
+    },
+    fibch: {
+      name: 'Fib channel',
+      svg: '<svg viewBox="0 0 28 28"><path d="M8.2 12.2L20.2 6.8M8.2 18.2L20.5 12.6M6.5 23.2L20.5 16.8"/><circle cx="6.5" cy="13" r="2"/><circle cx="22" cy="6" r="2"/><circle cx="6.5" cy="19" r="2"/></svg>'
+    }
+  };
+  const SUB_META = { ...RANGE_META, ...FIB_META };
   let activeRangeTool = 'prange';
   try { const sv = localStorage.getItem('activeRangeTool'); if (sv && RANGE_META[sv]) activeRangeTool = sv; } catch (e) {}
+  let activeFibTool = 'fibch';
+  try { const sv = localStorage.getItem('activeFibTool'); if (sv && FIB_META[sv]) activeFibTool = sv; } catch (e) {}
   let favTools = [];
   try {
     const sv = JSON.parse(localStorage.getItem('favDrawTools') || '[]');
-    if (Array.isArray(sv)) favTools = sv.filter(k => RANGE_META[k]);
+    if (Array.isArray(sv)) favTools = sv.filter(k => SUB_META[k]);
   } catch (e) {}
 
   const HINTS = {
@@ -2186,6 +2488,7 @@
     dprange: 'Bấm hai điểm để đo phạm vi ngày và giá',
     rect: 'Bấm hai góc của hình chữ nhật',
     fib: 'Bấm điểm đầu và điểm cuối của sóng',
+    fibch: 'Bấm điểm 1 và điểm 2 để tạo đường gốc, rồi bấm điểm 3 để mở rộng Fib channel',
     measure: 'Bấm hai điểm để đo giá và thời gian',
     brush: 'Giữ chuột và rê để vẽ tự do · Esc để thoát cọ'
   };
@@ -2200,9 +2503,26 @@
     b.innerHTML = meta.svg;
     document.querySelectorAll('#rangeMenu .tm-row').forEach(r => r.classList.toggle('on', r.dataset.rtool === rt));
   }
+  function syncFibBtn(ft) {
+    const meta = FIB_META[ft]; if (!meta) return;
+    activeFibTool = ft;
+    try { localStorage.setItem('activeFibTool', ft); } catch (e) {}
+    const b = $('btnFib');
+    b.dataset.tool = ft;
+    b.dataset.tip = meta.name + ' (bấm ▸ để mở Fibonacci)';
+    b.setAttribute('aria-label', meta.name);
+    b.innerHTML = meta.svg;
+    document.querySelectorAll('#fibMenu .tm-row[data-ftool]').forEach(r => r.classList.toggle('on', r.dataset.ftool === ft));
+  }
+  function syncSelBar() {
+    const s = drawings.find(d => d.id === selId);
+    const show = !!(s && s.type === 'fibch' && tool === 'cursor');
+    $('selBar').classList.toggle('show', show);
+  }
   function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
   function setTool(t) {
     if (RANGE_META[t]) syncRangeBtn(t);
+    if (FIB_META[t]) syncFibBtn(t);
     tool = t; cur = null; drag = null; brushing = false;
     PLIST.forEach(p => { p.hover = null; });
     if (t !== 'cursor') { measure = null; selId = null; }
@@ -2212,9 +2532,11 @@
     const hint = $('dHint');
     hint.style.display = t === 'cursor' ? 'none' : 'block';
     hint.textContent = HINTS[t] || '';
+    syncSelBar();
     touch();
   }
   function finishCur() {
+    delete cur._step;
     if (cur.type === 'measure') measure = { type: 'measure', pane: cur.pane, pts: cur.pts };
     else { drawings.push(cur); selId = cur.id; syncColor(); saveDrawings(); }
     cur = null; justStarted = false;
@@ -2254,17 +2576,33 @@
         if (!cur) {
           measure = null;
           cur = { id: uid(), type: tool, pane: p.key, pts: [pt, { ...pt }], color: dColor };
+          if (tool === 'fibch') { cur.cfg = cloneFibChCfg(fibChDef); cur._step = 1; $('dHint').textContent = 'Bấm điểm 2 để hoàn tất đường gốc của Fib channel'; }
           downXY = { x, y }; justStarted = true;
+        } else if (cur.type === 'fibch' && cur._step === 1) {
+          cur.pts[1] = pt; cur.pts[2] = { ...pt }; cur._step = 2; justStarted = false;
+          $('dHint').textContent = 'Bấm điểm 3 để chọn độ rộng kênh Fib channel';
+        } else if (cur.type === 'fibch' && cur._step === 2) {
+          cur.pts[2] = pt; finishCur();
         } else { cur.pts[1] = pt; finishCur(); }
         touch(); return;
       }
       const h = hit(x, y);
-      if (!h) { selId = null; setAuto(false, p); touch(); return; }
+      if (!h) { selId = null; setAuto(false, p); syncSelBar(); touch(); return; }
       e.preventDefault();
-      selId = h.s.id; syncColor();
+      selId = h.s.id; syncColor(); syncSelBar();
       drag = { id: h.s.id, pane: p.key, handle: h.handle, sx: x, sy: y, orig: h.s.pts.map(toPx) };
       try { cv.setPointerCapture(e.pointerId); } catch (_) {}
       touch();
+    });
+    cv.addEventListener('dblclick', e => {
+      if (tool !== 'cursor') return;
+      useP(p);
+      const { x, y } = xyOf(e);
+      const h = hit(x, y);
+      if (h && h.s.type === 'fibch') {
+        selId = h.s.id; syncSelBar(); touch();
+        openFibChCfg(h.s);
+      }
     });
     cv.addEventListener('pointermove', e => {
       useP(p);
@@ -2295,7 +2633,13 @@
       if (tool !== 'cursor') {
         p.hover = { x, y };
         if (tool !== 'brush') showSync(x, p.key);
-        if (cur && paneOf(cur) === p.key && !brushing) { const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt; }
+        if (cur && paneOf(cur) === p.key && !brushing) {
+          const pt = ptFromEvent(e);
+          if (pt) {
+            if (cur.type === 'fibch' && cur._step === 2) cur.pts[2] = pt;
+            else cur.pts[1] = pt;
+          }
+        }
         touch(); return;
       }
       const h = hit(x, y);
@@ -2310,7 +2654,13 @@
         const { x, y } = xyOf(e);
         if (Math.hypot(x - downXY.x, y - downXY.y) > 6) {
           const pt = ptFromEvent(e); if (pt) cur.pts[1] = pt;
-          finishCur();
+          if (cur.type === 'fibch' && cur._step === 1) {
+            cur.pts[2] = { ...(pt || cur.pts[1]) }; cur._step = 2;
+            $('dHint').textContent = 'Bấm điểm 3 để chọn độ rộng kênh Fib channel';
+            touch();
+          } else {
+            finishCur();
+          }
         }
       }
     });
@@ -2328,29 +2678,38 @@
     });
   }
   PLIST.forEach(bindPane);
-  const clickDeselect = () => { if (tool === 'cursor' && (measure || selId)) { measure = null; selId = null; touch(); } };
+  const clickDeselect = () => { if (tool === 'cursor' && (measure || selId)) { measure = null; selId = null; syncSelBar(); touch(); } };
   main.subscribeClick(clickDeselect);
   rsiChart.subscribeClick(clickDeselect);
 
   const rangeMenu = $('rangeMenu'), grpRange = $('grpRange'), btnRangeMore = $('btnRangeMore');
+  const fibMenu = $('fibMenu'), grpFib = $('grpFib'), btnFibMore = $('btnFibMore');
   function closeRangeMenu() {
     rangeMenu.classList.remove('open');
     grpRange.classList.remove('open');
     btnRangeMore.setAttribute('aria-expanded', 'false');
   }
-  function openRangeMenu() {
-    const r = grpRange.getBoundingClientRect();
-    rangeMenu.classList.add('open');
-    grpRange.classList.add('open');
-    btnRangeMore.setAttribute('aria-expanded', 'true');
-    const mh = rangeMenu.offsetHeight;
-    rangeMenu.style.left = Math.round(r.right + 4) + 'px';
-    rangeMenu.style.top = Math.round(Math.max(4, Math.min(r.top, innerHeight - mh - 4))) + 'px';
+  function closeFibMenu() {
+    fibMenu.classList.remove('open');
+    grpFib.classList.remove('open');
+    btnFibMore.setAttribute('aria-expanded', 'false');
   }
-  function toggleRangeMenu() { rangeMenu.classList.contains('open') ? closeRangeMenu() : openRangeMenu(); }
+  function closeSubMenus() { closeRangeMenu(); closeFibMenu(); }
+  function openSubMenu(menu, grp, btn) {
+    closeSubMenus();
+    const r = grp.getBoundingClientRect();
+    menu.classList.add('open');
+    grp.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+    const mh = menu.offsetHeight;
+    menu.style.left = Math.round(r.right + 4) + 'px';
+    menu.style.top = Math.round(Math.max(4, Math.min(r.top, innerHeight - mh - 4))) + 'px';
+  }
+  function toggleRangeMenu() { rangeMenu.classList.contains('open') ? closeRangeMenu() : openSubMenu(rangeMenu, grpRange, btnRangeMore); }
+  function toggleFibMenu() { fibMenu.classList.contains('open') ? closeFibMenu() : openSubMenu(fibMenu, grpFib, btnFibMore); }
 
   function renderFavBar() {
-    document.querySelectorAll('#rangeMenu .tm-star').forEach(st => {
+    document.querySelectorAll('#rangeMenu .tm-star, #fibMenu .tm-star').forEach(st => {
       const on = favTools.includes(st.dataset.star);
       st.classList.toggle('fav', on);
       st.textContent = on ? '★' : '☆';
@@ -2359,7 +2718,7 @@
     const box = $('favItems');
     box.innerHTML = '';
     favTools.forEach(rt => {
-      const m = RANGE_META[rt]; if (!m) return;
+      const m = SUB_META[rt]; if (!m) return;
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'fb' + (tool === rt ? ' on' : '');
@@ -2367,7 +2726,7 @@
       b.title = m.name;
       b.setAttribute('aria-label', m.name);
       b.innerHTML = m.svg;
-      b.onclick = () => { closeRangeMenu(); setTool(rt); };
+      b.onclick = () => { closeSubMenus(); setTool(rt); };
       box.appendChild(b);
     });
     $('favBar').classList.toggle('show', favTools.length > 0);
@@ -2377,20 +2736,34 @@
     if (b.id === 'btnRange') {
       b.onclick = () => {
         if (tool === b.dataset.tool) toggleRangeMenu();
-        else { closeRangeMenu(); setTool(b.dataset.tool); }
+        else { closeSubMenus(); setTool(b.dataset.tool); }
       };
       b.addEventListener('contextmenu', e => { e.preventDefault(); toggleRangeMenu(); });
+    } else if (b.id === 'btnFib') {
+      b.onclick = () => {
+        if (tool === b.dataset.tool) toggleFibMenu();
+        else { closeSubMenus(); setTool(b.dataset.tool); }
+      };
+      b.addEventListener('contextmenu', e => { e.preventDefault(); toggleFibMenu(); });
     } else {
-      b.onclick = () => { closeRangeMenu(); setTool(b.dataset.tool); };
+      b.onclick = () => { closeSubMenus(); setTool(b.dataset.tool); };
     }
   });
   btnRangeMore.onclick = e => { e.stopPropagation(); toggleRangeMenu(); };
+  btnFibMore.onclick = e => { e.stopPropagation(); toggleFibMenu(); };
   rangeMenu.querySelectorAll('.tm-row').forEach(row => {
-    const pick = () => { closeRangeMenu(); setTool(row.dataset.rtool); };
+    const pick = () => { closeSubMenus(); setTool(row.dataset.rtool); };
     row.onclick = e => { if (!e.target.closest('.tm-star')) pick(); };
     row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
   });
-  rangeMenu.querySelectorAll('.tm-star').forEach(st => {
+  fibMenu.querySelectorAll('.tm-row[data-ftool]').forEach(row => {
+    const pick = () => { closeSubMenus(); setTool(row.dataset.ftool); };
+    row.onclick = e => { if (!e.target.closest('.tm-star')) pick(); };
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+  });
+  $('fibMenuCfg').onclick = () => { closeSubMenus(); openFibChCfg(null); };
+  $('fibMenuCfg').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeSubMenus(); openFibChCfg(null); } };
+  document.querySelectorAll('#rangeMenu .tm-star, #fibMenu .tm-star').forEach(st => {
     st.onclick = e => {
       e.stopPropagation();
       const k = st.dataset.star, idx = favTools.indexOf(k);
@@ -2401,9 +2774,112 @@
   });
   document.addEventListener('pointerdown', e => {
     if (rangeMenu.classList.contains('open') && !rangeMenu.contains(e.target) && !grpRange.contains(e.target)) closeRangeMenu();
+    if (fibMenu.classList.contains('open') && !fibMenu.contains(e.target) && !grpFib.contains(e.target)) closeFibMenu();
   }, true);
-  window.addEventListener('resize', closeRangeMenu);
-  window.addEventListener('blur', closeRangeMenu);
+  window.addEventListener('resize', closeSubMenus);
+  window.addEventListener('blur', closeSubMenus);
+
+  /* ---------- Hộp thoại cài đặt thông số Fib Channel ---------- */
+  const fibChDlg = $('fibChCfg');
+  let fcTarget = null; // shape đang chỉnh sửa, hoặc null = chỉnh mặc định
+  const fcCfg = () => (fcTarget ? (fcTarget.cfg || (fcTarget.cfg = cloneFibChCfg(fibChDef))) : fibChDef);
+  function fcCommit() {
+    if (fcTarget) saveDrawings();
+    else saveFibChDef();
+    touch();
+  }
+  function fcRenderLevels() {
+    const cfg = fcCfg(), box = $('fcLevels');
+    box.innerHTML = '';
+    cfg.levels.forEach((lv, i) => {
+      const row = document.createElement('div');
+      row.className = 'fc-lv';
+      const chk = document.createElement('input');
+      chk.type = 'checkbox'; chk.checked = lv.on !== false; chk.title = 'Bật / tắt mức này';
+      chk.onchange = () => { lv.on = chk.checked; fcCommit(); };
+      const num = document.createElement('input');
+      num.type = 'number'; num.step = '0.001'; num.value = lv.v; num.setAttribute('aria-label', 'Giá trị mức');
+      num.oninput = () => { const v = parseFloat(num.value); if (Number.isFinite(v)) { lv.v = v; fcCommit(); } };
+      const col = document.createElement('input');
+      col.type = 'color'; col.value = lv.c || '#787b86'; col.title = 'Màu đường mức';
+      col.oninput = () => { lv.c = col.value; fcCommit(); };
+      const del = document.createElement('button');
+      del.type = 'button'; del.className = 'fc-del'; del.textContent = '×'; del.title = 'Xoá mức';
+      del.onclick = () => {
+        if (cfg.levels.length <= 2) return;
+        cfg.levels.splice(i, 1); fcRenderLevels(); fcCommit();
+      };
+      row.append(chk, num, col, del);
+      box.appendChild(row);
+    });
+  }
+  function fcSyncForm() {
+    const cfg = fcCfg();
+    $('fcScope').textContent = fcTarget ? '(kênh đang chọn)' : '(mặc định cho kênh mới)';
+    $('fcSaveDef').style.display = fcTarget ? '' : 'none';
+    fcRenderLevels();
+    $('fcExtL').checked = !!cfg.extendLeft;
+    $('fcExtR').checked = !!cfg.extendRight;
+    $('fcRev').checked = !!cfg.reverse;
+    $('fcLbl').checked = cfg.showLabels !== false;
+    $('fcPrc').checked = !!cfg.showPrices;
+    $('fcFill').checked = cfg.fill !== false;
+    const pct = Math.round((cfg.fillAlpha ?? 0.1) * 100);
+    $('fcAlpha').value = pct;
+    $('fcAlphaTxt').textContent = pct + '%';
+    $('fcWidth').value = String(cfg.lineWidth || 1.5);
+    $('fcStyle').value = cfg.lineStyle || 'solid';
+  }
+  function openFibChCfg(shape) {
+    fcTarget = shape || null;
+    if (fcTarget && !fcTarget.cfg) fcTarget.cfg = cloneFibChCfg(fibChDef);
+    fcSyncForm();
+    fibChDlg.classList.add('open');
+  }
+  function closeFibChCfg() { fibChDlg.classList.remove('open'); }
+  $('fcX').onclick = closeFibChCfg;
+  $('fcClose').onclick = closeFibChCfg;
+  $('fcExtL').onchange = e => { fcCfg().extendLeft = e.target.checked; fcCommit(); };
+  $('fcExtR').onchange = e => { fcCfg().extendRight = e.target.checked; fcCommit(); };
+  $('fcRev').onchange = e => { fcCfg().reverse = e.target.checked; fcCommit(); };
+  $('fcLbl').onchange = e => { fcCfg().showLabels = e.target.checked; fcCommit(); };
+  $('fcPrc').onchange = e => { fcCfg().showPrices = e.target.checked; fcCommit(); };
+  $('fcFill').onchange = e => { fcCfg().fill = e.target.checked; fcCommit(); };
+  $('fcAlpha').oninput = e => {
+    const v = parseInt(e.target.value, 10) || 0;
+    $('fcAlphaTxt').textContent = v + '%';
+    fcCfg().fillAlpha = v / 100;
+    fcCommit();
+  };
+  $('fcWidth').onchange = e => { fcCfg().lineWidth = parseFloat(e.target.value) || 1.5; fcCommit(); };
+  $('fcStyle').onchange = e => { fcCfg().lineStyle = e.target.value; fcCommit(); };
+  $('fcAddBtn').onclick = () => {
+    const v = parseFloat($('fcNewVal').value);
+    if (!Number.isFinite(v)) { $('fcNewVal').focus(); return; }
+    fcCfg().levels.push({ on: true, v, c: $('fcNewCol').value || '#2962ff' });
+    fcCfg().levels.sort((a, b) => a.v - b.v);
+    $('fcNewVal').value = '';
+    fcRenderLevels(); fcCommit();
+  };
+  $('fcNewVal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('fcAddBtn').click(); } });
+  $('fcReset').onclick = () => {
+    const fresh = cloneFibChCfg(FIBCH_DEFAULT);
+    if (fcTarget) fcTarget.cfg = fresh; else fibChDef = fresh;
+    fcSyncForm(); fcCommit();
+  };
+  $('fcSaveDef').onclick = () => {
+    if (!fcTarget) return;
+    fibChDef = cloneFibChCfg(fcTarget.cfg);
+    saveFibChDef();
+    const b = $('fcSaveDef'), old = b.textContent;
+    b.textContent = 'Đã lưu ✓';
+    setTimeout(() => { b.textContent = old; }, 1200);
+  };
+  $('sbCfg').onclick = () => {
+    const s = drawings.find(d => d.id === selId);
+    if (s && s.type === 'fibch') openFibChCfg(s);
+  };
+  $('sbDel').onclick = () => deleteSelected();
 
   // Kéo di chuyển thanh công cụ yêu thích nổi
   const favBar = $('favBar'), favGrip = $('favGrip');
@@ -2428,6 +2904,7 @@
   favGrip.addEventListener('pointercancel', endFavDrag);
 
   syncRangeBtn(activeRangeTool);
+  syncFibBtn(activeFibTool);
   renderFavBar();
   $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); };
   $('dMagnet').dataset.tip = 'Nam châm: hít vào giá O/H/L/C (chỉ khung giá)';
@@ -2447,23 +2924,29 @@
   function deleteSelected() {
     const i = drawings.findIndex(d => d.id === selId);
     if (i < 0) return false;
-    drawings.splice(i, 1); selId = null; saveDrawings(); touch(); return true;
+    if (fcTarget && fcTarget.id === selId) closeFibChCfg();
+    drawings.splice(i, 1); selId = null; syncSelBar(); saveDrawings(); touch(); return true;
   }
   $('dDel').onclick = () => {
     if (deleteSelected()) return;
     if (measure) { measure = null; touch(); return; }
     if (drawings.length && confirm('Xoá tất cả hình vẽ của ' + state.symbol + '?')) {
-      drawings = []; saveDrawings(); touch();
+      closeFibChCfg();
+      drawings = []; selId = null; syncSelBar(); saveDrawings(); touch();
     }
   };
   document.addEventListener('keydown', e => {
-    if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+      if (e.key === 'Escape' && fibChDlg.classList.contains('open')) closeFibChCfg();
+      return;
+    }
     if (e.key === 'Delete' || e.key === 'Backspace') { if (deleteSelected()) e.preventDefault(); }
     else if (e.key === 'Escape') {
-      if (rangeMenu.classList.contains('open')) closeRangeMenu();
+      if (fibChDlg.classList.contains('open')) closeFibChCfg();
+      else if (rangeMenu.classList.contains('open') || fibMenu.classList.contains('open')) closeSubMenus();
       else if (cur) { cur = null; justStarted = false; brushing = false; touch(); }
       else if (tool !== 'cursor') setTool('cursor');
-      else { measure = null; selId = null; touch(); }
+      else { measure = null; selId = null; syncSelBar(); touch(); }
     }
   });
   requestAnimationFrame(frame);
@@ -2478,8 +2961,12 @@
     $('clkNow').textContent = `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} UTC+7`;
     const into = dayMode === 'local' ? (nowSec + TZ) % 86400 : nowSec % 86400;
     $('clkLeft').textContent = (dayMode === 'local' ? 'Hết ngày: ' : 'Nến ngày đóng: ') + hms(86400 - into);
-    const h = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
+    const collapsed = $('rsiPane').classList.contains('collapsed');
+    const h = (collapsed ? (main.timeScale().height && main.timeScale().height()) : (rsiChart.timeScale().height && rsiChart.timeScale().height())) || 26;
+    const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 80;
     clock.style.height = h + 'px';
+    $('scaleBtns').style.minWidth = sw + 'px';
+    $('scaleBtns').style.bottom = (collapsed ? h : 0) + 'px';
     clock.title = dayMode === 'local'
       ? 'Đếm ngược đến 00:00 giờ Việt Nam. Bấm để đổi sang giờ đóng nến ngày của Binance (07:00).'
       : 'Đếm ngược đến lúc nến ngày Binance đóng (07:00 giờ Việt Nam). Bấm để đổi sang hết ngày 00:00.';
