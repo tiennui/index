@@ -646,6 +646,7 @@
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
   <button class="btn" id="tgMaBt" title="Backtest tự động: MA nhanh cắt lên MA chậm thì vào Long, stoploss tại điểm giao nhau (chạy trên khung đang chọn)">Backtest MA</button>
   <button class="btn" id="tgTheme">Giao diện tối</button>
+  <button class="btn" id="btnSaveLayout" title="Lưu bố cục, cài đặt và góc nhìn hiện tại (cũng tự động lưu mỗi khi bạn thay đổi)">💾 Lưu bố cục</button>
   <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
 </div>
 
@@ -653,6 +654,10 @@
   <button class="it" id="ctxReset" role="menuitem">
     <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg>
     <span>Đặt lại biểu đồ</span><span class="k">Alt + R</span>
+  </button>
+  <button class="it" id="ctxResetLayout" role="menuitem">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>
+    <span>Đặt lại bố cục mặc định</span>
   </button>
 </div>
 
@@ -933,13 +938,34 @@
   const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
   const TZ = 7 * 3600; // múi giờ hiển thị: UTC+7 (dịch thời gian nến +7 giờ)
 
+  const LAYOUT_KEY = 'chartLayout_v1', VIEWS_KEY = 'chartViews_v1';
+  let savedLayout = null;
+  try { savedLayout = JSON.parse(localStorage.getItem(LAYOUT_KEY) || 'null'); } catch (e) {}
+  let savedViews = {};
+  try {
+    const sv = JSON.parse(localStorage.getItem(VIEWS_KEY) || 'null');
+    if (sv && typeof sv === 'object') savedViews = sv;
+  } catch (e) {}
+  let restoringView = false, restoreTimer = null;
+  function guardViewRestore() {
+    restoringView = true;
+    clearTimeout(restoreTimer);
+    restoreTimer = setTimeout(() => { restoringView = false; }, 160);
+  }
+
   const state = {
-    symbol: 'BTCUSDT', interval: '1d', data: [], ws: null, wsTimer: null,
-    showEma: false, showVol: false, ha: false, dark: false, reqId: 0
+    symbol: (savedLayout && typeof savedLayout.symbol === 'string' && savedLayout.symbol.trim()) ? savedLayout.symbol.trim().toUpperCase() : 'BTCUSDT',
+    interval: (savedLayout && TFS.includes(savedLayout.interval)) ? savedLayout.interval : '1d',
+    data: [], ws: null, wsTimer: null,
+    showEma: !!(savedLayout && savedLayout.showEma),
+    showVol: !!(savedLayout && savedLayout.showVol),
+    ha: !!(savedLayout && savedLayout.ha),
+    dark: !!(savedLayout && savedLayout.dark),
+    reqId: 0
   };
 
   const rp = { phase: 'off', timer: null, speed: 1000, start: 10000, balance: 10000, pos: null, trades: [], markers: [] };
-  state.full = []; state.log = false;
+  state.full = []; state.log = !!(savedLayout && savedLayout.log);
   const RSI_DEFAULT = { len: 14, ema: 9, wma: 45, hi: 70, lo: 30, xhi: 80, xlo: 20 };
   state.rsi = { ...RSI_DEFAULT };
   try {
@@ -1265,7 +1291,10 @@
       const add = state.data.length - n0;
       acc = [];
       renderAll();
-      if (rng) main.timeScale().setVisibleLogicalRange({ from: rng.from + add, to: rng.to + add });
+      if (rng) {
+        guardViewRestore();
+        main.timeScale().setVisibleLogicalRange({ from: rng.from + add, to: rng.to + add });
+      }
     };
     for (let page = 0; page < HIST_PAGES; page++) {
       let raw;
@@ -1298,7 +1327,13 @@
       state.data = raw.map(mapKline);
       if (isDerived(state.interval)) { state.base = state.data; state.data = aggregateTf(state.base, state.interval); }
       renderAll();
-      main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
+      const vKey = state.symbol + '|' + state.interval, sv = savedViews[vKey], n = state.data.length;
+      guardViewRestore();
+      if (sv && Number.isFinite(sv.fromOff) && Number.isFinite(sv.toOff)) {
+        main.timeScale().setVisibleLogicalRange({ from: n - sv.fromOff, to: n + sv.toOff });
+      } else {
+        main.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
+      }
       updateQuote(state.data[state.data.length - 1].close);
       $('loading').classList.remove('show');
       openWs(id);
@@ -1368,8 +1403,10 @@
     b.onclick = () => {
       // Đang backtest: đổi khung nhưng giữ nguyên thời điểm đang phát lại
       if (rp.phase !== 'off') { if (tf !== state.interval) switchReplayTf(tf); return; }
+      saveCurrentView();
       state.interval = tf;
       setTfButtons(tf);
+      saveLayout();
       load();
     };
     tfBox.appendChild(b);
@@ -1398,12 +1435,14 @@
     ensureSymbolOption(sym);
     $('symbol').value = sym;
     if (state.symbol === sym) { try { wlSyncActive(); } catch (e) {} return; }
+    saveCurrentView();
     state.symbol = sym;
     try { wlSyncActive(); } catch (e) {}
+    saveLayout();
     load();
   }
   $('symbol').onchange = e => selectSymbol(e.target.value);
-  $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
+  $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); saveLayout(); renderIndicators(); };
 
   /* ---------- Chỉnh giá trị đường EMA ---------- */
   const emaCfg = $('emaCfg');
@@ -1424,7 +1463,7 @@
   eNs.forEach(el => el.addEventListener('input', applyEmaCfg));
   eSs.forEach((el, i) => el.addEventListener('change', e => {
     emaSeries[i].show = e.target.checked;
-    if (e.target.checked && !state.showEma) { state.showEma = true; $('tgEma').classList.add('on'); } // bật một đường thì nút EMA chung cũng bật
+    if (e.target.checked && !state.showEma) { state.showEma = true; $('tgEma').classList.add('on'); saveLayout(); } // bật một đường thì nút EMA chung cũng bật
     saveEmaCfg();
     renderIndicators();
   }));
@@ -1439,8 +1478,8 @@
     applyEmaCfg();
   };
   refreshEmaLabel();
-  $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); renderAll(); };
-  $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); renderAll(); };
+  $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); saveLayout(); renderAll(); };
+  $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); saveLayout(); renderAll(); };
   $('tgTheme').onclick = e => {
     state.dark = !state.dark;
     document.documentElement.dataset.theme = state.dark ? 'dark' : 'light';
@@ -1451,6 +1490,7 @@
     rsiChart.applyOptions(chartOptions());
     setLevels();
     candles.applyOptions(candleOpts());
+    saveLayout();
     renderAll();
   };
 
@@ -1502,10 +1542,11 @@
   const endDrag = e => {
     if (splitter.hasPointerCapture(e.pointerId)) splitter.releasePointerCapture(e.pointerId);
     splitter.classList.remove('drag'); document.body.classList.remove('dragging');
+    saveLayout();
   };
   splitter.addEventListener('pointerup', endDrag);
   splitter.addEventListener('pointercancel', endDrag);
-  splitter.addEventListener('dblclick', () => { rsiPane.style.height = ''; });
+  splitter.addEventListener('dblclick', () => { rsiPane.style.height = ''; saveLayout(); });
 
   // Bật / tắt hẳn khung RSI
   $('tgRsi').onclick = e => {
@@ -1513,6 +1554,7 @@
     e.currentTarget.classList.toggle('on', on);
     splitter.classList.toggle('hidden', !on);
     main.applyOptions({ timeScale: { visible: !on } });
+    saveLayout();
     try { tickClock(); } catch (_) {}
   };
 
@@ -1549,12 +1591,16 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); } });
 
   /* ---------- Chế độ Log ---------- */
-  $('tgLog').onclick = e => {
-    state.log = !state.log;
-    e.currentTarget.classList.toggle('on', state.log);
+  function applyLogMode() {
+    $('tgLog').classList.toggle('on', state.log);
     main.priceScale('right').applyOptions({
       mode: state.log ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal
     });
+  }
+  $('tgLog').onclick = () => {
+    state.log = !state.log;
+    applyLogMode();
+    saveLayout();
   };
 
   /* ---------- Backtest theo nến (replay + giao dịch thử) ---------- */
@@ -2945,19 +2991,20 @@
     favBar.style.left = Math.round(left) + 'px';
     favBar.style.top = Math.round(top) + 'px';
   });
-  const endFavDrag = () => { favDrag = null; };
+  const endFavDrag = () => { if (favDrag) { favDrag = null; saveLayout(); } };
   favGrip.addEventListener('pointerup', endFavDrag);
   favGrip.addEventListener('pointercancel', endFavDrag);
 
   syncRangeBtn(activeRangeTool);
   syncFibBtn(activeFibTool);
   renderFavBar();
-  $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); };
+  $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); saveLayout(); };
   $('dMagnet').dataset.tip = 'Nam châm: hít vào giá O/H/L/C (chỉ khung giá)';
   $('dColor').oninput = e => {
     dColor = e.target.value;
     const s = drawings.find(d => d.id === selId);
     if (s) { s.color = dColor; saveDrawings(); touch(); }
+    saveLayout();
   };
   const BRUSH_W = [2, 3, 5, 8];
   $('dW').onclick = () => {
@@ -2965,6 +3012,7 @@
     $('dW').textContent = brushW + 'px';
     const s = drawings.find(d => d.id === selId);
     if (s && s.type === 'brush') { s.w = brushW; saveDrawings(); }
+    saveLayout();
     touch();
   };
   function deleteSelected() {
@@ -3018,7 +3066,7 @@
       ? 'Đếm ngược đến 00:00 giờ Việt Nam. Bấm để đổi sang giờ đóng nến ngày của Binance (07:00).'
       : 'Đếm ngược đến lúc nến ngày Binance đóng (07:00 giờ Việt Nam). Bấm để đổi sang hết ngày 00:00.';
   }
-  const toggleDay = () => { dayMode = dayMode === 'local' ? 'binance' : 'local'; tickClock(); };
+  const toggleDay = () => { dayMode = dayMode === 'local' ? 'binance' : 'local'; tickClock(); saveLayout(); };
   clock.addEventListener('click', toggleDay);
   clock.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDay(); } });
   setInterval(tickClock, 500);
@@ -3035,10 +3083,15 @@
   $('tgAuto').onclick = () => setAutoScale(!state.auto);
 
   /* ---------- Chuột phải: reset biểu đồ về mặc định ---------- */
-  function resetChartView() {
+  function resetChartView(clearSaved = false) {
     setAutoScale(true);
     const n = state.data.length;
     if (!n) return;
+    if (clearSaved) {
+      delete savedViews[state.symbol + '|' + state.interval];
+      try { localStorage.setItem(VIEWS_KEY, JSON.stringify(savedViews)); } catch (e) {}
+    }
+    guardViewRestore();
     main.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
     rsiChart.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
   }
@@ -3054,13 +3107,13 @@
     e.preventDefault();
     showCtx(e.clientX, e.clientY);
   }));
-  $('ctxReset').onclick = () => { hideCtx(); resetChartView(); };
+  $('ctxReset').onclick = () => { hideCtx(); resetChartView(true); };
   // Bấm chuột trái (hoặc bất kỳ chỗ nào ngoài menu) để tắt menu
   document.addEventListener('pointerdown', e => { if (!ctxMenu.contains(e.target)) hideCtx(); }, true);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') hideCtx();
     else if (e.altKey && e.code === 'KeyR' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
-      e.preventDefault(); hideCtx(); resetChartView();
+      e.preventDefault(); hideCtx(); resetChartView(true);
     }
   });
   window.addEventListener('resize', hideCtx);
@@ -3560,13 +3613,135 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeWlPop(); closeWlAdd(); } });
   window.addEventListener('resize', closeWlPop);
 
+  /* ---------- Lưu & khôi phục bố cục / cài đặt giao diện ---------- */
+  let resettingLayout = false;
+  function saveLayout() {
+    if (resettingLayout) return;
+    try {
+      const data = {
+        symbol: state.symbol,
+        interval: state.interval,
+        ha: !!state.ha,
+        showEma: !!state.showEma,
+        showVol: !!state.showVol,
+        rsiOpen: !rsiPane.classList.contains('collapsed'),
+        rsiH: rsiPane.style.height || '',
+        dark: !!state.dark,
+        log: !!state.log,
+        magnet: !!magnet,
+        dColor,
+        brushW,
+        dayMode,
+        favPos: favBar.style.left ? { left: favBar.style.left, top: favBar.style.top } : null
+      };
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+  let saveViewTimer = null;
+  function saveCurrentView() {
+    if (resettingLayout || restoringView || rp.phase !== 'off' || !state.data.length) return;
+    const r = main.timeScale().getVisibleLogicalRange();
+    if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to)) return;
+    const n = state.data.length;
+    savedViews[state.symbol + '|' + state.interval] = {
+      fromOff: +(n - r.from).toFixed(2),
+      toOff: +(r.to - n).toFixed(2)
+    };
+    try { localStorage.setItem(VIEWS_KEY, JSON.stringify(savedViews)); } catch (e) {}
+  }
+  main.timeScale().subscribeVisibleLogicalRangeChange(() => {
+    if (resettingLayout || restoringView || rp.phase !== 'off' || !state.data.length) return;
+    clearTimeout(saveViewTimer);
+    saveViewTimer = setTimeout(saveCurrentView, 250);
+  });
+  window.addEventListener('beforeunload', () => {
+    if (resettingLayout) return;
+    saveLayout();
+    saveCurrentView();
+  });
+
+  function restoreLayout() {
+    document.documentElement.dataset.theme = state.dark ? 'dark' : 'light';
+    $('tgTheme').textContent = state.dark ? 'Giao diện sáng' : 'Giao diện tối';
+    $('tgHA').classList.toggle('on', state.ha);
+    $('tgEma').classList.toggle('on', state.showEma);
+    $('tgVol').classList.toggle('on', state.showVol);
+
+    const rsiOpen = savedLayout && typeof savedLayout.rsiOpen === 'boolean' ? savedLayout.rsiOpen : true;
+    rsiPane.classList.toggle('collapsed', !rsiOpen);
+    $('tgRsi').classList.toggle('on', rsiOpen);
+    splitter.classList.toggle('hidden', !rsiOpen);
+    if (savedLayout && typeof savedLayout.rsiH === 'string' && savedLayout.rsiH) {
+      rsiPane.style.height = savedLayout.rsiH;
+    }
+    main.applyOptions({ timeScale: { visible: !rsiOpen } });
+
+    applyLogMode();
+    ensureSymbolOption(state.symbol);
+    $('symbol').value = state.symbol;
+    setTfButtons(state.interval);
+
+    if (savedLayout) {
+      if (typeof savedLayout.magnet === 'boolean') {
+        magnet = savedLayout.magnet;
+        $('dMagnet').classList.toggle('on', magnet);
+      }
+      if (typeof savedLayout.dColor === 'string' && /^#[0-9a-f]{6}$/i.test(savedLayout.dColor)) {
+        dColor = savedLayout.dColor;
+        $('dColor').value = dColor;
+      }
+      if (BRUSH_W.includes(savedLayout.brushW)) {
+        brushW = savedLayout.brushW;
+        $('dW').textContent = brushW + 'px';
+      }
+      if (savedLayout.dayMode === 'local' || savedLayout.dayMode === 'binance') {
+        dayMode = savedLayout.dayMode;
+      }
+      if (savedLayout.favPos && savedLayout.favPos.left && savedLayout.favPos.top) {
+        favBar.style.right = 'auto';
+        favBar.style.left = savedLayout.favPos.left;
+        favBar.style.top = savedLayout.favPos.top;
+      }
+    }
+    tickClock();
+    wlSyncActive();
+  }
+
+  let saveBtnTimer = null;
+  $('btnSaveLayout').onclick = () => {
+    saveLayout();
+    saveCurrentView();
+    wlSaveUi();
+    saveDrawings();
+    const b = $('btnSaveLayout');
+    b.textContent = '✓ Đã lưu';
+    b.classList.add('on');
+    clearTimeout(saveBtnTimer);
+    saveBtnTimer = setTimeout(() => {
+      b.textContent = '💾 Lưu bố cục';
+      b.classList.remove('on');
+    }, 1400);
+  };
+  $('ctxResetLayout').onclick = () => {
+    hideCtx();
+    if (!confirm('Đặt lại bố cục giao diện về mặc định? (Các hình vẽ và danh sách Watchlist vẫn được giữ nguyên)')) return;
+    resettingLayout = true;
+    try {
+      localStorage.removeItem(LAYOUT_KEY);
+      localStorage.removeItem(VIEWS_KEY);
+      localStorage.removeItem(WL_UI_KEY);
+      localStorage.removeItem('lgCollapsed');
+    } catch (e) {}
+    location.reload();
+  };
+
   wlItems.forEach(x => ensureSymbolOption(x.sym));
   applyWlUi();
   wlRenderList();
   wlFetchSnapshot();
   wlConnectWs();
 
-  document.documentElement.dataset.theme = 'light';
+  restoreLayout();
   load();
 })();
 </script>
