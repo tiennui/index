@@ -58,8 +58,183 @@
   .dot.ok { background: var(--up); }
   .dot.err { background: var(--down); }
 
-  /* Khu vực biểu đồ */
-  .charts { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; padding-left: var(--tbw); }
+  /* Khu vực làm việc: biểu đồ + Watchlist bên phải */
+  .workspace { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+  .charts { flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; position: relative; padding-left: var(--tbw); }
+  #wlSplitter {
+    width: 4px; flex: none; cursor: col-resize; background: var(--line); touch-action: none; position: relative; z-index: 20;
+    transition: background .12s;
+  }
+  #wlSplitter:hover, #wlSplitter.drag { background: var(--accent); }
+  #wlSplitter.hidden { display: none; }
+  body.wl-drag { user-select: none; cursor: col-resize; }
+  /* Thanh bên phải (Right Rail kiểu TradingView) */
+  #rRail {
+    width: 44px; flex: none; display: flex; flex-direction: column; align-items: center; padding: 6px 0; gap: 4px;
+    background: var(--panel); border-left: 1px solid var(--line); z-index: 12;
+  }
+  #rRail .rb {
+    position: relative; width: 34px; height: 34px; padding: 0; border: 0; border-radius: 6px;
+    background: none; color: #6a6d78; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background .12s, color .12s;
+  }
+  :root[data-theme="dark"] #rRail .rb { color: #9598a1; }
+  #rRail .rb:hover { background: var(--hover); color: var(--text); }
+  #rRail .rb.on { background: var(--active); color: var(--accent); }
+  #rRail .rb:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  #rRail .rb svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  #rRail .rb[data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; right: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+    background: #1e222d; color: #d1d4dc; border: 1px solid #363a45; border-radius: 4px; padding: 6px 10px;
+    font-size: 12px; font-weight: 500; line-height: 1.2; white-space: nowrap; pointer-events: none; z-index: 80;
+    box-shadow: 0 2px 8px rgba(0,0,0,.35);
+  }
+  /* Panel Watchlist bên phải giống TradingView */
+  #wlPanel {
+    width: 296px; min-width: 220px; max-width: 520px; flex: none; display: flex; flex-direction: column;
+    background: var(--panel); color: var(--text); min-height: 0; position: relative; user-select: none;
+  }
+  #wlPanel.collapsed { display: none; }
+  .wl-head {
+    height: 42px; flex: none; display: flex; align-items: center; gap: 2px; padding: 0 8px 0 12px;
+  }
+  .wl-title {
+    display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; color: var(--text);
+    font: inherit; font-size: 14px; font-weight: 700; padding: 5px 6px; margin-left: -6px; border-radius: 5px; cursor: pointer;
+  }
+  .wl-title:hover { background: var(--hover); }
+  .wl-title svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .wl-acts { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+  .wl-ib {
+    width: 30px; height: 30px; padding: 0; border: 0; border-radius: 5px; background: none; color: var(--text);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: .82;
+  }
+  .wl-ib:hover { background: var(--hover); opacity: 1; }
+  .wl-ib.on { background: var(--active); color: var(--accent); opacity: 1; }
+  .wl-ib svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  /* Ô thêm mã */
+  #wlAddBox {
+    display: none; flex: none; padding: 6px 10px 8px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  #wlAddBox.open { display: block; }
+  .wl-add-row { display: flex; gap: 6px; }
+  #wlAddInput {
+    flex: 1; min-width: 0; padding: 6px 9px; font: inherit; font-size: 12.5px; color: var(--text);
+    background: var(--hover); border: 1px solid var(--line); border-radius: 5px; text-transform: uppercase;
+  }
+  #wlAddInput:focus { outline: 2px solid var(--accent); border-color: transparent; }
+  #wlAddGo {
+    padding: 5px 10px; border: 0; border-radius: 5px; background: var(--accent); color: #fff;
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; flex: none;
+  }
+  #wlAddGo:disabled { opacity: .5; cursor: wait; }
+  #wlAddMsg { font-size: 11.5px; color: var(--down); margin-top: 4px; min-height: 0; }
+  #wlSuggest {
+    margin-top: 6px; max-height: 168px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px;
+  }
+  .wl-sug {
+    display: flex; align-items: center; justify-content: space-between; padding: 5px 7px; border-radius: 4px;
+    cursor: pointer; font-size: 12.5px; border: 0; background: none; color: var(--text); text-align: left; width: 100%;
+  }
+  .wl-sug:hover { background: var(--hover); }
+  .wl-sug small { color: var(--muted); font-size: 11px; }
+  /* Tiêu đề cột */
+  .wl-cols {
+    flex: none; position: relative; display: grid; align-items: center;
+    grid-template-columns: minmax(0, 1.38fr) minmax(68px, 1fr) minmax(52px, .76fr) minmax(54px, .78fr);
+    gap: 4px; padding: 6px 10px 6px 18px; border-bottom: 1px solid var(--line);
+    font-size: 11.5px; color: var(--muted);
+  }
+  .wl-cols button.wl-col {
+    background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;
+  }
+  .wl-cols button.wl-col:hover { color: var(--text); }
+  .wl-cols button.wl-col.r { justify-content: flex-end; }
+  .wl-cols button.wl-col.sort { color: var(--accent); font-weight: 600; }
+  .wl-flag-all {
+    position: absolute; left: 2px; top: 50%; transform: translateY(-50%);
+    width: 12px; height: 14px; padding: 0; border: 0; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wl-flag-all::before {
+    content: ""; display: block; width: 10px; height: 12px; background: #c5c9d3;
+    clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%); transition: background .12s;
+  }
+  :root[data-theme="dark"] .wl-flag-all::before { background: #4c525e; }
+  .wl-flag-all:hover::before { background: var(--muted); }
+  .wl-flag-all.on::before { background: var(--down); }
+  /* Danh sách mã */
+  #wlList { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2px 3px 8px; }
+  .wl-row {
+    position: relative; display: grid; align-items: center; height: 38px;
+    grid-template-columns: minmax(0, 1.38fr) minmax(68px, 1fr) minmax(52px, .76fr) minmax(54px, .78fr);
+    gap: 4px; padding: 0 7px 0 15px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+    cursor: pointer; border-radius: 6px; font-variant-numeric: tabular-nums; font-size: 13px;
+    transition: background .1s;
+  }
+  .wl-row:hover { background: var(--hover); }
+  .wl-row.active {
+    outline: 1.5px solid var(--text); outline-offset: -1.5px; border-bottom-color: transparent;
+    background: color-mix(in srgb, var(--hover) 45%, transparent); z-index: 1;
+  }
+  .wl-row.drag-over { border-top: 2px solid var(--accent); }
+  .wl-flag {
+    position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 13px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: flex-start;
+  }
+  .wl-flag::before {
+    content: ""; display: block; width: 9px; height: 13px; background: #c5c9d3; opacity: 0;
+    clip-path: polygon(0 0, 100% 0, 72% 50%, 100% 100%, 0 100%); transition: opacity .12s, background .12s;
+  }
+  :root[data-theme="dark"] .wl-flag::before { background: #4c525e; }
+  .wl-row:hover .wl-flag::before { opacity: .65; }
+  .wl-flag.set::before { opacity: 1; background: var(--fc, var(--down)); }
+  .wl-sym-cell { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .wl-ic {
+    width: 20px; height: 20px; flex: none; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; overflow: hidden;
+  }
+  .wl-ic svg { width: 20px; height: 20px; display: block; }
+  .wl-sym { font-weight: 600; font-size: 12.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wl-badge {
+    font-size: 9px; font-weight: 700; color: #f5a623; margin-left: -2px; flex: none;
+    display: inline-flex; align-items: center; gap: 2px; line-height: 1;
+  }
+  .wl-badge i { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--muted); }
+  .wl-last, .wl-chg, .wl-pct { text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wl-last { color: var(--text); font-weight: 500; }
+  .wl-last .tk-up { color: var(--up); }
+  .wl-last .tk-dn { color: var(--down); }
+  .wl-chg.up, .wl-pct.up { color: var(--up); }
+  .wl-chg.down, .wl-pct.down { color: var(--down); }
+  .wl-chg.flat, .wl-pct.flat { color: var(--muted); }
+  .wl-rm {
+    position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; border: 0; border-radius: 4px; padding: 0;
+    background: var(--panel); color: var(--muted); cursor: pointer; display: none;
+    align-items: center; justify-content: center; font-size: 13px; line-height: 1;
+    box-shadow: -4px 0 6px var(--hover);
+  }
+  .wl-row:hover .wl-rm { display: flex; }
+  .wl-rm:hover { background: var(--down); color: #fff; }
+  .wl-empty { padding: 24px 12px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  /* Menu pop-over cho Watchlist */
+  #wlPop {
+    position: fixed; z-index: 98; display: none; min-width: 196px; padding: 5px 0;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.25); user-select: none;
+  }
+  #wlPop.open { display: block; }
+  #wlPop button {
+    display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 7px 12px;
+    border: 0; background: none; color: inherit; font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+  }
+  #wlPop button:hover { background: var(--hover); }
+  #wlPop button.on { color: var(--accent); font-weight: 600; }
+  #wlPop .hr { height: 1px; background: var(--line); margin: 4px 0; }
+  @media (max-width: 720px) { #wlPanel { width: 230px; min-width: 185px; } #rRail { width: 38px; } }
   #clock {
     position: absolute; right: 0; bottom: 0; z-index: 30; height: 26px; padding: 0 8px; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
@@ -179,6 +354,70 @@
     font-size: 12px; font-weight: 500; line-height: 1.2; white-space: nowrap; pointer-events: none; z-index: 60;
     box-shadow: 0 2px 8px rgba(0,0,0,.35);
   }
+  /* Nhóm công cụ vẽ có menu con (Công cụ đo) */
+  #dTools .tb-grp { position: relative; width: 100%; display: flex; align-items: center; justify-content: center; }
+  #dTools .tb-grp.open .tb::after { display: none; }
+  #dTools .tb-more {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    width: 11px; height: 28px; padding: 0; border: 0; border-radius: 3px;
+    background: none; color: var(--muted); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; opacity: .75;
+    transition: background .12s, color .12s, opacity .12s;
+  }
+  #dTools .tb-more svg { width: 7px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  #dTools .tb-grp:hover .tb-more, #dTools .tb-grp.open .tb-more { opacity: 1; color: var(--text); }
+  #dTools .tb-more:hover, #dTools .tb-grp.open .tb-more { background: var(--hover); }
+  #dTools .tb-more:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+  /* Menu con Công cụ đo */
+  #rangeMenu {
+    position: fixed; z-index: 95; display: none; min-width: 248px; padding: 6px 0;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.25); user-select: none;
+  }
+  #rangeMenu.open { display: block; }
+  #rangeMenu .tm-hd {
+    padding: 4px 12px 6px; font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--muted);
+  }
+  #rangeMenu .tm-row {
+    display: flex; align-items: center; gap: 10px; padding: 6px 10px 6px 12px; cursor: pointer;
+    font-size: 13px; color: var(--text);
+  }
+  #rangeMenu .tm-row:hover, #rangeMenu .tm-row:focus-visible { background: var(--hover); outline: none; }
+  #rangeMenu .tm-row.on { background: var(--active); color: var(--accent); }
+  #rangeMenu .tm-ic {
+    width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor;
+    stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round;
+  }
+  #rangeMenu .tm-lb { flex: 1; white-space: nowrap; }
+  #rangeMenu .tm-star {
+    background: none; border: 0; padding: 2px 4px; cursor: pointer; font-size: 16px; line-height: 1;
+    color: var(--muted); opacity: 0; transition: opacity .12s, color .12s, transform .1s;
+  }
+  #rangeMenu .tm-row:hover .tm-star, #rangeMenu .tm-star:focus-visible { opacity: .65; }
+  #rangeMenu .tm-star:hover { opacity: 1; transform: scale(1.1); }
+  #rangeMenu .tm-star.fav { opacity: 1; color: var(--text); }
+  /* Thanh công cụ yêu thích nổi (hiện khi bấm sao ★) */
+  #favBar {
+    position: absolute; top: 8px; right: 92px; z-index: 15; display: none;
+    align-items: center; gap: 2px; padding: 3px 4px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18); user-select: none;
+  }
+  #favBar.show { display: flex; }
+  #favBar .fav-grip {
+    width: 12px; height: 28px; display: flex; align-items: center; justify-content: center;
+    cursor: grab; color: var(--muted); opacity: .7; touch-action: none;
+  }
+  #favBar .fav-grip:active { cursor: grabbing; }
+  #favBar .fav-grip svg { width: 8px; height: 16px; fill: currentColor; }
+  #favBar .fb {
+    width: 32px; height: 32px; padding: 0; border: 0; border-radius: 5px;
+    background: none; color: #6a6d78; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  :root[data-theme="dark"] #favBar .fb { color: #9598a1; }
+  #favBar .fb:hover { background: var(--hover); color: var(--text); }
+  #favBar .fb.on { background: var(--active); color: var(--accent); }
+  #favBar .fb svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
   #dHint {
     position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 9; display: none;
     pointer-events: none; background: var(--accent); color: #fff; padding: 5px 12px; border-radius: 4px; font-size: 12px;
@@ -296,7 +535,6 @@
     <option>BTCUSDT</option><option>ETHUSDT</option><option>BNBUSDT</option>
     <option>SOLUSDT</option><option>XRPUSDT</option><option>DOGEUSDT</option>
     <option>ADAUSDT</option><option>TRXUSDT</option><option value="PAXGUSDT">PAXGUSDT (Vàng)</option>
-    <option value="RC1!">RC1! · Robusta Coffee (ICEEUR)</option>
   </select>
   <span class="sep"></span>
   <div id="tfs"></div>
@@ -313,8 +551,6 @@
   <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
   <button class="btn" id="tgMaBt" title="Backtest tự động: MA nhanh cắt lên MA chậm thì vào Long, stoploss tại điểm giao nhau (chạy trên khung đang chọn)">Backtest MA</button>
   <button class="btn" id="tgTheme">Giao diện tối</button>
-  <button class="btn" id="btnImport" style="display:none" title="Nhập file CSV nến (time, open, high, low, close, volume) cho mã này">⬆ Nhập CSV</button>
-  <input type="file" id="csvFile" accept=".csv,.txt,.tsv,text/csv" hidden>
   <div class="live"><span class="dot" id="dot"></span><span id="status">Đang kết nối…</span></div>
 </div>
 
@@ -399,6 +635,7 @@
   <div class="msub">Vào Long tại giá đóng cửa nến MA nhanh cắt lên; stoploss đặt đúng giá tại điểm hai đường giao nhau. Lệnh thoát khi chạm stoploss, hoặc chốt tại giá đóng cửa nến MA nhanh cắt xuống MA chậm. Muốn đổi khung thời gian thì bấm các nút khung phía trên. Bấm vào một dòng để xem lệnh đó trên biểu đồ.</div>
 </div>
 
+<div class="workspace">
 <div class="charts">
   <div id="dTools" role="toolbar" aria-label="Công cụ vẽ" aria-orientation="vertical">
     <button class="tb on" data-tool="cursor" data-tip="Con trỏ (Esc)" aria-label="Con trỏ"><svg viewBox="0 0 28 28"><path d="M8 5l13 9-5.6 1.4L12.6 21z"/></svg></button>
@@ -407,14 +644,14 @@
     <button class="tb" data-tool="arrow" data-tip="Mũi tên" aria-label="Mũi tên"><svg viewBox="0 0 28 28"><path d="M8 20L21 7"/><path d="M14.5 7H21v6.5"/><circle cx="6.5" cy="21.5" r="2.2"/></svg></button>
     <button class="tb" data-tool="hline" data-tip="Đường ngang" aria-label="Đường ngang"><svg viewBox="0 0 28 28"><path d="M4 14h20"/><circle cx="14" cy="14" r="2.4"/></svg></button>
     <button class="tb" data-tool="plabel" data-tip="Nhãn giá" aria-label="Nhãn giá"><svg viewBox="0 0 28 28"><path d="M5 23V9a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 23 9v7a1.5 1.5 0 0 1-1.5 1.5H11z"/></svg></button>
-    <!-- 3 Công cụ đo lường kiểu TradingView: Phạm vi giá, Phạm vi ngày, Phạm vi ngày & giá -->
-    <button class="tb" data-tool="prange" data-tip="Phạm vi giá" aria-label="Phạm vi giá"><svg viewBox="0 0 28 28"><path d="M5 7h18M5 21h18M14 7v14M11 10l3-3 3 3M11 18l3 3 3-3"/></svg></button>
-    <button class="tb" data-tool="drange" data-tip="Phạm vi ngày" aria-label="Phạm vi ngày"><svg viewBox="0 0 28 28"><path d="M7 5v18M21 5v18M7 14h14M10 11l-3 3 3 3M18 11l3 3-3 3"/></svg></button>
-    <button class="tb" data-tool="dprange" data-tip="Phạm vi ngày & giá" aria-label="Phạm vi ngày & giá"><svg viewBox="0 0 28 28"><rect x="6" y="6" width="16" height="16" rx="1"/><path d="M14 6v16M6 14h16M12 8l2-2 2 2M12 20l2 2 2-2M8 12l-2 2 2 2M20 12l2 2-2 2"/></svg></button>
+    <div class="tb-grp" id="grpRange">
+      <button class="tb" id="btnRange" data-tool="prange" data-tip="Phạm vi giá (bấm ▸ để mở Công cụ đo)" aria-label="Phạm vi giá"><svg viewBox="0 0 28 28"><path d="M5 7h15M8 21h15M14 7.5v13.5M10.5 11l3.5-3.5 3.5 3.5"/><circle cx="22" cy="7" r="2"/><circle cx="6" cy="21" r="2"/></svg></button>
+      <button class="tb-more" id="btnRangeMore" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Mở menu Công cụ đo" title="Công cụ đo"><svg viewBox="0 0 8 12"><path d="M2 2l4 4-4 4"/></svg></button>
+    </div>
     <button class="tb" data-tool="fib" data-tip="Fibonacci retracement" aria-label="Fibonacci retracement"><svg viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg></button>
     <button class="tb" data-tool="rect" data-tip="Hình chữ nhật" aria-label="Hình chữ nhật"><svg viewBox="0 0 28 28"><rect x="6" y="8" width="16" height="12" rx="1"/></svg></button>
     <button class="tb" data-tool="brush" data-tip="Cọ vẽ tự do" aria-label="Cọ vẽ tự do"><svg viewBox="0 0 28 28"><path d="M11 14.5l9.2-9.2a2.4 2.4 0 0 1 3.4 3.4L14.4 17.9"/><path d="M9.6 17.4c-1.8 0-3.2 1.4-3.2 3.2 0 1.4-2.2 1.6-1.8 2 1.1 1.1 2.6 1.9 4.4 1.9 2.4 0 4.2-1.9 4.2-4.2a2.9 2.9 0 0 0-3.6-2.9z"/></svg></button>
-    <button class="tb" data-tool="measure" data-tip="Thước đo nhanh (tạm thời)" aria-label="Thước đo nhanh"><svg viewBox="0 0 28 28"><path d="M14 4v20M10 8l4-4 4 4M10 20l4 4 4-4M4 14h4M20 14h4"/></svg></button>
+    <button class="tb" data-tool="measure" data-tip="Thước đo giá / thời gian" aria-label="Thước đo giá / thời gian"><svg viewBox="0 0 28 28"><path d="M14 4v20M10 8l4-4 4 4M10 20l4 4 4-4M4 14h4M20 14h4"/></svg></button>
     <div class="hr"></div>
     <button class="tb" id="dMagnet" data-tip="Nam châm: hít vào giá O/H/L/C" aria-label="Nam châm"><svg viewBox="0 0 28 28"><path d="M8 5v9a6 6 0 0 0 12 0V5h-4.5v9a1.5 1.5 0 0 1-3 0V5z"/><path d="M8 9h4.5M15.5 9H20"/></svg></button>
     <button class="tb" id="dW" data-tip="Độ dày nét cọ (bấm để đổi)" aria-label="Độ dày nét cọ">3px</button>
@@ -448,6 +685,72 @@
   <div id="vsync"></div>
   <div id="tlabel"></div>
   <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
+  <div id="favBar" role="toolbar" aria-label="Công cụ đo yêu thích">
+    <span class="fav-grip" id="favGrip" title="Kéo để di chuyển"><svg viewBox="0 0 8 16"><circle cx="2" cy="3" r="1.1"/><circle cx="6" cy="3" r="1.1"/><circle cx="2" cy="8" r="1.1"/><circle cx="6" cy="8" r="1.1"/><circle cx="2" cy="13" r="1.1"/><circle cx="6" cy="13" r="1.1"/></svg></span>
+    <span id="favItems" style="display:flex;align-items:center;gap:2px"></span>
+  </div>
+</div>
+<div id="wlSplitter" role="separator" aria-orientation="vertical" title="Kéo để đổi chiều rộng · bấm đúp để đặt lại"></div>
+<aside id="wlPanel" aria-label="Danh sách theo dõi">
+  <div class="wl-head">
+    <button class="wl-title" id="wlFilterBtn" type="button" aria-haspopup="menu" aria-expanded="false">
+      <span id="wlTitleTxt">Watchlist</span>
+      <svg viewBox="0 0 12 12"><path d="M2.5 4.5L6 8l3.5-3.5"/></svg>
+    </button>
+    <div class="wl-acts">
+      <button class="wl-ib" id="wlAddBtn" type="button" title="Thêm mã vào Watchlist" aria-label="Thêm mã">
+        <svg viewBox="0 0 18 18"><path d="M9 3.5v11M3.5 9h11"/></svg>
+      </button>
+      <button class="wl-ib" id="wlExpandBtn" type="button" title="Mở rộng / Thu gọn chiều rộng" aria-label="Đổi chiều rộng">
+        <svg viewBox="0 0 18 18"><path d="M3.5 7V3.5H7M11 3.5h3.5V7M14.5 11v3.5H11M7 14.5H3.5V11"/></svg>
+      </button>
+      <button class="wl-ib" id="wlMoreBtn" type="button" title="Tùy chọn Watchlist" aria-label="Tùy chọn">
+        <svg viewBox="0 0 18 18"><circle cx="4" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="9" cy="9" r="1.2" fill="currentColor" stroke="none"/><circle cx="14" cy="9" r="1.2" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+  </div>
+  <div id="wlAddBox">
+    <div class="wl-add-row">
+      <input id="wlAddInput" type="text" placeholder="Nhập mã (VD: LINKUSDT, SUI...)" autocomplete="off" spellcheck="false">
+      <button id="wlAddGo" type="button">Thêm</button>
+    </div>
+    <div id="wlAddMsg"></div>
+    <div id="wlSuggest"></div>
+  </div>
+  <div class="wl-cols">
+    <button class="wl-flag-all" id="wlFlagFilter" type="button" title="Chỉ hiện mã đã gắn cờ" aria-label="Lọc mã gắn cờ"></button>
+    <button class="wl-col" data-sort="sym" type="button">Symbol</button>
+    <button class="wl-col r" data-sort="last" type="button">Last</button>
+    <button class="wl-col r" data-sort="chg" type="button">Chg</button>
+    <button class="wl-col r" data-sort="pct" type="button">Chg%</button>
+  </div>
+  <div id="wlList" role="listbox" aria-label="Danh sách mã"></div>
+</aside>
+<div id="rRail" role="toolbar" aria-label="Thanh bên phải" aria-orientation="vertical">
+  <button class="rb on" id="btnWlToggle" type="button" data-tip="Watchlist" aria-label="Bật / tắt Watchlist" aria-expanded="true">
+    <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+  </button>
+</div>
+</div>
+<div id="wlPop" role="menu"></div>
+
+<div id="rangeMenu" role="menu" aria-label="Công cụ đo">
+  <div class="tm-hd">CÔNG CỤ ĐO</div>
+  <div class="tm-row" data-rtool="prange" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><path d="M5 7h15M8 21h15M14 7.5v13.5M10.5 11l3.5-3.5 3.5 3.5"/><circle cx="22" cy="7" r="2"/><circle cx="6" cy="21" r="2"/></svg>
+    <span class="tm-lb">Phạm vi giá</span>
+    <button class="tm-star" type="button" data-star="prange" aria-label="Yêu thích Phạm vi giá" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
+  <div class="tm-row" data-rtool="drange" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><path d="M7 6v14M21 8v14M7 14h13.5M17 10.5l3.5 3.5-3.5 3.5"/><circle cx="7" cy="22" r="2"/><circle cx="21" cy="6" r="2"/></svg>
+    <span class="tm-lb">Phạm vi ngày</span>
+    <button class="tm-star" type="button" data-star="drange" aria-label="Yêu thích Phạm vi ngày" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
+  <div class="tm-row" data-rtool="dprange" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><path d="M7 19V7h12M21 9v12H9M14 8v12M11 11l3-3 3 3M8 14h12M17 11l3 3-3 3"/><circle cx="7" cy="21" r="2"/><circle cx="21" cy="7" r="2"/></svg>
+    <span class="tm-lb">Phạm vi ngày và giá</span>
+    <button class="tm-star" type="button" data-star="dprange" aria-label="Yêu thích Phạm vi ngày và giá" title="Ghim lên thanh yêu thích">☆</button>
+  </div>
 </div>
 
 <script>
@@ -456,8 +759,6 @@
     BTCUSDT: 'Bitcoin', ETHUSDT: 'Ethereum', BNBUSDT: 'BNB', SOLUSDT: 'Solana',
     XRPUSDT: 'XRP', DOGEUSDT: 'Dogecoin', ADAUSDT: 'Cardano', TRXUSDT: 'TRON', PAXGUSDT: 'PAX Gold'
   };
-  // Mã không có trên Binance: dữ liệu nhập từ file CSV (lưu trong trình duyệt)
-  const CUSTOM = { 'RC1!': { name: 'Robusta Coffee Futures', ex: 'ICEEUR' } };
   const TFS = ['1h','2h','4h','6h','8h','12h','1d','2d','3d','1w','2w','1M'];
   const TF_LABEL = { '1d':'D', '2d':'2D', '3d':'3D', '1w':'W', '2w':'2W', '1M':'M' };
   const HOSTS = ['https://api.binance.com', 'https://data-api.binance.vision'];
@@ -697,6 +998,19 @@
     const diff = prev ? d.close - prev.close : d.close - d.open;
     const pct = prev ? diff / prev.close * 100 : 0;
     const cls = diff >= 0 ? 'up' : 'down';
+    <!-- $('lgOhlc').innerHTML = -->
+      <!-- `<span>O<b class="${cls}"> ${fmt(d.open)}</b></span><span>H<b class="${cls}"> ${fmt(d.high)}</b></span>` + -->
+      <!-- `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` + -->
+      <!-- `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`; -->
+    <!-- $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`; -->
+    <!-- $('lgEma').innerHTML = emaSeries.filter(e => e.show).map(e => -->
+      <!-- `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join(''); -->
+    <!-- const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i]; -->
+    <!-- $('lgRsi').innerHTML = -->
+      <!-- `<span>RSI close ${state.rsi.len} ${state.rsi.xhi} ${state.rsi.xlo}</span>` + -->
+      <!-- `<span style="color:#ab47bc">${r != null ? fmt(r) : '–'}</span>` + -->
+      <!-- `<span style="color:#66bb6a">${e9 != null ? fmt(e9) : '–'}</span>` + -->
+      <!-- `<span style="color:#42a5f5">${w != null ? fmt(w) : '–'}</span>`; -->
   }
   main.subscribeCrosshairMove(param => {
     if (!param.time) { updateLegend(state.data.length - 1); return; }
@@ -713,10 +1027,8 @@
   function updateTitle() {
     const base = state.symbol.replace('USDT', '');
     const tf = TF_LABEL[state.interval] || state.interval;
-    const cu = CUSTOM[state.symbol];
-    const src = cu ? cu.ex : 'Binance';
-    $('lgName').textContent = cu ? `${cu.name} · ${tf} · ${cu.ex}` : `${NAMES[state.symbol]} / TetherUS · ${tf} · Binance`;
-    document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · ${src}`;
+    $('lgName').textContent = `${NAMES[state.symbol] || base} / TetherUS · ${tf} · Binance`;
+    document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · Binance`;
   }
   function updateQuote(price) {
     $('qSell').textContent = fmt(price);
@@ -726,75 +1038,7 @@
   }
 
   /* ---------- Dữ liệu Binance ---------- */
-  /* ---------- Dữ liệu nhập từ CSV (mã ngoài Binance) ---------- */
-  const csvKey = sym => 'csv_' + sym;
-  function loadCsvBars(sym) {
-    try { return JSON.parse(localStorage.getItem(csvKey(sym)) || '[]'); } catch (e) { return []; }
-  }
-  function splitCsvLine(line, d) {
-    const out = []; let cur = '', q = false;
-    for (let i = 0; i < line.length; i++) {
-      const c = line[i];
-      if (c === '"') q = !q;
-      else if (c === d && !q) { out.push(cur); cur = ''; }
-      else cur += c;
-    }
-    out.push(cur);
-    return out.map(x => x.trim());
-  }
-  const csvNum = v => { const n = parseFloat(String(v ?? '').replace(/,/g, '').replace(/[^\d.eE+-]/g, '')); return Number.isFinite(n) ? n : NaN; };
-  function csvTime(v) {
-    v = String(v).trim();
-    if (/^\d+(\.\d+)?$/.test(v)) { const n = +v; return n > 1e11 ? Math.floor(n) : Math.floor(n * 1000); }
-    const t = Date.parse(v);
-    return Number.isFinite(t) ? t : NaN;
-  }
-  // Trả về mảng [tsMs, o, h, l, c, v] đã sắp xếp; ném lỗi nếu file không đọc được
-  function parseCsv(text) {
-    const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(l => l.trim());
-    if (lines.length < 2) throw new Error('File trống');
-    const d = [',', ';', '\t'].map(c => [c, lines[0].split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
-    const head = splitCsvLine(lines[0], d).map(h => h.toLowerCase());
-    const find = (...names) => head.findIndex(h => names.some(n => h === n || h.startsWith(n)));
-    const ix = { t: find('time', 'date', 'datetime', 'ngày'), o: find('open', 'mở'), h: find('high', 'cao'), l: find('low', 'thấp'), c: find('close', 'price', 'đóng'), v: find('volume', 'vol') };
-    if (ix.t < 0 || ix.o < 0 || ix.h < 0 || ix.l < 0 || ix.c < 0) throw new Error('Thiếu cột. Cần dòng tiêu đề có: time/date, open, high, low, close');
-    const map = new Map();
-    for (let i = 1; i < lines.length; i++) {
-      const f = splitCsvLine(lines[i], d);
-      const t = csvTime(f[ix.t]), o = csvNum(f[ix.o]), h = csvNum(f[ix.h]), l = csvNum(f[ix.l]), c = csvNum(f[ix.c]);
-      if (![t, o, h, l, c].every(Number.isFinite)) continue;
-      const v = ix.v >= 0 ? csvNum(f[ix.v]) : 0;
-      map.set(t, [t, o, h, l, c, Number.isFinite(v) ? v : 0]);
-    }
-    const rows = [...map.values()].sort((a, b) => a[0] - b[0]);
-    if (rows.length < 2) throw new Error('Không đọc được dòng dữ liệu nào (kiểm tra định dạng ngày: yyyy-mm-dd hoặc mốc unix)');
-    return rows;
-  }
-  // Gộp nến ngày thành tuần / tháng (UTC); khung khác ngoài D/W/M thì báo lỗi
-  function csvBars(sym, interval) {
-    const raw = loadCsvBars(sym);
-    if (!raw.length) throw new Error('empty');
-    const api = apiInterval(interval);
-    if (api === '1d') return raw;
-    let key;
-    if (api === '1w') key = ms => { const dd = Math.floor(ms / 864e5); return (dd - (dd + 3) % 7) * 864e5; };
-    else if (api === '1M') key = ms => { const x = new Date(ms); return Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), 1); };
-    else throw new Error('tf');
-    const out = [];
-    for (const r of raw) {
-      const k = key(r[0]), last = out[out.length - 1];
-      if (last && last[0] === k) { last[2] = Math.max(last[2], r[2]); last[3] = Math.min(last[3], r[3]); last[4] = r[4]; last[5] += r[5]; }
-      else out.push([k, r[1], r[2], r[3], r[4], r[5]]);
-    }
-    return out;
-  }
   async function fetchKlines(symbol, interval, endTime, startTime) {
-    if (CUSTOM[symbol]) {
-      let b = csvBars(symbol, interval);
-      if (endTime) b = b.filter(x => x[0] <= endTime);
-      if (startTime) b = b.filter(x => x[0] >= startTime);
-      return b;
-    }
     let lastErr;
     for (const host of HOSTS) {
       try {
@@ -886,18 +1130,10 @@
       main.timeScale().setVisibleLogicalRange({ from: state.data.length - 130, to: state.data.length + 12 });
       updateQuote(state.data[state.data.length - 1].close);
       $('loading').classList.remove('show');
-      if (CUSTOM[state.symbol]) { setStatus('', 'Dữ liệu CSV (không realtime)'); return; }
       openWs(id);
       loadHistory(id);
     } catch (e) {
       if (id !== state.reqId) return;
-      if (CUSTOM[state.symbol]) {
-        $('loading').innerHTML = e.message === 'tf'
-          ? 'Mã này chỉ có các khung D, 2D, W, 2W, M (dữ liệu từ file CSV).<br>Hãy chọn một trong các khung đó.'
-          : 'Chưa có dữ liệu cho ' + state.symbol + '.<br>Bấm “⬆ Nhập CSV” trên thanh công cụ để nạp nến (cột: time, open, high, low, close, volume).';
-        setStatus('err', e.message === 'tf' ? 'Sai khung' : 'Chưa có dữ liệu');
-        return;
-      }
       $('loading').innerHTML = 'Không tải được dữ liệu từ Binance.<br>Hãy kiểm tra kết nối mạng, hoặc mở file này trực tiếp bằng trình duyệt (Binance có thể chặn một số quốc gia/mạng).';
       setStatus('err', 'Lỗi kết nối');
     }
@@ -967,7 +1203,6 @@
     };
     tfBox.appendChild(b);
   });
-  const syncImportBtn = () => { $('btnImport').style.display = CUSTOM[state.symbol] ? '' : 'none'; };
   const lgBox = $('lgToggle').closest('.legend');
   function setLegendCollapsed(c) {
     lgBox.classList.toggle('collapsed', c);
@@ -979,21 +1214,24 @@
   }
   $('lgToggle').onclick = () => setLegendCollapsed(!lgBox.classList.contains('collapsed'));
   try { if (localStorage.getItem('lgCollapsed') === '1') setLegendCollapsed(true); } catch (e) {}
-  $('symbol').onchange = e => { state.symbol = e.target.value; syncImportBtn(); load(); };
-  $('btnImport').onclick = () => { $('csvFile').value = ''; $('csvFile').click(); };
-  $('csvFile').onchange = async e => {
-    const f = e.target.files[0];
-    if (!f) return;
-    try {
-      const rows = parseCsv(await f.text());
-      localStorage.setItem(csvKey(state.symbol), JSON.stringify(rows));
-      const day = t => new Date(t).toISOString().slice(0, 10);
-      alert('Đã nạp ' + rows.length + ' nến (' + day(rows[0][0]) + ' → ' + day(rows[rows.length - 1][0]) + '). Dữ liệu được hiểu là nến NGÀY; các khung W/M được gộp từ đó.');
-      load();
-    } catch (err) {
-      alert('Không nạp được file: ' + err.message);
+  function ensureSymbolOption(sym) {
+    const sel = $('symbol');
+    if (![...sel.options].some(o => o.value === sym)) {
+      const opt = document.createElement('option');
+      opt.value = sym; opt.textContent = sym;
+      sel.appendChild(opt);
     }
-  };
+  }
+  function selectSymbol(sym) {
+    if (!sym) return;
+    ensureSymbolOption(sym);
+    $('symbol').value = sym;
+    if (state.symbol === sym) { try { wlSyncActive(); } catch (e) {} return; }
+    state.symbol = sym;
+    try { wlSyncActive(); } catch (e) {}
+    load();
+  }
+  $('symbol').onchange = e => selectSymbol(e.target.value);
   $('tgEma').onclick = e => { state.showEma = !state.showEma; e.currentTarget.classList.toggle('on', state.showEma); renderIndicators(); };
 
   /* ---------- Chỉnh giá trị đường EMA ---------- */
@@ -1367,6 +1605,7 @@
   }
 
   // Chuyển đổi trực tiếp giữa thời gian thực (t) <-> toạ độ X của Lightweight Charts
+  // Hỗ trợ cả vùng tương lai (t > nến cuối) và các điểm nằm giữa 2 nến (như nét cọ vẽ tự do)
   function timeToX(t) {
     const d = state.data, n = d.length;
     if (n === 0) return null;
@@ -1389,6 +1628,7 @@
       const barW = xp != null ? (xn - xp) : 8;
       return xn + ((t - d[n - 1].time) / bs) * barW;
     }
+    // Nằm giữa 2 nến (ví dụ: vẽ ở khung 1h rồi chuyển sang 1d) -> nội suy tuyến tính giữa 2 nến kề nhau
     let lo = 0, hi = n - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -1428,6 +1668,7 @@
     if (time == null || price == null) return null;
 
     if (magnet && P.key === 'main' && tool !== 'brush') {
+      // Hít vào nến gần nhất và giá O/H/L/C gần chuột nhất
       let minDiff = Infinity, closestBar = null;
       for (const b of state.data) {
         const diff = Math.abs(b.time - time);
@@ -1456,16 +1697,32 @@
     if (d) o.push(d + ' ngày'); if (h) o.push(h + ' giờ'); if (m && !d) o.push(m + ' phút');
     return o.join(' ') || '0';
   };
-  function countBars(t1, t2) {
-    if (!state.data || state.data.length === 0) return 0;
-    const minT = Math.min(t1, t2), maxT = Math.max(t1, t2);
-    let bars = state.data.filter(bar => bar.time >= minT && bar.time <= maxT).length;
-    if (bars > 0) bars -= 1;
-    return bars;
+  function timeToLogical(t) {
+    const d = state.data, n = d.length;
+    if (!n) return 0;
+    const bs = SECS[state.interval] || (state.interval === '1M' ? 2592000 : 86400);
+    if (t <= d[0].time) return (t - d[0].time) / bs;
+    if (t >= d[n - 1].time) return (n - 1) + (t - d[n - 1].time) / bs;
+    let lo = 0, hi = n - 1;
+    while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (d[mid].time <= t) lo = mid; else hi = mid; }
+    return lo + (t - d[lo].time) / (d[hi].time - d[lo].time);
+  }
+  function rangeInfo(t0, t1) {
+    const minT = Math.min(t0, t1), maxT = Math.max(t0, t1), secs = Math.abs(t1 - t0);
+    const d = state.data;
+    const bars = Math.round(Math.abs(timeToLogical(t1) - timeToLogical(t0)));
+    let volSum = 0;
+    if (d && d.length) {
+      for (let i = 0; i < d.length; i++) {
+        const b = d[i];
+        if (b.time >= minT && b.time <= maxT) volSum += b.volume || 0;
+      }
+    }
+    return { bars, secs, vol: volSum };
   }
   function tag(lines, x, y, bg, align, vmode) {
     cx.font = '600 11.5px -apple-system, "Trebuchet MS", Roboto, sans-serif';
-    const w = Math.max(...lines.map(l => cx.measureText(l).width)) + 16, h = lines.length * 16 + 8;
+    const w = Math.max(...lines.map(l => cx.measureText(l).width)) + 14, h = lines.length * 15 + 6;
     let left = align === 'c' ? x - w / 2 : align === 'r' ? x - w : x;
     left = Math.min(Math.max(4, left), W - w - 4);
     let top = vmode === 'above' ? y - h : vmode === 'mid' ? y - h / 2 : y;
@@ -1473,8 +1730,8 @@
     cx.fillStyle = bg; cx.beginPath();
     if (cx.roundRect) cx.roundRect(left, top, w, h, 4); else cx.rect(left, top, w, h);
     cx.fill();
-    cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
-    lines.forEach((l, i) => cx.fillText(l, left + w / 2, top + 12 + i * 16));
+    cx.fillStyle = '#fff'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
+    lines.forEach((l, i) => cx.fillText(l, left + 7, top + 10.5 + i * 15));
   }
   function arrow(x1, y1, x2, y2) {
     cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
@@ -1522,7 +1779,7 @@
       const ang = Math.atan2(b.y - a.y, b.x - a.x), hs = 14, len = Math.hypot(b.x - a.x, b.y - a.y);
       cx.lineWidth = 2; cx.lineCap = 'round';
       cx.beginPath(); cx.moveTo(a.x, a.y);
-      const k = len > hs ? hs * 0.8 : 0;
+      const k = len > hs ? hs * 0.8 : 0;            // dừng đường thẳng trước đầu mũi tên cho gọn
       cx.lineTo(b.x - k * Math.cos(ang), b.y - k * Math.sin(ang)); cx.stroke();
       if (len > 2) {
         cx.beginPath(); cx.moveTo(b.x, b.y);
@@ -1535,50 +1792,47 @@
       cx.beginPath(); cx.moveTo(0, a.y); cx.lineTo(W, a.y); cx.stroke();
       tag([fmt(s.pts[0].p)], W - 4, a.y, col, 'r', 'mid');
     } else if (s.type === 'prange') {
-      // 1. Công cụ Phạm vi giá (chuẩn TradingView)
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
-      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
       const up = s.pts[1].p >= s.pts[0].p;
-      const rc = up ? '#2962ff' : '#f23645';
-      cx.fillStyle = hexA(rc, 0.16);
-      cx.fillRect(x0, y0, x1 - x0, y1 - y0);
-      cx.strokeStyle = rc; cx.lineWidth = 1.5;
+      cx.fillStyle = hexA(col, 0.15);
+      cx.fillRect(x0, Math.min(a.y, b.y), x1 - x0, Math.abs(b.y - a.y));
+      cx.lineWidth = 1.5;
       cx.beginPath(); cx.moveTo(x0, a.y); cx.lineTo(x1, a.y); cx.moveTo(x0, b.y); cx.lineTo(x1, b.y); cx.stroke();
       arrow(mx, a.y, mx, b.y);
-      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
+      const dp = s.pts[1].p - s.pts[0].p, pct = s.pts[0].p ? dp / s.pts[0].p * 100 : 0, sg = dp >= 0 ? '+' : '';
       tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`],
-        mx, up ? y0 - 6 : y1 + 6, rc, 'c', up ? 'above' : 'top');
+        mx, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, col, 'c', up ? 'above' : 'top');
     } else if (s.type === 'drange') {
-      // 2. Công cụ Phạm vi ngày (chuẩn TradingView)
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
       const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
-      const rc = '#2962ff';
-      cx.fillStyle = hexA(rc, 0.16);
+      cx.fillStyle = hexA(col, 0.15);
       cx.fillRect(x0, y0, x1 - x0, y1 - y0);
-      cx.strokeStyle = rc; cx.lineWidth = 1.5;
+      cx.lineWidth = 1.5;
       cx.beginPath(); cx.moveTo(a.x, y0); cx.lineTo(a.x, y1); cx.moveTo(b.x, y0); cx.lineTo(b.x, y1); cx.stroke();
       arrow(a.x, my, b.x, my);
-      const bars = countBars(s.pts[0].t, s.pts[1].t);
-      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
-      tag([`${bars} thanh, ${fmtDur(secs)}`], mx, y1 + 6, rc, 'c', 'top');
+      const info = rangeInfo(s.pts[0].t, s.pts[1].t);
+      const lines = [info.secs > 0 ? `${info.bars} nến, ${fmtDur(info.secs)}` : `${info.bars} nến`];
+      if (P.key === 'main' && info.vol > 0) lines.push(`Vol ${fmtVol(info.vol)}`);
+      const placeAbove = y1 + (lines.length * 15 + 16) > H;
+      tag(lines, mx, placeAbove ? y0 - 6 : y1 + 6, col, 'c', placeAbove ? 'above' : 'top');
     } else if (s.type === 'dprange') {
-      // 3. Công cụ Phạm vi ngày và giá (chuẩn TradingView)
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
       const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
       const up = s.pts[1].p >= s.pts[0].p;
-      const rc = up ? '#2962ff' : '#f23645';
-      cx.fillStyle = hexA(rc, 0.16);
+      cx.fillStyle = hexA(col, 0.15);
       cx.fillRect(x0, y0, x1 - x0, y1 - y0);
-      cx.strokeStyle = rc; cx.lineWidth = 1.5;
+      cx.lineWidth = 1.5;
       cx.strokeRect(x0, y0, x1 - x0, y1 - y0);
       arrow(a.x, my, b.x, my);
       arrow(mx, a.y, mx, b.y);
-      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
-      const bars = countBars(s.pts[0].t, s.pts[1].t);
-      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
-      const line1 = P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`;
-      const line2 = `${bars} thanh, ${fmtDur(secs)}`;
-      tag([line1, line2], mx, up ? y0 - 6 : y1 + 6, rc, 'c', up ? 'above' : 'top');
+      const dp = s.pts[1].p - s.pts[0].p, pct = s.pts[0].p ? dp / s.pts[0].p * 100 : 0, sg = dp >= 0 ? '+' : '';
+      const info = rangeInfo(s.pts[0].t, s.pts[1].t);
+      const lines = [
+        P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`,
+        info.secs > 0 ? `${info.bars} nến, ${fmtDur(info.secs)}` : `${info.bars} nến`
+      ];
+      if (P.key === 'main' && info.vol > 0) lines.push(`Vol ${fmtVol(info.vol)}`);
+      tag(lines, mx, up ? y0 - 6 : y1 + 6, col, 'c', up ? 'above' : 'top');
     } else if (s.type === 'plabel') {
       const g = plGeom(s, a), edgeY = g.flipY ? g.top + 1 : g.top + g.h - 1, dx = g.flipX ? -12 : 12;
       cx.fillStyle = col;
@@ -1614,21 +1868,19 @@
       cx.strokeStyle = mc; cx.lineWidth = 1.5;
       arrow(a.x, (a.y + b.y) / 2, b.x, (a.y + b.y) / 2);
       arrow((a.x + b.x) / 2, a.y, (a.x + b.x) / 2, b.y);
-      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
-      const bars = countBars(s.pts[0].t, s.pts[1].t);
-      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
-      tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${bars} nến, ${fmtDur(secs)}`],
-        (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
+      const dp = s.pts[1].p - s.pts[0].p, pct = s.pts[0].p ? dp / s.pts[0].p * 100 : 0, sg = dp >= 0 ? '+' : '';
+      const info = rangeInfo(s.pts[0].t, s.pts[1].t);
+      tag([
+        P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`,
+        info.secs > 0 ? `${info.bars} nến, ${fmtDur(info.secs)}` : `${info.bars} nến`
+      ], (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
     }
     if (sel) {
-      const hcol = (s.type === 'prange' || s.type === 'drange' || s.type === 'dprange')
-        ? ((s.type === 'drange' || s.pts[1].p >= s.pts[0].p) ? '#2962ff' : '#f23645')
-        : col;
       cx.lineWidth = 2; cx.setLineDash([]);
       pts.forEach((p, i) => {
         if (s.type === 'hline') p = { x: Math.min(Math.max(p.x, 14), W - 60), y: p.y };
         cx.beginPath(); cx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-        cx.fillStyle = '#fff'; cx.fill(); cx.strokeStyle = hcol; cx.stroke();
+        cx.fillStyle = '#fff'; cx.fill(); cx.strokeStyle = col; cx.stroke();
       });
     }
   }
@@ -1644,6 +1896,7 @@
     else { const k = 2 / (n + 1); for (let i = n; i < v.length; i++) out[i] = v[i] * k + out[i - 1] * (1 - k); }
     return out;
   }
+  // c: state.data (giá thật), o: {fast, slow, type, rr, fee, exitCross}
   function mabRun(c, o) {
     const close = c.map(x => x.close);
     const f = mabAvg(close, o.fast, o.type), s = mabAvg(close, o.slow, o.type);
@@ -1681,14 +1934,14 @@
     const n = trades.length;
     return { trades, stats: { n, winRate: n ? wins / n : 0, total: eq - 1, maxDD: dd, avgR: n ? sumR / n : 0, pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : 0) } };
   }
-  function mabIdx(t) {
+  function mabIdx(t) { // chỉ số nến có đúng thời gian t (state.data luôn tăng dần)
     const d = state.data; let lo = 0, hi = d.length - 1;
     while (lo <= hi) { const m = (lo + hi) >> 1; if (d[m].time === t) return m; if (d[m].time < t) lo = m + 1; else hi = m - 1; }
     return -1;
   }
   const mabCfg = () => ({
     type: $('mType').value, fast: +$('mFast').value, slow: +$('mSlow').value,
-    rr: 0, fee: +$('mFee').value || 0, exitCross: true
+    rr: 0, fee: +$('mFee').value || 0, exitCross: true // không chốt theo R: chỉ thoát khi chạm SL hoặc MA nhanh cắt xuống MA chậm
   });
   const mabPct = x => (x * 100).toFixed(2) + '%';
   const mabCls = x => x > 0 ? 'up' : x < 0 ? 'down' : '';
@@ -1701,7 +1954,7 @@
     if (!(o.fast >= 2 && o.slow > o.fast)) { $('mInfo').textContent = 'MA chậm phải lớn hơn MA nhanh.'; mab.trades = []; touch(); return; }
     try { localStorage.setItem('mabCfg', JSON.stringify(o)); } catch (e) {}
     const all = state.data, lastB = all[all.length - 1];
-    const closed = !lastB || closeTime(lastB.time) <= Date.now() / 1000 + TZ;
+    const closed = !lastB || closeTime(lastB.time) <= Date.now() / 1000 + TZ; // bỏ nến đang chạy để tín hiệu không đổi theo từng giây
     const d = closed ? all : all.slice(0, -1);
     const r = mabRun(d, o);
     mab.trades = r.trades; mab.stats = r.stats;
@@ -1724,7 +1977,7 @@
   }
   $('tgMaBt').onclick = () => {
     if (mab.on) { mabOff(); return; }
-    if (rp.phase !== 'off') return;
+    if (rp.phase !== 'off') return; // đang phát lại nến: không chạy cùng lúc
     mab.on = true; $('maBt').classList.add('open'); $('tgMaBt').classList.add('on'); mabRefresh();
   };
   ['mType', 'mFast', 'mSlow', 'mFee'].forEach(id => $(id).addEventListener('change', mabRefresh));
@@ -1739,10 +1992,11 @@
     if (sv) { $('mType').value = sv.type === 'sma' ? 'sma' : 'ema'; $('mFast').value = sv.fast; $('mSlow').value = sv.slow; $('mFee').value = sv.fee; }
   } catch (e) {}
 
+  // Vẽ lệnh lên biểu đồ chính: vùng rủi ro (đỏ), vùng chốt lời (xanh), điểm vào / thoát
   function drawMab() {
     if (!mab.on || !mab.trades.length || rp.phase !== 'off') return;
     const ts = P.chart.timeScale(), d = state.data, pal = palette();
-    let lastLx = -1e9;
+    let lastLx = -1e9; // nhãn R: bỏ qua nhãn nào chồng lên nhãn trước (cách nhau < 30px)
     cx.save(); cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif'; cx.textAlign = 'center';
     for (const t of mab.trades) {
       const i0 = mabIdx(t.t0), i1 = mabIdx(t.t1); if (i0 < 0 || i1 < 0) continue;
@@ -1760,10 +2014,10 @@
       cx.setLineDash([]);
       const win = t.ret > 0, col = win ? pal.up : pal.down;
       const yLow = Y(d[i0].low), yHigh = Y(d[i1].high);
-      if (yLow != null) {
+      if (yLow != null) { // mũi tên vào lệnh (dưới nến)
         cx.fillStyle = pal.up; cx.beginPath(); cx.moveTo(x0, yLow + 5); cx.lineTo(x0 - 5, yLow + 13); cx.lineTo(x0 + 5, yLow + 13); cx.closePath(); cx.fill();
       }
-      if (yHigh != null) {
+      if (yHigh != null) { // mũi tên thoát lệnh (trên nến)
         cx.fillStyle = col; cx.beginPath(); cx.moveTo(x1, yHigh - 5); cx.lineTo(x1 - 5, yHigh - 13); cx.lineTo(x1 + 5, yHigh - 13); cx.closePath(); cx.fill();
         if (x1 - lastLx >= 30) { cx.fillText((t.r >= 0 ? '+' : '') + t.r.toFixed(1) + 'R', x1, yHigh - 17); lastLx = x1; }
       }
@@ -1851,24 +2105,27 @@
              (Math.abs(x - mx) <= 6 && y >= y0 - 6 && y <= y1 + 6);
     }
     if (s.type === 'drange') {
-      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
-      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), my = (a.y + b.y) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
       return (y >= y0 - 6 && y <= y1 + 6 && (Math.abs(x - a.x) <= 6 || Math.abs(x - b.x) <= 6)) ||
              (Math.abs(y - my) <= 6 && x >= x0 - 6 && x <= x1 + 6);
     }
-    if (s.type === 'dprange' || s.type === 'rect') {
-      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
-      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-      const borderHit = ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
-                        ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
-      if (s.type === 'rect') return borderHit;
-      return borderHit ||
+    if (s.type === 'dprange') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
+      return ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
+             ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6) ||
              (Math.abs(x - mx) <= 6 && y >= y0 - 6 && y <= y1 + 6) ||
              (Math.abs(y - my) <= 6 && x >= x0 - 6 && x <= x1 + 6);
     }
     if (s.type === 'plabel') {
       const g = plGeom(s, a);
       return (x >= g.left - 3 && x <= g.left + g.w + 3 && y >= g.top - 3 && y <= g.top + g.h + 3) || Math.hypot(x - a.x, y - a.y) <= 8;
+    }
+    if (s.type === 'rect') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      return ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
+             ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
     }
     if (s.type === 'fib') {
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
@@ -1897,6 +2154,28 @@
   }
 
   /* --- Điều khiển --- */
+  const RANGE_META = {
+    prange: {
+      name: 'Phạm vi giá',
+      svg: '<svg viewBox="0 0 28 28"><path d="M5 7h15M8 21h15M14 7.5v13.5M10.5 11l3.5-3.5 3.5 3.5"/><circle cx="22" cy="7" r="2"/><circle cx="6" cy="21" r="2"/></svg>'
+    },
+    drange: {
+      name: 'Phạm vi ngày',
+      svg: '<svg viewBox="0 0 28 28"><path d="M7 6v14M21 8v14M7 14h13.5M17 10.5l3.5 3.5-3.5 3.5"/><circle cx="7" cy="22" r="2"/><circle cx="21" cy="6" r="2"/></svg>'
+    },
+    dprange: {
+      name: 'Phạm vi ngày và giá',
+      svg: '<svg viewBox="0 0 28 28"><path d="M7 19V7h12M21 9v12H9M14 8v12M11 11l3-3 3 3M8 14h12M17 11l3 3-3 3"/><circle cx="7" cy="21" r="2"/><circle cx="21" cy="7" r="2"/></svg>'
+    }
+  };
+  let activeRangeTool = 'prange';
+  try { const sv = localStorage.getItem('activeRangeTool'); if (sv && RANGE_META[sv]) activeRangeTool = sv; } catch (e) {}
+  let favTools = [];
+  try {
+    const sv = JSON.parse(localStorage.getItem('favDrawTools') || '[]');
+    if (Array.isArray(sv)) favTools = sv.filter(k => RANGE_META[k]);
+  } catch (e) {}
+
   const HINTS = {
     trend: 'Bấm điểm đầu rồi bấm điểm cuối của đường xu hướng',
     hline: 'Bấm để đặt đường ngang',
@@ -1907,15 +2186,28 @@
     dprange: 'Bấm hai điểm để đo phạm vi ngày và giá',
     rect: 'Bấm hai góc của hình chữ nhật',
     fib: 'Bấm điểm đầu và điểm cuối của sóng',
-    measure: 'Bấm hai điểm để đo nhanh giá và thời gian',
+    measure: 'Bấm hai điểm để đo giá và thời gian',
     brush: 'Giữ chuột và rê để vẽ tự do · Esc để thoát cọ'
   };
+  function syncRangeBtn(rt) {
+    const meta = RANGE_META[rt]; if (!meta) return;
+    activeRangeTool = rt;
+    try { localStorage.setItem('activeRangeTool', rt); } catch (e) {}
+    const b = $('btnRange');
+    b.dataset.tool = rt;
+    b.dataset.tip = meta.name + ' (bấm ▸ để mở Công cụ đo)';
+    b.setAttribute('aria-label', meta.name);
+    b.innerHTML = meta.svg;
+    document.querySelectorAll('#rangeMenu .tm-row').forEach(r => r.classList.toggle('on', r.dataset.rtool === rt));
+  }
   function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
   function setTool(t) {
+    if (RANGE_META[t]) syncRangeBtn(t);
     tool = t; cur = null; drag = null; brushing = false;
     PLIST.forEach(p => { p.hover = null; });
     if (t !== 'cursor') { measure = null; selId = null; }
     document.querySelectorAll('#dTools [data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
+    document.querySelectorAll('#favItems .fb').forEach(b => b.classList.toggle('on', b.dataset.tool === t));
     PLIST.forEach(p => { setAuto(t !== 'cursor', p); if (t !== 'cursor') p.cv.style.cursor = 'crosshair'; });
     const hint = $('dHint');
     hint.style.display = t === 'cursor' ? 'none' : 'block';
@@ -1942,11 +2234,11 @@
   function bindPane(p) {
     const cv = p.cv;
     cv.addEventListener('pointerdown', e => {
-      if (e.button === 2) return;
+      if (e.button === 2) return;                    // chuột phải = reset biểu đồ, không vẽ
       useP(p);
       const { x, y } = xyOf(e);
       if (tool !== 'cursor') {
-        if (cur && paneOf(cur) !== p.key) return;
+        if (cur && paneOf(cur) !== p.key) return;      // điểm thứ hai phải nằm cùng khung với điểm đầu
         const pt = ptFromEvent(e); if (!pt) return;
         e.preventDefault();
         try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -2025,6 +2317,7 @@
     cv.addEventListener('pointercancel', () => { endBrush(); if (drag) { drag = null; saveDrawings(); } });
     cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); touch(); } });
 
+    // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
     p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
       if (tool !== 'cursor' || drag || !drawings.length) return;
       useP(p);
@@ -2039,7 +2332,103 @@
   main.subscribeClick(clickDeselect);
   rsiChart.subscribeClick(clickDeselect);
 
-  document.querySelectorAll('#dTools [data-tool]').forEach(b => b.onclick = () => setTool(b.dataset.tool));
+  const rangeMenu = $('rangeMenu'), grpRange = $('grpRange'), btnRangeMore = $('btnRangeMore');
+  function closeRangeMenu() {
+    rangeMenu.classList.remove('open');
+    grpRange.classList.remove('open');
+    btnRangeMore.setAttribute('aria-expanded', 'false');
+  }
+  function openRangeMenu() {
+    const r = grpRange.getBoundingClientRect();
+    rangeMenu.classList.add('open');
+    grpRange.classList.add('open');
+    btnRangeMore.setAttribute('aria-expanded', 'true');
+    const mh = rangeMenu.offsetHeight;
+    rangeMenu.style.left = Math.round(r.right + 4) + 'px';
+    rangeMenu.style.top = Math.round(Math.max(4, Math.min(r.top, innerHeight - mh - 4))) + 'px';
+  }
+  function toggleRangeMenu() { rangeMenu.classList.contains('open') ? closeRangeMenu() : openRangeMenu(); }
+
+  function renderFavBar() {
+    document.querySelectorAll('#rangeMenu .tm-star').forEach(st => {
+      const on = favTools.includes(st.dataset.star);
+      st.classList.toggle('fav', on);
+      st.textContent = on ? '★' : '☆';
+      st.title = on ? 'Bỏ khỏi thanh yêu thích' : 'Ghim lên thanh yêu thích';
+    });
+    const box = $('favItems');
+    box.innerHTML = '';
+    favTools.forEach(rt => {
+      const m = RANGE_META[rt]; if (!m) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fb' + (tool === rt ? ' on' : '');
+      b.dataset.tool = rt;
+      b.title = m.name;
+      b.setAttribute('aria-label', m.name);
+      b.innerHTML = m.svg;
+      b.onclick = () => { closeRangeMenu(); setTool(rt); };
+      box.appendChild(b);
+    });
+    $('favBar').classList.toggle('show', favTools.length > 0);
+  }
+
+  document.querySelectorAll('#dTools [data-tool]').forEach(b => {
+    if (b.id === 'btnRange') {
+      b.onclick = () => {
+        if (tool === b.dataset.tool) toggleRangeMenu();
+        else { closeRangeMenu(); setTool(b.dataset.tool); }
+      };
+      b.addEventListener('contextmenu', e => { e.preventDefault(); toggleRangeMenu(); });
+    } else {
+      b.onclick = () => { closeRangeMenu(); setTool(b.dataset.tool); };
+    }
+  });
+  btnRangeMore.onclick = e => { e.stopPropagation(); toggleRangeMenu(); };
+  rangeMenu.querySelectorAll('.tm-row').forEach(row => {
+    const pick = () => { closeRangeMenu(); setTool(row.dataset.rtool); };
+    row.onclick = e => { if (!e.target.closest('.tm-star')) pick(); };
+    row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
+  });
+  rangeMenu.querySelectorAll('.tm-star').forEach(st => {
+    st.onclick = e => {
+      e.stopPropagation();
+      const k = st.dataset.star, idx = favTools.indexOf(k);
+      if (idx >= 0) favTools.splice(idx, 1); else favTools.push(k);
+      try { localStorage.setItem('favDrawTools', JSON.stringify(favTools)); } catch (err) {}
+      renderFavBar();
+    };
+  });
+  document.addEventListener('pointerdown', e => {
+    if (rangeMenu.classList.contains('open') && !rangeMenu.contains(e.target) && !grpRange.contains(e.target)) closeRangeMenu();
+  }, true);
+  window.addEventListener('resize', closeRangeMenu);
+  window.addEventListener('blur', closeRangeMenu);
+
+  // Kéo di chuyển thanh công cụ yêu thích nổi
+  const favBar = $('favBar'), favGrip = $('favGrip');
+  let favDrag = null;
+  favGrip.addEventListener('pointerdown', e => {
+    const cr = charts.getBoundingClientRect(), br = favBar.getBoundingClientRect();
+    favDrag = { dx: e.clientX - br.left, dy: e.clientY - br.top, cr, w: br.width, h: br.height };
+    try { favGrip.setPointerCapture(e.pointerId); } catch (_) {}
+    e.preventDefault();
+  });
+  favGrip.addEventListener('pointermove', e => {
+    if (!favDrag) return;
+    const minL = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tbw')) || 52;
+    const left = Math.max(minL + 4, Math.min(e.clientX - favDrag.cr.left - favDrag.dx, favDrag.cr.width - favDrag.w - 4));
+    const top = Math.max(4, Math.min(e.clientY - favDrag.cr.top - favDrag.dy, favDrag.cr.height - favDrag.h - 4));
+    favBar.style.right = 'auto';
+    favBar.style.left = Math.round(left) + 'px';
+    favBar.style.top = Math.round(top) + 'px';
+  });
+  const endFavDrag = () => { favDrag = null; };
+  favGrip.addEventListener('pointerup', endFavDrag);
+  favGrip.addEventListener('pointercancel', endFavDrag);
+
+  syncRangeBtn(activeRangeTool);
+  renderFavBar();
   $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); };
   $('dMagnet').dataset.tip = 'Nam châm: hít vào giá O/H/L/C (chỉ khung giá)';
   $('dColor').oninput = e => {
@@ -2071,7 +2460,8 @@
     if (/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
     if (e.key === 'Delete' || e.key === 'Backspace') { if (deleteSelected()) e.preventDefault(); }
     else if (e.key === 'Escape') {
-      if (cur) { cur = null; justStarted = false; brushing = false; touch(); }
+      if (rangeMenu.classList.contains('open')) closeRangeMenu();
+      else if (cur) { cur = null; justStarted = false; brushing = false; touch(); }
       else if (tool !== 'cursor') setTool('cursor');
       else { measure = null; selId = null; touch(); }
     }
@@ -2080,7 +2470,7 @@
 
   /* ---------- Đồng hồ UTC+7 + đếm ngược hết ngày (góc dưới bên phải) ---------- */
   const clock = $('clock');
-  let dayMode = 'local';
+  let dayMode = 'local'; // 'local': hết ngày lúc 00:00 giờ VN · 'binance': nến ngày Binance đóng lúc 07:00 giờ VN
   const hms = s => `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s % 3600 / 60))}:${pad2(Math.floor(s % 60))}`;
   function tickClock() {
     const nowSec = Date.now() / 1000;
@@ -2131,6 +2521,7 @@
     showCtx(e.clientX, e.clientY);
   }));
   $('ctxReset').onclick = () => { hideCtx(); resetChartView(); };
+  // Bấm chuột trái (hoặc bất kỳ chỗ nào ngoài menu) để tắt menu
   document.addEventListener('pointerdown', e => { if (!ctxMenu.contains(e.target)) hideCtx(); }, true);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') hideCtx();
@@ -2143,6 +2534,7 @@
   ctxMenu.addEventListener('contextmenu', e => e.preventDefault());
 
   /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
+  // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
   const vsync = $('vsync');
   function hideSync() { vsync.style.display = 'none'; }
   function showSync(x, from) {
@@ -2157,11 +2549,13 @@
     vsync.style.height = (bottom - top) + 'px';
     vsync.style.display = 'block';
   }
+  // Bám đúng giữa nến (giống đường dọc có sẵn của biểu đồ), ngoài vùng nến thì theo chuột
   const syncX = (chart, param) => {
     if (!param.point) return null;
     const c = param.time != null ? chart.timeScale().timeToCoordinate(param.time) : null;
     return c != null ? c : param.point.x;
   };
+  // Trục thời gian của khung giá bị ẩn -> hiện nhãn ngày giờ tự vẽ ở đáy khi rê chuột vào khung giá
   const tlabel = $('tlabel');
   function hideTLabel() { tlabel.style.display = 'none'; }
   function showTLabel(x, time) {
@@ -2180,8 +2574,464 @@
   });
   rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); });
 
+  /* ---------- Watchlist (Tab bên phải giống TradingView) ---------- */
+  const WL_KEY = 'watchlist_v1', WL_UI_KEY = 'wlUi_v1';
+  const WL_FLAGS = ['#f23645', '#2962ff', '#089981', '#ff9800', '#ab47bc'];
+  const WL_DEFAULT = [
+    { sym: 'PAXGUSDT', flag: '#f23645' },
+    { sym: 'BTCUSDT',  flag: '#f23645' },
+    { sym: 'ETHUSDT',  flag: '' },
+    { sym: 'BNBUSDT',  flag: '' },
+    { sym: 'SOLUSDT',  flag: '' },
+    { sym: 'XRPUSDT',  flag: '' },
+    { sym: 'DOGEUSDT', flag: '' },
+    { sym: 'ADAUSDT',  flag: '' },
+    { sym: 'TRXUSDT',  flag: '' }
+  ];
+  const WL_POPULAR = [
+    ['BTCUSDT','Bitcoin'], ['ETHUSDT','Ethereum'], ['BNBUSDT','BNB'], ['SOLUSDT','Solana'],
+    ['XRPUSDT','XRP'], ['DOGEUSDT','Dogecoin'], ['ADAUSDT','Cardano'], ['TRXUSDT','TRON'],
+    ['PAXGUSDT','PAX Gold'], ['SUIUSDT','Sui'], ['AVAXUSDT','Avalanche'],
+    ['LINKUSDT','Chainlink'], ['TONUSDT','Toncoin'], ['LTCUSDT','Litecoin'], ['DOTUSDT','Polkadot'],
+    ['NEARUSDT','NEAR'], ['APTUSDT','Aptos'], ['ARBUSDT','Arbitrum'], ['OPUSDT','Optimism'],
+    ['PEPEUSDT','Pepe'], ['SHIBUSDT','Shiba Inu'], ['WIFUSDT','dogwifhat'], ['AAVEUSDT','Aave'],
+    ['UNIUSDT','Uniswap'], ['ATOMUSDT','Cosmos'], ['FILUSDT','Filecoin'], ['ICPUSDT','Internet Computer'],
+    ['HBARUSDT','Hedera'], ['TAOUSDT','Bittensor'], ['BCHUSDT','Bitcoin Cash'], ['XLMUSDT','Stellar'],
+    ['ETCUSDT','Ethereum Classic'], ['RENDERUSDT','Render'], ['INJUSDT','Injective'], ['ONDOUSDT','Ondo'],
+    ['PENDLEUSDT','Pendle'], ['ENAUSDT','Ethena']
+  ];
+  const WL_COLORS = ['#2962ff','#089981','#f5a623','#ab47bc','#00acc1','#ef5350','#5c6bc0','#26a69a','#ec407a','#8d6e63'];
+
+  let wlItems = WL_DEFAULT.map(x => ({ ...x }));
+  try {
+    const sv = JSON.parse(localStorage.getItem(WL_KEY) || 'null');
+    if (Array.isArray(sv) && sv.length) {
+      const cleaned = sv
+        .filter(x => x && typeof x.sym === 'string' && x.sym.trim() && x.sym.trim().toUpperCase() !== 'RC1!')
+        .map(x => ({ sym: x.sym.trim().toUpperCase(), flag: typeof x.flag === 'string' ? x.flag : '' }));
+      if (cleaned.length) {
+        wlItems = cleaned;
+        if (cleaned.length !== sv.length) localStorage.setItem(WL_KEY, JSON.stringify(cleaned));
+      }
+    }
+  } catch (e) {}
+  let wlUi = { open: true, w: 296, flaggedOnly: false, sortKey: '', sortDir: 0 };
+  try {
+    const sv = JSON.parse(localStorage.getItem(WL_UI_KEY) || 'null');
+    if (sv && typeof sv === 'object') wlUi = { ...wlUi, ...sv };
+  } catch (e) {}
+
+  const wlQuotes = new Map();   // sym -> { last, chg, pct, prevStr }
+  const wlRowEls = new Map();   // sym -> { row, lastEl, chgEl, pctEl, flashTimer }
+  let wlWs = null, wlWsTimer = null, wlDragSym = null;
+
+  const wlSave = () => { try { localStorage.setItem(WL_KEY, JSON.stringify(wlItems)); } catch (e) {} };
+  const wlSaveUi = () => { try { localStorage.setItem(WL_UI_KEY, JSON.stringify(wlUi)); } catch (e) {} };
+
+  function wlIconHtml(sym) {
+    if (sym === 'PAXGUSDT' || sym.startsWith('XAU')) {
+      return '<span class="wl-ic" style="background:#d4a017"><svg viewBox="0 0 20 20"><path d="M7.5 6.5h5l1 2.7h-7zM4.2 10.6h4.8l1 2.8h-6.8zM11 10.6h4.8l1 2.8H10z" fill="#fff"/></svg></span>';
+    }
+    const base = sym.replace(/(USDT|USDC|FDUSD|BUSD|USD|BTC|ETH)$/, '') || sym;
+    if (base === 'BTC') return '<span class="wl-ic" style="background:#f7931a;font-size:12px">₿</span>';
+    if (base === 'ETH') return '<span class="wl-ic" style="background:#627eea"><svg viewBox="0 0 20 20"><path d="M10 3.2L6.2 10.1 10 12.3l3.8-2.2z" fill="#fff"/><path d="M10 13.3L6.2 11.1 10 16.8l3.8-5.7z" fill="#fff" opacity=".82"/></svg></span>';
+    if (base === 'BNB') return '<span class="wl-ic" style="background:#f0b90b"><svg viewBox="0 0 20 20"><path d="M10 4.5l2.2 2.2-2.2 2.2-2.2-2.2zm0 6.6l2.2 2.2-2.2 2.2-2.2-2.2zM5.6 8.9l1.8 1.8-1.8 1.8-1.8-1.8zm8.8 0l1.8 1.8-1.8 1.8-1.8-1.8z" fill="#fff"/></svg></span>';
+    if (base === 'SOL') return '<span class="wl-ic" style="background:#181c24"><svg viewBox="0 0 20 20"><path d="M5.5 7l1.5-1.6h7.8L13.3 7zm0 3.8l1.5-1.6h7.8l-1.5 1.6zm0 3.8L7 13h7.8l-1.5 1.6z" fill="#14f195"/></svg></span>';
+    if (base === 'XRP') return '<span class="wl-ic" style="background:#23292f"><svg viewBox="0 0 20 20"><path d="M5.5 5.8h2l2.5 2.7 2.5-2.7h2l-3.5 3.8a1.4 1.4 0 0 1-2 0zm0 8.4h2l2.5-2.7 2.5 2.7h2l-3.5-3.8a1.4 1.4 0 0 0-2 0z" fill="#fff"/></svg></span>';
+    if (base === 'DOGE') return '<span class="wl-ic" style="background:#c2a633;font-size:11.5px">Ð</span>';
+    if (base === 'ADA') return '<span class="wl-ic" style="background:#0033ad"><svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="2.2" fill="#fff"/><circle cx="10" cy="5.4" r="1.1" fill="#fff"/><circle cx="10" cy="14.6" r="1.1" fill="#fff"/><circle cx="6" cy="7.7" r="1.1" fill="#fff"/><circle cx="14" cy="7.7" r="1.1" fill="#fff"/><circle cx="6" cy="12.3" r="1.1" fill="#fff"/><circle cx="14" cy="12.3" r="1.1" fill="#fff"/></svg></span>';
+    if (base === 'TRX') return '<span class="wl-ic" style="background:#ef0027"><svg viewBox="0 0 20 20"><path d="M4.8 5.4l10.6 2.1-6.8 8.3z" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></span>';
+    let h = 0; for (let i = 0; i < base.length; i++) h = (h * 31 + base.charCodeAt(i)) >>> 0;
+    const bg = WL_COLORS[h % WL_COLORS.length];
+    return `<span class="wl-ic" style="background:${bg}">${base.slice(0, 2)}</span>`;
+  }
+  function wlDecimals(p) {
+    const a = Math.abs(p);
+    if (!a || a >= 10) return 2;
+    if (a >= 1) return 3;
+    if (a >= 0.01) return 4;
+    if (a >= 0.0001) return 6;
+    return 8;
+  }
+  function wlFmtPrice(p) {
+    if (p == null || !Number.isFinite(p)) return '–';
+    return fmt(p, wlDecimals(p));
+  }
+  function wlFmtChg(c, p) {
+    if (c == null || !Number.isFinite(c)) return '–';
+    return fmt(c, wlDecimals(p != null ? p : c));
+  }
+  function wlUpdateRowData(sym, last, chg, pct, flash) {
+    const prev = wlQuotes.get(sym);
+    const prevLast = prev ? prev.last : null;
+    const prevStr = prev ? prev.prevStr : null;
+    const str = wlFmtPrice(last);
+    wlQuotes.set(sym, { last, chg, pct, prevStr: str });
+    const els = wlRowEls.get(sym);
+    if (!els) return;
+    if (flash && prevLast != null && prevStr && last !== prevLast) {
+      const dir = last > prevLast ? 'up' : 'dn';
+      if (prevStr.length === str.length) {
+        let k = 0; while (k < str.length && str[k] === prevStr[k]) k++;
+        els.lastEl.innerHTML = `${str.slice(0, k)}<span class="tk-${dir}">${str.slice(k)}</span>`;
+      } else {
+        els.lastEl.innerHTML = `<span class="tk-${dir}">${str}</span>`;
+      }
+      clearTimeout(els.flashTimer);
+      els.flashTimer = setTimeout(() => {
+        if (wlRowEls.get(sym) === els) els.lastEl.textContent = wlQuotes.get(sym)?.prevStr || str;
+      }, 1100);
+    } else {
+      els.lastEl.textContent = str;
+    }
+    const cls = chg > 0 ? 'up' : chg < 0 ? 'down' : 'flat';
+    els.chgEl.className = 'wl-chg ' + cls;
+    els.pctEl.className = 'wl-pct ' + cls;
+    els.chgEl.textContent = wlFmtChg(chg, last);
+    els.pctEl.textContent = pct == null || !Number.isFinite(pct) ? '–' : fmt(pct, 2) + '%';
+  }
+  function wlSyncActive() {
+    wlRowEls.forEach((els, sym) => {
+      const on = sym === state.symbol;
+      els.row.classList.toggle('active', on);
+      els.row.setAttribute('aria-selected', String(on));
+    });
+  }
+  function wlDisplayedItems() {
+    let arr = wlUi.flaggedOnly ? wlItems.filter(x => !!x.flag) : wlItems.slice();
+    if (wlUi.sortKey && wlUi.sortDir) {
+      const k = wlUi.sortKey, dir = wlUi.sortDir;
+      arr.sort((a, b) => {
+        if (k === 'sym') return dir * a.sym.localeCompare(b.sym);
+        const qa = wlQuotes.get(a.sym), qb = wlQuotes.get(b.sym);
+        const va = qa && Number.isFinite(qa[k]) ? qa[k] : -Infinity;
+        const vb = qb && Number.isFinite(qb[k]) ? qb[k] : -Infinity;
+        return dir * (va - vb);
+      });
+    }
+    return arr;
+  }
+  function wlRenderList() {
+    const listEl = $('wlList');
+    wlRowEls.forEach(els => clearTimeout(els.flashTimer));
+    wlRowEls.clear();
+    listEl.innerHTML = '';
+    $('wlFlagFilter').classList.toggle('on', !!wlUi.flaggedOnly);
+    $('wlTitleTxt').textContent = wlUi.flaggedOnly ? 'Watchlist (Cờ)' : 'Watchlist';
+    document.querySelectorAll('.wl-cols .wl-col').forEach(btn => {
+      const k = btn.dataset.sort;
+      const base = k === 'sym' ? 'Symbol' : k === 'last' ? 'Last' : k === 'chg' ? 'Chg' : 'Chg%';
+      const on = wlUi.sortKey === k && wlUi.sortDir !== 0;
+      btn.classList.toggle('sort', on);
+      btn.textContent = on ? base + (wlUi.sortDir > 0 ? ' ▲' : ' ▼') : base;
+    });
+    const rows = wlDisplayedItems();
+    if (!rows.length) {
+      listEl.innerHTML = `<div class="wl-empty">${wlUi.flaggedOnly ? 'Chưa có mã nào được gắn cờ.' : 'Danh sách trống. Bấm + để thêm mã.'}</div>`;
+      return;
+    }
+    const canDrag = !wlUi.sortKey;
+    rows.forEach(item => {
+      const sym = item.sym;
+      const row = document.createElement('div');
+      row.className = 'wl-row' + (sym === state.symbol ? ' active' : '');
+      row.role = 'option';
+      row.tabIndex = 0;
+      row.dataset.sym = sym;
+      row.setAttribute('aria-selected', String(sym === state.symbol));
+      if (canDrag) row.draggable = true;
+
+      const flagBtn = document.createElement('button');
+      flagBtn.type = 'button';
+      flagBtn.className = 'wl-flag' + (item.flag ? ' set' : '');
+      if (item.flag) flagBtn.style.setProperty('--fc', item.flag);
+      flagBtn.title = 'Gắn cờ (chuột phải để đổi màu cờ)';
+      flagBtn.setAttribute('aria-label', 'Gắn cờ ' + sym);
+      flagBtn.onclick = e => {
+        e.stopPropagation();
+        item.flag = item.flag ? '' : '#f23645';
+        wlSave();
+        if (wlUi.flaggedOnly) wlRenderList();
+        else {
+          flagBtn.classList.toggle('set', !!item.flag);
+          if (item.flag) flagBtn.style.setProperty('--fc', item.flag);
+        }
+      };
+      flagBtn.oncontextmenu = e => {
+        e.preventDefault(); e.stopPropagation();
+        const i = WL_FLAGS.indexOf(item.flag);
+        item.flag = i < 0 ? WL_FLAGS[0] : (i + 1 < WL_FLAGS.length ? WL_FLAGS[i + 1] : '');
+        wlSave();
+        if (wlUi.flaggedOnly && !item.flag) wlRenderList();
+        else {
+          flagBtn.classList.toggle('set', !!item.flag);
+          if (item.flag) flagBtn.style.setProperty('--fc', item.flag);
+        }
+      };
+
+      const symCell = document.createElement('div');
+      symCell.className = 'wl-sym-cell';
+      symCell.innerHTML = wlIconHtml(sym) + `<span class="wl-sym">${sym}</span>`;
+
+      const lastEl = document.createElement('div'); lastEl.className = 'wl-last'; lastEl.textContent = '–';
+      const chgEl = document.createElement('div'); chgEl.className = 'wl-chg flat'; chgEl.textContent = '–';
+      const pctEl = document.createElement('div'); pctEl.className = 'wl-pct flat'; pctEl.textContent = '–';
+
+      const rmBtn = document.createElement('button');
+      rmBtn.type = 'button'; rmBtn.className = 'wl-rm'; rmBtn.textContent = '×';
+      rmBtn.title = 'Xoá ' + sym + ' khỏi Watchlist';
+      rmBtn.setAttribute('aria-label', 'Xoá ' + sym);
+      rmBtn.onclick = e => {
+        e.stopPropagation();
+        const idx = wlItems.findIndex(x => x.sym === sym);
+        if (idx >= 0) { wlItems.splice(idx, 1); wlSave(); wlRenderList(); wlConnectWs(); }
+      };
+
+      row.append(flagBtn, symCell, lastEl, chgEl, pctEl, rmBtn);
+      row.onclick = () => selectSymbol(sym);
+      row.onkeydown = e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectSymbol(sym); }
+        else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const all = [...listEl.querySelectorAll('.wl-row')];
+          const curI = all.indexOf(row);
+          const next = all[curI + (e.key === 'ArrowDown' ? 1 : -1)];
+          if (next) { next.focus(); selectSymbol(next.dataset.sym); }
+        }
+      };
+      if (canDrag) {
+        row.addEventListener('dragstart', e => { wlDragSym = sym; e.dataTransfer.effectAllowed = 'move'; });
+        row.addEventListener('dragover', e => { if (wlDragSym && wlDragSym !== sym) { e.preventDefault(); row.classList.add('drag-over'); } });
+        row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+        row.addEventListener('drop', e => {
+          e.preventDefault(); row.classList.remove('drag-over');
+          if (!wlDragSym || wlDragSym === sym) return;
+          const fi = wlItems.findIndex(x => x.sym === wlDragSym), ti = wlItems.findIndex(x => x.sym === sym);
+          if (fi >= 0 && ti >= 0) {
+            const [moved] = wlItems.splice(fi, 1);
+            wlItems.splice(ti, 0, moved);
+            wlSave(); wlRenderList();
+          }
+          wlDragSym = null;
+        });
+        row.addEventListener('dragend', () => { wlDragSym = null; listEl.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over')); });
+      }
+      listEl.appendChild(row);
+      wlRowEls.set(sym, { row, lastEl, chgEl, pctEl, flashTimer: null });
+      const q = wlQuotes.get(sym);
+      if (q) wlUpdateRowData(sym, q.last, q.chg, q.pct, false);
+    });
+  }
+
+  /* REST 24h snapshot + WebSocket realtime cho Watchlist */
+  async function wlFetchSnapshot(syms) {
+    const list = syms || wlItems.map(x => x.sym);
+    if (!list.length) return;
+    const applyOne = d => {
+      if (!d || !d.symbol) return;
+      wlUpdateRowData(d.symbol, +d.lastPrice, +d.priceChange, +d.priceChangePercent, false);
+    };
+    const qs = encodeURIComponent(JSON.stringify(list));
+    for (const host of HOSTS) {
+      try {
+        const res = await fetch(`${host}/api/v3/ticker/24hr?symbols=${qs}`);
+        if (res.ok) { const arr = await res.json(); if (Array.isArray(arr)) arr.forEach(applyOne); return; }
+      } catch (e) {}
+    }
+    // Fallback tải từng mã nếu có mã lỗi
+    await Promise.all(list.map(async s => {
+      for (const host of HOSTS) {
+        try {
+          const res = await fetch(`${host}/api/v3/ticker/24hr?symbol=${encodeURIComponent(s)}`);
+          if (res.ok) { applyOne(await res.json()); return; }
+        } catch (e) {}
+      }
+    }));
+  }
+  function wlCloseWs() {
+    clearTimeout(wlWsTimer);
+    if (wlWs) { wlWs.onclose = null; wlWs.close(); wlWs = null; }
+  }
+  function wlConnectWs() {
+    wlCloseWs();
+    const syms = wlItems.map(x => x.sym);
+    if (!syms.length) return;
+    const streams = syms.map(s => s.toLowerCase() + '@ticker').join('/');
+    const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
+    wlWs = ws;
+    ws.onmessage = ev => {
+      try {
+        const msg = JSON.parse(ev.data);
+        const d = msg && (msg.data || msg);
+        if (!d || !d.s) return;
+        wlUpdateRowData(d.s, +d.c, +d.p, +d.P, true);
+      } catch (e) {}
+    };
+    ws.onclose = () => {
+      if (wlWs !== ws) return;
+      wlWsTimer = setTimeout(wlConnectWs, 3500);
+    };
+    ws.onerror = () => ws.close();
+  }
+
+  /* Bật/tắt panel + kéo đổi chiều rộng */
+  const wlPanel = $('wlPanel'), wlSplitter = $('wlSplitter'), btnWlToggle = $('btnWlToggle');
+  function applyWlUi() {
+    wlPanel.classList.toggle('collapsed', !wlUi.open);
+    wlSplitter.classList.toggle('hidden', !wlUi.open);
+    btnWlToggle.classList.toggle('on', !!wlUi.open);
+    btnWlToggle.setAttribute('aria-expanded', String(!!wlUi.open));
+    if (wlUi.open && wlUi.w) wlPanel.style.width = wlUi.w + 'px';
+  }
+  btnWlToggle.onclick = () => { wlUi.open = !wlUi.open; wlSaveUi(); applyWlUi(); };
+  $('wlExpandBtn').onclick = () => {
+    wlUi.w = (wlPanel.getBoundingClientRect().width || wlUi.w) > 340 ? 296 : 390;
+    wlUi.open = true; wlSaveUi(); applyWlUi();
+  };
+  let wlDragX = 0, wlStartW = 296;
+  wlSplitter.addEventListener('pointerdown', e => {
+    wlDragX = e.clientX; wlStartW = wlPanel.getBoundingClientRect().width;
+    wlSplitter.setPointerCapture(e.pointerId);
+    wlSplitter.classList.add('drag'); document.body.classList.add('wl-drag');
+  });
+  wlSplitter.addEventListener('pointermove', e => {
+    if (!wlSplitter.hasPointerCapture(e.pointerId)) return;
+    const maxW = Math.min(520, Math.max(240, innerWidth - 260));
+    const nw = Math.round(Math.min(maxW, Math.max(220, wlStartW + (wlDragX - e.clientX))));
+    wlUi.w = nw; wlPanel.style.width = nw + 'px';
+  });
+  const endWlDrag = e => {
+    if (wlSplitter.hasPointerCapture(e.pointerId)) wlSplitter.releasePointerCapture(e.pointerId);
+    wlSplitter.classList.remove('drag'); document.body.classList.remove('wl-drag');
+    wlSaveUi();
+  };
+  wlSplitter.addEventListener('pointerup', endWlDrag);
+  wlSplitter.addEventListener('pointercancel', endWlDrag);
+  wlSplitter.addEventListener('dblclick', () => { wlUi.w = 296; wlSaveUi(); applyWlUi(); });
+
+  /* Sắp xếp cột & lọc cờ */
+  document.querySelectorAll('.wl-cols .wl-col').forEach(btn => {
+    btn.onclick = () => {
+      const k = btn.dataset.sort;
+      if (wlUi.sortKey !== k) { wlUi.sortKey = k; wlUi.sortDir = k === 'sym' ? 1 : -1; }
+      else if (wlUi.sortDir === (k === 'sym' ? 1 : -1)) wlUi.sortDir = -wlUi.sortDir;
+      else { wlUi.sortKey = ''; wlUi.sortDir = 0; }
+      wlSaveUi(); wlRenderList();
+    };
+  });
+  $('wlFlagFilter').onclick = () => { wlUi.flaggedOnly = !wlUi.flaggedOnly; wlSaveUi(); wlRenderList(); };
+
+  /* Thêm mã mới (+): tìm kiếm gợi ý + xác thực trực tiếp qua Binance */
+  const wlAddBox = $('wlAddBox'), wlAddInput = $('wlAddInput'), wlAddMsg = $('wlAddMsg'), wlSuggest = $('wlSuggest');
+  function wlRenderSuggest() {
+    const q = wlAddInput.value.trim().toUpperCase();
+    const existing = new Set(wlItems.map(x => x.sym));
+    const list = WL_POPULAR.filter(([s, n]) => !existing.has(s) && (!q || s.includes(q) || n.toUpperCase().includes(q))).slice(0, 12);
+    wlSuggest.innerHTML = '';
+    list.forEach(([s, n]) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'wl-sug';
+      b.innerHTML = `<span style="display:inline-flex;align-items:center;gap:6px">${wlIconHtml(s)}<b>${s}</b></span><small>${n}</small>`;
+      b.onclick = () => wlAddSymbol(s);
+      wlSuggest.appendChild(b);
+    });
+  }
+  async function wlAddSymbol(raw) {
+    let s = (raw || wlAddInput.value || '').trim().toUpperCase().replace(/\s+/g, '');
+    if (!s) return;
+    wlAddMsg.textContent = '';
+    if (!/(USDT|USDC|FDUSD|BUSD|BTC|ETH|BNB)$/.test(s)) s += 'USDT';
+    if (wlItems.some(x => x.sym === s)) {
+      wlAddMsg.textContent = s + ' đã có trong Watchlist.';
+      selectSymbol(s); return;
+    }
+    $('wlAddGo').disabled = true;
+    let okData = null;
+    for (const host of HOSTS) {
+      try {
+        const res = await fetch(`${host}/api/v3/ticker/24hr?symbol=${encodeURIComponent(s)}`);
+        if (res.ok) { okData = await res.json(); break; }
+      } catch (e) {}
+    }
+    $('wlAddGo').disabled = false;
+    if (!okData) { wlAddMsg.textContent = 'Không tìm thấy mã ' + s + ' trên Binance.'; return; }
+    wlQuotes.set(s, { last: +okData.lastPrice, chg: +okData.priceChange, pct: +okData.priceChangePercent, prevStr: wlFmtPrice(+okData.lastPrice) });
+    wlItems.unshift({ sym: s, flag: '' });
+    ensureSymbolOption(s);
+    wlSave();
+    wlAddInput.value = '';
+    wlRenderSuggest();
+    wlRenderList();
+    wlConnectWs();
+    selectSymbol(s);
+  }
+  function closeWlAdd() { wlAddBox.classList.remove('open'); $('wlAddBtn').classList.remove('on'); wlAddMsg.textContent = ''; }
+  $('wlAddBtn').onclick = () => {
+    const on = wlAddBox.classList.toggle('open');
+    $('wlAddBtn').classList.toggle('on', on);
+    if (on) { wlAddMsg.textContent = ''; wlRenderSuggest(); wlAddInput.focus(); }
+  };
+  wlAddInput.addEventListener('input', () => { wlAddMsg.textContent = ''; wlRenderSuggest(); });
+  wlAddInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); wlAddSymbol(); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeWlAdd(); }
+  });
+  $('wlAddGo').onclick = () => wlAddSymbol();
+
+  /* Menu Watchlist ▾ và ••• */
+  const wlPop = $('wlPop');
+  function closeWlPop() { wlPop.classList.remove('open'); $('wlFilterBtn').setAttribute('aria-expanded', 'false'); }
+  function openWlPop(anchor, items) {
+    wlPop.innerHTML = '';
+    items.forEach(it => {
+      if (it === '-') { const d = document.createElement('div'); d.className = 'hr'; wlPop.appendChild(d); return; }
+      const b = document.createElement('button');
+      b.type = 'button';
+      if (it.on) b.className = 'on';
+      b.innerHTML = `<span>${it.label}</span>${it.on ? '<span>✓</span>' : ''}`;
+      b.onclick = () => { closeWlPop(); it.fn(); };
+      wlPop.appendChild(b);
+    });
+    const r = anchor.getBoundingClientRect();
+    wlPop.classList.add('open');
+    const pw = wlPop.offsetWidth, ph = wlPop.offsetHeight;
+    wlPop.style.left = Math.round(Math.max(4, Math.min(r.left, innerWidth - pw - 6))) + 'px';
+    wlPop.style.top = Math.round(Math.min(r.bottom + 4, innerHeight - ph - 6)) + 'px';
+  }
+  $('wlFilterBtn').onclick = e => {
+    e.stopPropagation();
+    if (wlPop.classList.contains('open')) { closeWlPop(); return; }
+    $('wlFilterBtn').setAttribute('aria-expanded', 'true');
+    openWlPop($('wlFilterBtn'), [
+      { label: 'Tất cả mã (' + wlItems.length + ')', on: !wlUi.flaggedOnly, fn: () => { wlUi.flaggedOnly = false; wlSaveUi(); wlRenderList(); } },
+      { label: 'Chỉ mã gắn cờ (' + wlItems.filter(x => x.flag).length + ')', on: wlUi.flaggedOnly, fn: () => { wlUi.flaggedOnly = true; wlSaveUi(); wlRenderList(); } }
+    ]);
+  };
+  $('wlMoreBtn').onclick = e => {
+    e.stopPropagation();
+    if (wlPop.classList.contains('open')) { closeWlPop(); return; }
+    openWlPop($('wlMoreBtn'), [
+      { label: 'Sắp xếp: Thủ công (kéo thả)', on: !wlUi.sortKey, fn: () => { wlUi.sortKey = ''; wlUi.sortDir = 0; wlSaveUi(); wlRenderList(); } },
+      { label: 'Sắp xếp: Chg% giảm dần', on: wlUi.sortKey === 'pct' && wlUi.sortDir === -1, fn: () => { wlUi.sortKey = 'pct'; wlUi.sortDir = -1; wlSaveUi(); wlRenderList(); } },
+      { label: 'Sắp xếp: Tên A → Z', on: wlUi.sortKey === 'sym' && wlUi.sortDir === 1, fn: () => { wlUi.sortKey = 'sym'; wlUi.sortDir = 1; wlSaveUi(); wlRenderList(); } },
+      '-',
+      { label: 'Bỏ tất cả cờ', fn: () => { wlItems.forEach(x => { x.flag = ''; }); wlUi.flaggedOnly = false; wlSave(); wlSaveUi(); wlRenderList(); } },
+      { label: 'Đặt lại Watchlist mặc định', fn: () => { wlItems = WL_DEFAULT.map(x => ({ ...x })); wlUi.flaggedOnly = false; wlUi.sortKey = ''; wlUi.sortDir = 0; wlSave(); wlSaveUi(); wlRenderList(); wlFetchSnapshot(); wlConnectWs(); } }
+    ]);
+  };
+  document.addEventListener('pointerdown', e => {
+    if (wlPop.classList.contains('open') && !wlPop.contains(e.target) && !$('wlFilterBtn').contains(e.target) && !$('wlMoreBtn').contains(e.target)) closeWlPop();
+  }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeWlPop(); closeWlAdd(); } });
+  window.addEventListener('resize', closeWlPop);
+
+  wlItems.forEach(x => ensureSymbolOption(x.sym));
+  applyWlUi();
+  wlRenderList();
+  wlFetchSnapshot();
+  wlConnectWs();
+
   document.documentElement.dataset.theme = 'light';
-  syncImportBtn();
   load();
 })();
 </script>
