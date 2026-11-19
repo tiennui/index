@@ -237,24 +237,24 @@
   @media (max-width: 720px) { #wlPanel { width: 230px; min-width: 185px; } #rRail { width: 38px; } }
   /* Đồng hồ ở góc dưới cùng bên phải */
   #clock {
-    position: absolute; right: 0; bottom: 0; z-index: 30; height: 26px; padding: 0 8px; cursor: pointer;
+    position: absolute; right: 0; bottom: 0; z-index: 30; height: 24px; padding: 0 5px; cursor: pointer;
     display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
     background: var(--bg); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
-    font-size: 10.5px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; user-select: none;
+    font-size: 9.5px; line-height: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; user-select: none;
   }
   #clock b { color: var(--text); font-weight: 600; }
   #clock span { color: var(--muted); }
   #clock:hover span { color: var(--accent); }
   /* Nút log / auto đặt tại góc dưới trục giá của khung biểu đồ giá (#mainPane) */
   #scaleBtns {
-    position: absolute; right: 0; bottom: 0; z-index: 12; height: 24px;
-    display: flex; align-items: center; justify-content: center; gap: 2px;
-    min-width: 80px; padding: 0 4px; user-select: none;
+    position: absolute; right: 0; bottom: 0; z-index: 12; height: 20px;
+    display: flex; align-items: center; justify-content: center; gap: 1px;
+    min-width: 56px; padding: 0 2px; user-select: none;
     background: var(--bg); border-top: 1px solid var(--line); border-left: 1px solid var(--line);
   }
   #scaleBtns .sc-btn {
-    border: 0; background: none; color: var(--muted); padding: 2px 6px; border-radius: 3px;
-    font: inherit; font-size: 11.5px; font-weight: 600; line-height: 16px; cursor: pointer;
+    border: 0; background: none; color: var(--muted); padding: 1px 4px; border-radius: 3px;
+    font: inherit; font-size: 10px; font-weight: 600; line-height: 14px; cursor: pointer;
     transition: background .12s, color .12s;
   }
   #scaleBtns .sc-btn:hover { background: var(--hover); color: var(--text); }
@@ -471,7 +471,7 @@
   .fc-lv .fc-del:hover { color: var(--down); }
   .fc-addrow { display: flex; gap: 6px; margin-top: 8px; }
   .fc-addrow input[type=number] {
-    width: 96px; padding: 4px 7px; font: inherit; font-size: 12.5px; color: var(--text);
+    flex: 1; min-width: 110px; padding: 4px 7px; font: inherit; font-size: 12.5px; color: var(--text);
     background: var(--hover); border: 1px solid var(--line); border-radius: 4px;
   }
   .fc-addrow input[type=color] {
@@ -574,8 +574,8 @@
   #maBt .up { color: var(--up); } #maBt .down { color: var(--down); }
   #timer {
     position: absolute; right: 0; z-index: 6; display: none; pointer-events: none;
-    color: #fff; font-size: 11px; font-weight: 600; text-align: center; line-height: 17px;
-    height: 17px; font-variant-numeric: tabular-nums; background: var(--up);
+    color: #fff; font-size: 10px; font-weight: 600; text-align: center; line-height: 15px;
+    height: 15px; font-variant-numeric: tabular-nums; background: var(--up);
   }
   .chart { position: absolute; inset: 0; }
   #vsync {
@@ -900,6 +900,7 @@
       <label class="fc-chk"><input id="fcLbl" type="checkbox"> Hiện nhãn mức</label>
       <label class="fc-chk"><input id="fcPrc" type="checkbox"> Hiện giá</label>
       <label class="fc-chk"><input id="fcFill" type="checkbox"> Tô màu nền</label>
+      <label class="fc-chk" style="grid-column:1/-1"><input id="fcLog" type="checkbox"> Mức Fib dựa trên thang log (Log scale)</label>
     </div>
     <div class="fc-row">
       <span>Độ mờ nền (<b id="fcAlphaTxt">10%</b>)</span>
@@ -968,9 +969,9 @@
   function chartOptions() {
     const p = palette();
     return {
-      layout: { background: { type: 'solid', color: p.bg }, textColor: p.text, fontSize: 12 },
+      layout: { background: { type: 'solid', color: p.bg }, textColor: p.text, fontSize: 11 },
       grid: { vertLines: { color: p.grid }, horzLines: { color: p.grid } },
-      rightPriceScale: { borderColor: p.line, minimumWidth: 80 },
+      rightPriceScale: { borderColor: p.line, minimumWidth: 56 },
       timeScale: { borderColor: p.line, timeVisible: true, secondsVisible: false, rightOffset: 12 },
       localization: { timeFormatter: fmtTime },
       crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -1285,6 +1286,8 @@
     closeWs();
     resetReplayUI();
     syncDrawings();
+    main.applyOptions({ rightPriceScale: { minimumWidth: 56 } });
+    rsiChart.applyOptions({ rightPriceScale: { minimumWidth: 56 } });
     titlePrice = null; // đổi mã / khung: bỏ giá cũ cho tới khi có giá mới
     updateTitle();
     $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
@@ -1879,7 +1882,7 @@
       { on: false, v: 3.618,  c: '#9c27b0' },
       { on: false, v: 4.236,  c: '#e91e63' }
     ],
-    extendLeft: false, extendRight: true, reverse: false,
+    extendLeft: false, extendRight: true, reverse: false, logScale: false,
     showLabels: true, showPrices: false,
     lineWidth: 1.5, lineStyle: 'solid', fill: true, fillAlpha: 0.1
   };
@@ -1891,6 +1894,7 @@
       extendLeft: !!src.extendLeft,
       extendRight: src.extendRight !== false,
       reverse: !!src.reverse,
+      logScale: !!src.logScale,
       showLabels: src.showLabels !== false,
       showPrices: !!src.showPrices,
       lineWidth: Number.isFinite(+src.lineWidth) ? +src.lineWidth : 1.5,
@@ -1908,28 +1912,66 @@
   function fibChLines(s, pts) {
     const cfg = s.cfg || fibChDef;
     const [a, b, c] = pts;
-    const bdx = b.x - a.x, bdy = b.y - a.y, vert = Math.abs(bdx) < 1e-4;
-    const slope = vert ? 0 : bdy / bdx;
-    const dx = vert ? (c.x - a.x) : 0;
-    const dy = vert ? 0 : (c.y - (a.y + slope * (c.x - a.x)));
+    const bdx = b.x - a.x, vert = Math.abs(bdx) < 1e-4;
     const enabled = (cfg.levels || []).filter(l => l.on !== false && Number.isFinite(+l.v));
-    return enabled.map(lv => {
+    if (vert) {
+      const dx = c.x - a.x, y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      return enabled.map(lv => {
+        const eff = cfg.reverse ? (1 - lv.v) : lv.v, x = a.x + eff * dx;
+        const p1 = { x, y: cfg.extendLeft ? 0 : y0 }, p2 = { x, y: cfg.extendRight ? H : y1 };
+        const lblPr = P.series.coordinateToPrice(y0);
+        return { v: lv.v, eff, c: lv.c || '#787b86', pts: [p1, p2], lblPt: { x, y: y0 }, lblPr };
+      }).sort((u, w) => u.eff - w.eff);
+    }
+    const p0 = s.pts[0].p, p1 = s.pts[1].p, p2 = s.pts[2].p;
+    const useLog = !!(cfg.logScale && P.key === 'main' && p0 > 0 && p1 > 0 && p2 > 0);
+    const chartIsLog = P.key === 'main' && !!state.log;
+    const xL = Math.min(a.x, b.x), xR = Math.max(a.x, b.x);
+    const xStart = cfg.extendLeft ? Math.min(0, xL) : xL;
+    const xEnd = cfg.extendRight ? Math.max(W, xR) : xR;
+    // Khi thang tính Fib trùng thang biểu đồ (cùng log hoặc cùng tuyến tính) -> đường thẳng tuyệt đối, tính thẳng trên toạ độ màn hình (không tràn exp)
+    if (useLog === chartIsLog) {
+      const slopeY = (b.y - a.y) / bdx;
+      const dy = c.y - (a.y + slopeY * (c.x - a.x));
+      const yAt = (x, eff) => a.y + slopeY * (x - a.x) + eff * dy;
+      return enabled.map(lv => {
+        const eff = cfg.reverse ? (1 - lv.v) : lv.v;
+        const pA = { x: xStart, y: yAt(xStart, eff) }, pB = { x: xEnd, y: yAt(xEnd, eff) };
+        const lblPt = { x: xL, y: yAt(xL, eff) };
+        const lblPr = P.series.coordinateToPrice(lblPt.y);
+        return { v: lv.v, eff, c: lv.c || '#787b86', pts: [pA, pB], lblPt, lblPr };
+      }).sort((u, w) => u.eff - w.eff);
+    }
+    // Khi khác thang (Fib log trên biểu đồ thường, hoặc Fib thường trên biểu đồ log) -> tính theo không gian giá trị rồi chiếu lên biểu đồ
+    const toV = p => useLog ? Math.log(p) : p;
+    const fromV = v => useLog ? Math.exp(v) : v;
+    const v0 = toV(p0), v1 = toV(p1), v2 = toV(p2);
+    const slopeV = (v1 - v0) / bdx;
+    const dv = v2 - (v0 + slopeV * (c.x - a.x));
+    const sL = Math.max(-20, xStart), sR = Math.min(W + 20, xEnd), steps = 44;
+    const out = [];
+    for (const lv of enabled) {
       const eff = cfg.reverse ? (1 - lv.v) : lv.v;
-      const ox = eff * dx, oy = eff * dy;
-      const ax = a.x + ox, ay = a.y + oy, bx = b.x + ox, by = b.y + oy;
-      let p1 = ax <= bx ? { x: ax, y: ay } : { x: bx, y: by };
-      let p2 = ax <= bx ? { x: bx, y: by } : { x: ax, y: ay };
-      const lblPt = { x: p1.x, y: p1.y }, rightPt = { x: p2.x, y: p2.y };
-      if (!vert) {
-        if (cfg.extendLeft && p1.x > 0) p1 = { x: 0, y: p1.y + slope * (0 - p1.x) };
-        if (cfg.extendRight && p2.x < W) p2 = { x: W, y: p2.y + slope * (W - p2.x) };
-      } else {
-        const y0 = Math.min(ay, by), y1 = Math.max(ay, by);
-        p1 = { x: ax, y: cfg.extendLeft ? 0 : y0 };
-        p2 = { x: ax, y: cfg.extendRight ? H : y1 };
+      const lpts = [];
+      if (sR >= sL) {
+        for (let i = 0; i <= steps; i++) {
+          const x = sL + (sR - sL) * (i / steps);
+          const v = v0 + slopeV * (x - a.x) + eff * dv;
+          if (useLog && (v > 700 || v < -700)) continue;
+          const pr = fromV(v);
+          if (!Number.isFinite(pr) || (chartIsLog && pr <= 0)) continue;
+          const y = Y(pr);
+          if (y != null && isFinite(y)) lpts.push({ x, y });
+        }
       }
-      return { v: lv.v, eff, c: lv.c || '#787b86', p1, p2, lblPt, rightPt };
-    }).sort((u, w) => u.eff - w.eff);
+      if (lpts.length < 2) continue;
+      const vLbl = v0 + slopeV * (xL - a.x) + eff * dv;
+      const lblPr = (!useLog || (vLbl <= 700 && vLbl >= -700)) ? fromV(vLbl) : NaN;
+      const lblY = (Number.isFinite(lblPr) && (!chartIsLog || lblPr > 0)) ? Y(lblPr) : null;
+      const lblPt = lblY != null && isFinite(lblY) ? { x: xL, y: lblY } : lpts[0];
+      out.push({ v: lv.v, eff, c: lv.c || '#787b86', pts: lpts, lblPt, lblPr });
+    }
+    return out.sort((u, w) => u.eff - w.eff);
   }
   const hexA = (hex, a) => { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; };
   const fmtDur = s => {
@@ -2111,11 +2153,12 @@
         const segs = fibChLines(s, pts);
         if (cfg.fill && cfg.fillAlpha > 0 && segs.length > 1) {
           for (let i = 0; i < segs.length - 1; i++) {
-            const u = segs[i], w = segs[i + 1];
-            cx.fillStyle = hexA(w.c, cfg.fillAlpha);
+            const u = segs[i].pts, w = segs[i + 1].pts;
+            cx.fillStyle = hexA(segs[i + 1].c, cfg.fillAlpha);
             cx.beginPath();
-            cx.moveTo(u.p1.x, u.p1.y); cx.lineTo(u.p2.x, u.p2.y);
-            cx.lineTo(w.p2.x, w.p2.y); cx.lineTo(w.p1.x, w.p1.y);
+            cx.moveTo(u[0].x, u[0].y);
+            for (let j = 1; j < u.length; j++) cx.lineTo(u[j].x, u[j].y);
+            for (let j = w.length - 1; j >= 0; j--) cx.lineTo(w[j].x, w[j].y);
             cx.closePath(); cx.fill();
           }
         }
@@ -2125,13 +2168,12 @@
         cx.textBaseline = 'bottom';
         segs.forEach(g => {
           cx.strokeStyle = g.c; cx.setLineDash(dash);
-          cx.beginPath(); cx.moveTo(g.p1.x, g.p1.y); cx.lineTo(g.p2.x, g.p2.y); cx.stroke();
+          cx.beginPath(); cx.moveTo(g.pts[0].x, g.pts[0].y);
+          for (let j = 1; j < g.pts.length; j++) cx.lineTo(g.pts[j].x, g.pts[j].y);
+          cx.stroke();
           if (cfg.showLabels) {
             let txt = String(g.v);
-            if (cfg.showPrices) {
-              const pr = P.series.coordinateToPrice(g.lblPt.y);
-              if (pr != null) txt += ` (${fmt(pr)})`;
-            }
+            if (cfg.showPrices && g.lblPr != null && isFinite(g.lblPr)) txt += ` (${fmt(g.lblPr)})`;
             const lx = Math.max(4, Math.min(g.lblPt.x + 4, W - 70));
             const ly = Math.max(13, Math.min(g.lblPt.y - 3, H - 3));
             cx.fillStyle = g.c; cx.textAlign = 'left';
@@ -2422,7 +2464,10 @@
     if (s.type === 'fibch') {
       if (pts.length < 3) return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
       if (distSeg(x, y, a.x, a.y, pts[2].x, pts[2].y) <= 7) return true;
-      return fibChLines(s, pts).some(g => distSeg(x, y, g.p1.x, g.p1.y, g.p2.x, g.p2.y) <= 7);
+      return fibChLines(s, pts).some(g => {
+        for (let i = 1; i < g.pts.length; i++) if (distSeg(x, y, g.pts[i - 1].x, g.pts[i - 1].y, g.pts[i].x, g.pts[i].y) <= 7) return true;
+        return false;
+      });
     }
     return false;
   }
@@ -2824,6 +2869,7 @@
     $('fcLbl').checked = cfg.showLabels !== false;
     $('fcPrc').checked = !!cfg.showPrices;
     $('fcFill').checked = cfg.fill !== false;
+    $('fcLog').checked = !!cfg.logScale;
     const pct = Math.round((cfg.fillAlpha ?? 0.1) * 100);
     $('fcAlpha').value = pct;
     $('fcAlphaTxt').textContent = pct + '%';
@@ -2845,6 +2891,7 @@
   $('fcLbl').onchange = e => { fcCfg().showLabels = e.target.checked; fcCommit(); };
   $('fcPrc').onchange = e => { fcCfg().showPrices = e.target.checked; fcCommit(); };
   $('fcFill').onchange = e => { fcCfg().fill = e.target.checked; fcCommit(); };
+  $('fcLog').onchange = e => { fcCfg().logScale = e.target.checked; fcCommit(); };
   $('fcAlpha').oninput = e => {
     const v = parseInt(e.target.value, 10) || 0;
     $('fcAlphaTxt').textContent = v + '%';
@@ -2963,8 +3010,9 @@
     $('clkLeft').textContent = (dayMode === 'local' ? 'Hết ngày: ' : 'Nến ngày đóng: ') + hms(86400 - into);
     const collapsed = $('rsiPane').classList.contains('collapsed');
     const h = (collapsed ? (main.timeScale().height && main.timeScale().height()) : (rsiChart.timeScale().height && rsiChart.timeScale().height())) || 26;
-    const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 80;
+    const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 58;
     clock.style.height = h + 'px';
+    $('scaleBtns').style.width = sw + 'px';
     $('scaleBtns').style.minWidth = sw + 'px';
     $('scaleBtns').style.bottom = (collapsed ? h : 0) + 'px';
     clock.title = dayMode === 'local'
@@ -3051,7 +3099,8 @@
     tlabel.textContent = fmtTime(time);
     tlabel.style.height = tsH + 'px';
     tlabel.style.display = 'flex';
-    const mp = $('mainPane'), half = tlabel.offsetWidth / 2, maxX = mp.clientWidth - 80 - half;
+    const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 58;
+    const mp = $('mainPane'), half = tlabel.offsetWidth / 2, maxX = mp.clientWidth - sw - half;
     tlabel.style.left = (mp.offsetLeft + Math.max(half, Math.min(x, maxX))) + 'px';
   }
   main.subscribeCrosshairMove(param => {
