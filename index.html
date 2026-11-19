@@ -407,11 +407,14 @@
     <button class="tb" data-tool="arrow" data-tip="Mũi tên" aria-label="Mũi tên"><svg viewBox="0 0 28 28"><path d="M8 20L21 7"/><path d="M14.5 7H21v6.5"/><circle cx="6.5" cy="21.5" r="2.2"/></svg></button>
     <button class="tb" data-tool="hline" data-tip="Đường ngang" aria-label="Đường ngang"><svg viewBox="0 0 28 28"><path d="M4 14h20"/><circle cx="14" cy="14" r="2.4"/></svg></button>
     <button class="tb" data-tool="plabel" data-tip="Nhãn giá" aria-label="Nhãn giá"><svg viewBox="0 0 28 28"><path d="M5 23V9a1.5 1.5 0 0 1 1.5-1.5h15A1.5 1.5 0 0 1 23 9v7a1.5 1.5 0 0 1-1.5 1.5H11z"/></svg></button>
-    <button class="tb" data-tool="prange" data-tip="Khoảng giá" aria-label="Khoảng giá"><svg viewBox="0 0 28 28"><path d="M5 7h16M7 21h16M14 7v14M11 10l3-3 3 3M11 18l3 3 3-3"/><circle cx="23" cy="7" r="2"/><circle cx="5" cy="21" r="2"/></svg></button>
+    <!-- 3 Công cụ đo lường kiểu TradingView: Phạm vi giá, Phạm vi ngày, Phạm vi ngày & giá -->
+    <button class="tb" data-tool="prange" data-tip="Phạm vi giá" aria-label="Phạm vi giá"><svg viewBox="0 0 28 28"><path d="M5 7h18M5 21h18M14 7v14M11 10l3-3 3 3M11 18l3 3 3-3"/></svg></button>
+    <button class="tb" data-tool="drange" data-tip="Phạm vi ngày" aria-label="Phạm vi ngày"><svg viewBox="0 0 28 28"><path d="M7 5v18M21 5v18M7 14h14M10 11l-3 3 3 3M18 11l3 3-3 3"/></svg></button>
+    <button class="tb" data-tool="dprange" data-tip="Phạm vi ngày & giá" aria-label="Phạm vi ngày & giá"><svg viewBox="0 0 28 28"><rect x="6" y="6" width="16" height="16" rx="1"/><path d="M14 6v16M6 14h16M12 8l2-2 2 2M12 20l2 2 2-2M8 12l-2 2 2 2M20 12l2 2-2 2"/></svg></button>
     <button class="tb" data-tool="fib" data-tip="Fibonacci retracement" aria-label="Fibonacci retracement"><svg viewBox="0 0 28 28"><path d="M4 6h20M4 11h20M4 17h20M4 22h20"/><path d="M7 22L21 6" stroke-dasharray="2 2"/></svg></button>
     <button class="tb" data-tool="rect" data-tip="Hình chữ nhật" aria-label="Hình chữ nhật"><svg viewBox="0 0 28 28"><rect x="6" y="8" width="16" height="12" rx="1"/></svg></button>
     <button class="tb" data-tool="brush" data-tip="Cọ vẽ tự do" aria-label="Cọ vẽ tự do"><svg viewBox="0 0 28 28"><path d="M11 14.5l9.2-9.2a2.4 2.4 0 0 1 3.4 3.4L14.4 17.9"/><path d="M9.6 17.4c-1.8 0-3.2 1.4-3.2 3.2 0 1.4-2.2 1.6-1.8 2 1.1 1.1 2.6 1.9 4.4 1.9 2.4 0 4.2-1.9 4.2-4.2a2.9 2.9 0 0 0-3.6-2.9z"/></svg></button>
-    <button class="tb" data-tool="measure" data-tip="Thước đo giá / thời gian" aria-label="Thước đo giá / thời gian"><svg viewBox="0 0 28 28"><path d="M14 4v20M10 8l4-4 4 4M10 20l4 4 4-4M4 14h4M20 14h4"/></svg></button>
+    <button class="tb" data-tool="measure" data-tip="Thước đo nhanh (tạm thời)" aria-label="Thước đo nhanh"><svg viewBox="0 0 28 28"><path d="M14 4v20M10 8l4-4 4 4M10 20l4 4 4-4M4 14h4M20 14h4"/></svg></button>
     <div class="hr"></div>
     <button class="tb" id="dMagnet" data-tip="Nam châm: hít vào giá O/H/L/C" aria-label="Nam châm"><svg viewBox="0 0 28 28"><path d="M8 5v9a6 6 0 0 0 12 0V5h-4.5v9a1.5 1.5 0 0 1-3 0V5z"/><path d="M8 9h4.5M15.5 9H20"/></svg></button>
     <button class="tb" id="dW" data-tip="Độ dày nét cọ (bấm để đổi)" aria-label="Độ dày nét cọ">3px</button>
@@ -694,19 +697,6 @@
     const diff = prev ? d.close - prev.close : d.close - d.open;
     const pct = prev ? diff / prev.close * 100 : 0;
     const cls = diff >= 0 ? 'up' : 'down';
-    <!-- $('lgOhlc').innerHTML = -->
-      <!-- `<span>O<b class="${cls}"> ${fmt(d.open)}</b></span><span>H<b class="${cls}"> ${fmt(d.high)}</b></span>` + -->
-      <!-- `<span>L<b class="${cls}"> ${fmt(d.low)}</b></span><span>C<b class="${cls}"> ${fmt(d.close)}</b></span>` + -->
-      <!-- `<span class="${cls}">${diff >= 0 ? '+' : ''}${fmt(diff)} (${diff >= 0 ? '+' : ''}${fmt(pct)}%)</span>`; -->
-    <!-- $('lgVol').innerHTML = `<span>Vol · ${state.symbol.replace('USDT','')} <b class="${cls}">${fmtVol(d.volume)}</b></span>`; -->
-    <!-- $('lgEma').innerHTML = emaSeries.filter(e => e.show).map(e => -->
-      <!-- `<span style="color:${e.color}">EMA ${e.n} <i>${e.vals && e.vals[i] != null ? fmt(e.vals[i]) : '–'}</i></span>`).join(''); -->
-    <!-- const r = cache.R && cache.R[i], e9 = cache.E && cache.E[i], w = cache.W && cache.W[i]; -->
-    <!-- $('lgRsi').innerHTML = -->
-      <!-- `<span>RSI close ${state.rsi.len} ${state.rsi.xhi} ${state.rsi.xlo}</span>` + -->
-      <!-- `<span style="color:#ab47bc">${r != null ? fmt(r) : '–'}</span>` + -->
-      <!-- `<span style="color:#66bb6a">${e9 != null ? fmt(e9) : '–'}</span>` + -->
-      <!-- `<span style="color:#42a5f5">${w != null ? fmt(w) : '–'}</span>`; -->
   }
   main.subscribeCrosshairMove(param => {
     if (!param.time) { updateLegend(state.data.length - 1); return; }
@@ -1377,7 +1367,6 @@
   }
 
   // Chuyển đổi trực tiếp giữa thời gian thực (t) <-> toạ độ X của Lightweight Charts
-  // Hỗ trợ cả vùng tương lai (t > nến cuối) và các điểm nằm giữa 2 nến (như nét cọ vẽ tự do)
   function timeToX(t) {
     const d = state.data, n = d.length;
     if (n === 0) return null;
@@ -1400,7 +1389,6 @@
       const barW = xp != null ? (xn - xp) : 8;
       return xn + ((t - d[n - 1].time) / bs) * barW;
     }
-    // Nằm giữa 2 nến (ví dụ: vẽ ở khung 1h rồi chuyển sang 1d) -> nội suy tuyến tính giữa 2 nến kề nhau
     let lo = 0, hi = n - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -1440,7 +1428,6 @@
     if (time == null || price == null) return null;
 
     if (magnet && P.key === 'main' && tool !== 'brush') {
-      // Hít vào nến gần nhất và giá O/H/L/C gần chuột nhất
       let minDiff = Infinity, closestBar = null;
       for (const b of state.data) {
         const diff = Math.abs(b.time - time);
@@ -1469,9 +1456,16 @@
     if (d) o.push(d + ' ngày'); if (h) o.push(h + ' giờ'); if (m && !d) o.push(m + ' phút');
     return o.join(' ') || '0';
   };
+  function countBars(t1, t2) {
+    if (!state.data || state.data.length === 0) return 0;
+    const minT = Math.min(t1, t2), maxT = Math.max(t1, t2);
+    let bars = state.data.filter(bar => bar.time >= minT && bar.time <= maxT).length;
+    if (bars > 0) bars -= 1;
+    return bars;
+  }
   function tag(lines, x, y, bg, align, vmode) {
     cx.font = '600 11.5px -apple-system, "Trebuchet MS", Roboto, sans-serif';
-    const w = Math.max(...lines.map(l => cx.measureText(l).width)) + 14, h = lines.length * 15 + 6;
+    const w = Math.max(...lines.map(l => cx.measureText(l).width)) + 16, h = lines.length * 16 + 8;
     let left = align === 'c' ? x - w / 2 : align === 'r' ? x - w : x;
     left = Math.min(Math.max(4, left), W - w - 4);
     let top = vmode === 'above' ? y - h : vmode === 'mid' ? y - h / 2 : y;
@@ -1479,11 +1473,12 @@
     cx.fillStyle = bg; cx.beginPath();
     if (cx.roundRect) cx.roundRect(left, top, w, h, 4); else cx.rect(left, top, w, h);
     cx.fill();
-    cx.fillStyle = '#fff'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
-    lines.forEach((l, i) => cx.fillText(l, left + 7, top + 10.5 + i * 15));
+    cx.fillStyle = '#fff'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
+    lines.forEach((l, i) => cx.fillText(l, left + w / 2, top + 12 + i * 16));
   }
   function arrow(x1, y1, x2, y2) {
     cx.beginPath(); cx.moveTo(x1, y1); cx.lineTo(x2, y2); cx.stroke();
+    if (Math.hypot(x2 - x1, y2 - y1) < 4) return;
     const a = Math.atan2(y2 - y1, x2 - x1), s = 6;
     cx.beginPath(); cx.moveTo(x2, y2);
     cx.lineTo(x2 - s * Math.cos(a - 0.45), y2 - s * Math.sin(a - 0.45));
@@ -1527,7 +1522,7 @@
       const ang = Math.atan2(b.y - a.y, b.x - a.x), hs = 14, len = Math.hypot(b.x - a.x, b.y - a.y);
       cx.lineWidth = 2; cx.lineCap = 'round';
       cx.beginPath(); cx.moveTo(a.x, a.y);
-      const k = len > hs ? hs * 0.8 : 0;            // dừng đường thẳng trước đầu mũi tên cho gọn
+      const k = len > hs ? hs * 0.8 : 0;
       cx.lineTo(b.x - k * Math.cos(ang), b.y - k * Math.sin(ang)); cx.stroke();
       if (len > 2) {
         cx.beginPath(); cx.moveTo(b.x, b.y);
@@ -1540,16 +1535,50 @@
       cx.beginPath(); cx.moveTo(0, a.y); cx.lineTo(W, a.y); cx.stroke();
       tag([fmt(s.pts[0].p)], W - 4, a.y, col, 'r', 'mid');
     } else if (s.type === 'prange') {
+      // 1. Công cụ Phạm vi giá (chuẩn TradingView)
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
       const up = s.pts[1].p >= s.pts[0].p;
-      cx.fillStyle = hexA(col, 0.15);
-      cx.fillRect(x0, Math.min(a.y, b.y), x1 - x0, Math.abs(b.y - a.y));
-      cx.lineWidth = 1.5;
+      const rc = up ? '#2962ff' : '#f23645';
+      cx.fillStyle = hexA(rc, 0.16);
+      cx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      cx.strokeStyle = rc; cx.lineWidth = 1.5;
       cx.beginPath(); cx.moveTo(x0, a.y); cx.lineTo(x1, a.y); cx.moveTo(x0, b.y); cx.lineTo(x1, b.y); cx.stroke();
       arrow(mx, a.y, mx, b.y);
       const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
       tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`],
-        mx, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, col, 'c', up ? 'above' : 'top');
+        mx, up ? y0 - 6 : y1 + 6, rc, 'c', up ? 'above' : 'top');
+    } else if (s.type === 'drange') {
+      // 2. Công cụ Phạm vi ngày (chuẩn TradingView)
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
+      const rc = '#2962ff';
+      cx.fillStyle = hexA(rc, 0.16);
+      cx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      cx.strokeStyle = rc; cx.lineWidth = 1.5;
+      cx.beginPath(); cx.moveTo(a.x, y0); cx.lineTo(a.x, y1); cx.moveTo(b.x, y0); cx.lineTo(b.x, y1); cx.stroke();
+      arrow(a.x, my, b.x, my);
+      const bars = countBars(s.pts[0].t, s.pts[1].t);
+      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
+      tag([`${bars} thanh, ${fmtDur(secs)}`], mx, y1 + 6, rc, 'c', 'top');
+    } else if (s.type === 'dprange') {
+      // 3. Công cụ Phạm vi ngày và giá (chuẩn TradingView)
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), mx = (a.x + b.x) / 2;
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
+      const up = s.pts[1].p >= s.pts[0].p;
+      const rc = up ? '#2962ff' : '#f23645';
+      cx.fillStyle = hexA(rc, 0.16);
+      cx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      cx.strokeStyle = rc; cx.lineWidth = 1.5;
+      cx.strokeRect(x0, y0, x1 - x0, y1 - y0);
+      arrow(a.x, my, b.x, my);
+      arrow(mx, a.y, mx, b.y);
+      const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
+      const bars = countBars(s.pts[0].t, s.pts[1].t);
+      const secs = Math.abs(s.pts[1].t - s.pts[0].t);
+      const line1 = P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`;
+      const line2 = `${bars} thanh, ${fmtDur(secs)}`;
+      tag([line1, line2], mx, up ? y0 - 6 : y1 + 6, rc, 'c', up ? 'above' : 'top');
     } else if (s.type === 'plabel') {
       const g = plGeom(s, a), edgeY = g.flipY ? g.top + 1 : g.top + g.h - 1, dx = g.flipX ? -12 : 12;
       cx.fillStyle = col;
@@ -1586,23 +1615,20 @@
       arrow(a.x, (a.y + b.y) / 2, b.x, (a.y + b.y) / 2);
       arrow((a.x + b.x) / 2, a.y, (a.x + b.x) / 2, b.y);
       const dp = s.pts[1].p - s.pts[0].p, pct = dp / s.pts[0].p * 100, sg = dp >= 0 ? '+' : '';
-      let bars = 0;
-      if (state.data && state.data.length > 0) {
-        const minTime = Math.min(s.pts[0].t, s.pts[1].t);
-        const maxTime = Math.max(s.pts[0].t, s.pts[1].t);
-        bars = state.data.filter(bar => bar.time >= minTime && bar.time <= maxTime).length;
-        if (bars > 0) bars -= 1;
-      }
+      const bars = countBars(s.pts[0].t, s.pts[1].t);
       const secs = Math.abs(s.pts[1].t - s.pts[0].t);
       tag([P.key === 'rsi' ? `${sg}${fmt(dp)}` : `${sg}${fmt(dp)} (${sg}${fmt(pct)}%)`, `${bars} nến, ${fmtDur(secs)}`],
         (a.x + b.x) / 2, up ? Math.min(a.y, b.y) - 6 : Math.max(a.y, b.y) + 6, mc, 'c', up ? 'above' : 'top');
     }
     if (sel) {
+      const hcol = (s.type === 'prange' || s.type === 'drange' || s.type === 'dprange')
+        ? ((s.type === 'drange' || s.pts[1].p >= s.pts[0].p) ? '#2962ff' : '#f23645')
+        : col;
       cx.lineWidth = 2; cx.setLineDash([]);
       pts.forEach((p, i) => {
         if (s.type === 'hline') p = { x: Math.min(Math.max(p.x, 14), W - 60), y: p.y };
         cx.beginPath(); cx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-        cx.fillStyle = '#fff'; cx.fill(); cx.strokeStyle = col; cx.stroke();
+        cx.fillStyle = '#fff'; cx.fill(); cx.strokeStyle = hcol; cx.stroke();
       });
     }
   }
@@ -1618,7 +1644,6 @@
     else { const k = 2 / (n + 1); for (let i = n; i < v.length; i++) out[i] = v[i] * k + out[i - 1] * (1 - k); }
     return out;
   }
-  // c: state.data (giá thật), o: {fast, slow, type, rr, fee, exitCross}
   function mabRun(c, o) {
     const close = c.map(x => x.close);
     const f = mabAvg(close, o.fast, o.type), s = mabAvg(close, o.slow, o.type);
@@ -1656,14 +1681,14 @@
     const n = trades.length;
     return { trades, stats: { n, winRate: n ? wins / n : 0, total: eq - 1, maxDD: dd, avgR: n ? sumR / n : 0, pf: gl > 0 ? gw / gl : (gw > 0 ? Infinity : 0) } };
   }
-  function mabIdx(t) { // chỉ số nến có đúng thời gian t (state.data luôn tăng dần)
+  function mabIdx(t) {
     const d = state.data; let lo = 0, hi = d.length - 1;
     while (lo <= hi) { const m = (lo + hi) >> 1; if (d[m].time === t) return m; if (d[m].time < t) lo = m + 1; else hi = m - 1; }
     return -1;
   }
   const mabCfg = () => ({
     type: $('mType').value, fast: +$('mFast').value, slow: +$('mSlow').value,
-    rr: 0, fee: +$('mFee').value || 0, exitCross: true // không chốt theo R: chỉ thoát khi chạm SL hoặc MA nhanh cắt xuống MA chậm
+    rr: 0, fee: +$('mFee').value || 0, exitCross: true
   });
   const mabPct = x => (x * 100).toFixed(2) + '%';
   const mabCls = x => x > 0 ? 'up' : x < 0 ? 'down' : '';
@@ -1676,7 +1701,7 @@
     if (!(o.fast >= 2 && o.slow > o.fast)) { $('mInfo').textContent = 'MA chậm phải lớn hơn MA nhanh.'; mab.trades = []; touch(); return; }
     try { localStorage.setItem('mabCfg', JSON.stringify(o)); } catch (e) {}
     const all = state.data, lastB = all[all.length - 1];
-    const closed = !lastB || closeTime(lastB.time) <= Date.now() / 1000 + TZ; // bỏ nến đang chạy để tín hiệu không đổi theo từng giây
+    const closed = !lastB || closeTime(lastB.time) <= Date.now() / 1000 + TZ;
     const d = closed ? all : all.slice(0, -1);
     const r = mabRun(d, o);
     mab.trades = r.trades; mab.stats = r.stats;
@@ -1699,7 +1724,7 @@
   }
   $('tgMaBt').onclick = () => {
     if (mab.on) { mabOff(); return; }
-    if (rp.phase !== 'off') return; // đang phát lại nến: không chạy cùng lúc
+    if (rp.phase !== 'off') return;
     mab.on = true; $('maBt').classList.add('open'); $('tgMaBt').classList.add('on'); mabRefresh();
   };
   ['mType', 'mFast', 'mSlow', 'mFee'].forEach(id => $(id).addEventListener('change', mabRefresh));
@@ -1714,11 +1739,10 @@
     if (sv) { $('mType').value = sv.type === 'sma' ? 'sma' : 'ema'; $('mFast').value = sv.fast; $('mSlow').value = sv.slow; $('mFee').value = sv.fee; }
   } catch (e) {}
 
-  // Vẽ lệnh lên biểu đồ chính: vùng rủi ro (đỏ), vùng chốt lời (xanh), điểm vào / thoát
   function drawMab() {
     if (!mab.on || !mab.trades.length || rp.phase !== 'off') return;
     const ts = P.chart.timeScale(), d = state.data, pal = palette();
-    let lastLx = -1e9; // nhãn R: bỏ qua nhãn nào chồng lên nhãn trước (cách nhau < 30px)
+    let lastLx = -1e9;
     cx.save(); cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif'; cx.textAlign = 'center';
     for (const t of mab.trades) {
       const i0 = mabIdx(t.t0), i1 = mabIdx(t.t1); if (i0 < 0 || i1 < 0) continue;
@@ -1736,10 +1760,10 @@
       cx.setLineDash([]);
       const win = t.ret > 0, col = win ? pal.up : pal.down;
       const yLow = Y(d[i0].low), yHigh = Y(d[i1].high);
-      if (yLow != null) { // mũi tên vào lệnh (dưới nến)
+      if (yLow != null) {
         cx.fillStyle = pal.up; cx.beginPath(); cx.moveTo(x0, yLow + 5); cx.lineTo(x0 - 5, yLow + 13); cx.lineTo(x0 + 5, yLow + 13); cx.closePath(); cx.fill();
       }
-      if (yHigh != null) { // mũi tên thoát lệnh (trên nến)
+      if (yHigh != null) {
         cx.fillStyle = col; cx.beginPath(); cx.moveTo(x1, yHigh - 5); cx.lineTo(x1 - 5, yHigh - 13); cx.lineTo(x1 + 5, yHigh - 13); cx.closePath(); cx.fill();
         if (x1 - lastLx >= 30) { cx.fillText((t.r >= 0 ? '+' : '') + t.r.toFixed(1) + 'R', x1, yHigh - 17); lastLx = x1; }
       }
@@ -1826,14 +1850,25 @@
       return (x >= x0 - 6 && x <= x1 + 6 && (Math.abs(y - a.y) <= 6 || Math.abs(y - b.y) <= 6)) ||
              (Math.abs(x - mx) <= 6 && y >= y0 - 6 && y <= y1 + 6);
     }
+    if (s.type === 'drange') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
+      const y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y), my = (a.y + b.y) / 2;
+      return (y >= y0 - 6 && y <= y1 + 6 && (Math.abs(x - a.x) <= 6 || Math.abs(x - b.x) <= 6)) ||
+             (Math.abs(y - my) <= 6 && x >= x0 - 6 && x <= x1 + 6);
+    }
+    if (s.type === 'dprange' || s.type === 'rect') {
+      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      const borderHit = ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
+                        ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
+      if (s.type === 'rect') return borderHit;
+      return borderHit ||
+             (Math.abs(x - mx) <= 6 && y >= y0 - 6 && y <= y1 + 6) ||
+             (Math.abs(y - my) <= 6 && x >= x0 - 6 && x <= x1 + 6);
+    }
     if (s.type === 'plabel') {
       const g = plGeom(s, a);
       return (x >= g.left - 3 && x <= g.left + g.w + 3 && y >= g.top - 3 && y <= g.top + g.h + 3) || Math.hypot(x - a.x, y - a.y) <= 8;
-    }
-    if (s.type === 'rect') {
-      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
-      return ((Math.abs(x - x0) <= 6 || Math.abs(x - x1) <= 6) && y >= y0 - 6 && y <= y1 + 6) ||
-             ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
     }
     if (s.type === 'fib') {
       const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
@@ -1867,10 +1902,12 @@
     hline: 'Bấm để đặt đường ngang',
     arrow: 'Bấm điểm đầu rồi bấm điểm cuối (đầu mũi tên)',
     plabel: 'Bấm để đặt nhãn giá tại điểm đó',
-    prange: 'Bấm hai điểm để đo khoảng giá',
+    prange: 'Bấm hai điểm để đo phạm vi giá',
+    drange: 'Bấm hai điểm để đo phạm vi ngày',
+    dprange: 'Bấm hai điểm để đo phạm vi ngày và giá',
     rect: 'Bấm hai góc của hình chữ nhật',
     fib: 'Bấm điểm đầu và điểm cuối của sóng',
-    measure: 'Bấm hai điểm để đo giá và thời gian',
+    measure: 'Bấm hai điểm để đo nhanh giá và thời gian',
     brush: 'Giữ chuột và rê để vẽ tự do · Esc để thoát cọ'
   };
   function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
@@ -1905,11 +1942,11 @@
   function bindPane(p) {
     const cv = p.cv;
     cv.addEventListener('pointerdown', e => {
-      if (e.button === 2) return;                    // chuột phải = reset biểu đồ, không vẽ
+      if (e.button === 2) return;
       useP(p);
       const { x, y } = xyOf(e);
       if (tool !== 'cursor') {
-        if (cur && paneOf(cur) !== p.key) return;      // điểm thứ hai phải nằm cùng khung với điểm đầu
+        if (cur && paneOf(cur) !== p.key) return;
         const pt = ptFromEvent(e); if (!pt) return;
         e.preventDefault();
         try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1988,7 +2025,6 @@
     cv.addEventListener('pointercancel', () => { endBrush(); if (drag) { drag = null; saveDrawings(); } });
     cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); touch(); } });
 
-    // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
     p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
       if (tool !== 'cursor' || drag || !drawings.length) return;
       useP(p);
@@ -2044,7 +2080,7 @@
 
   /* ---------- Đồng hồ UTC+7 + đếm ngược hết ngày (góc dưới bên phải) ---------- */
   const clock = $('clock');
-  let dayMode = 'local'; // 'local': hết ngày lúc 00:00 giờ VN · 'binance': nến ngày Binance đóng lúc 07:00 giờ VN
+  let dayMode = 'local';
   const hms = s => `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s % 3600 / 60))}:${pad2(Math.floor(s % 60))}`;
   function tickClock() {
     const nowSec = Date.now() / 1000;
@@ -2095,7 +2131,6 @@
     showCtx(e.clientX, e.clientY);
   }));
   $('ctxReset').onclick = () => { hideCtx(); resetChartView(); };
-  // Bấm chuột trái (hoặc bất kỳ chỗ nào ngoài menu) để tắt menu
   document.addEventListener('pointerdown', e => { if (!ctxMenu.contains(e.target)) hideCtx(); }, true);
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') hideCtx();
@@ -2108,7 +2143,6 @@
   ctxMenu.addEventListener('contextmenu', e => e.preventDefault());
 
   /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
-  // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
   const vsync = $('vsync');
   function hideSync() { vsync.style.display = 'none'; }
   function showSync(x, from) {
@@ -2123,13 +2157,11 @@
     vsync.style.height = (bottom - top) + 'px';
     vsync.style.display = 'block';
   }
-  // Bám đúng giữa nến (giống đường dọc có sẵn của biểu đồ), ngoài vùng nến thì theo chuột
   const syncX = (chart, param) => {
     if (!param.point) return null;
     const c = param.time != null ? chart.timeScale().timeToCoordinate(param.time) : null;
     return c != null ? c : param.point.x;
   };
-  // Trục thời gian của khung giá bị ẩn -> hiện nhãn ngày giờ tự vẽ ở đáy khi rê chuột vào khung giá
   const tlabel = $('tlabel');
   function hideTLabel() { tlabel.style.display = 'none'; }
   function showTLabel(x, time) {
