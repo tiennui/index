@@ -315,6 +315,38 @@
   #emaCfg .acts { display: flex; justify-content: space-between; margin-top: 12px; }
   #emaCfg .acts .btn { background: var(--hover); }
   #emaCfg .err { color: var(--down); font-size: 12px; min-height: 16px; margin-top: 4px; }
+  #candleCfg {
+    position: fixed; top: 48px; right: 12px; z-index: 50; display: none; width: 280px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  }
+  #candleCfg.open { display: block; }
+  #candleCfg h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  #candleCfg .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+  #candleCfg .pre {
+    display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 5px;
+    border: 1px solid var(--line); background: var(--hover); color: var(--text);
+    font: inherit; font-size: 12px; cursor: pointer; text-align: left;
+  }
+  #candleCfg .pre:hover { border-color: var(--accent); }
+  #candleCfg .pre.on { border-color: var(--accent); background: var(--active); color: var(--accent); font-weight: 600; }
+  #candleCfg .sw { display: inline-flex; gap: 2px; flex: none; }
+  #candleCfg .sw i { width: 8px; height: 12px; border-radius: 1.5px; display: block; border: 1px solid rgba(128,128,128,.45); }
+  #candleCfg .cols {
+    display: grid; grid-template-columns: 1fr 56px 56px; align-items: center; gap: 6px;
+    margin-bottom: 6px; font-size: 12px;
+  }
+  #candleCfg .cols.hdr { color: var(--muted); font-size: 11px; margin-bottom: 4px; text-align: center; }
+  #candleCfg .cols.hdr span:first-child { text-align: left; }
+  #candleCfg .cols label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #candleCfg .cols input[type=checkbox] { margin: 0; cursor: pointer; }
+  #candleCfg .cols input[type=color] {
+    width: 44px; height: 26px; padding: 2px; border: 1px solid var(--line); border-radius: 5px;
+    background: var(--hover); cursor: pointer; justify-self: center;
+  }
+  #candleCfg .cols input[type=color]:disabled { opacity: .35; cursor: not-allowed; }
+  #candleCfg .acts { display: flex; justify-content: space-between; margin-top: 12px; }
+  #candleCfg .acts .btn { background: var(--hover); }
 
   #rbar {
     display: none; flex: none; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -637,6 +669,7 @@
   <div id="tfs"></div>
   <span class="sep"></span>
   <button class="btn" id="tgHA" title="Chuyển sang nến Heiken Ashi (RSI, EMA, Backtest vẫn tính trên giá thật)">Heiken Ashi</button>
+  <button class="btn" id="btnCandle" aria-haspopup="dialog" title="Chỉnh màu thân, viền và râu nến">🎨 Màu nến</button>
   <button class="btn" id="tgEma">EMA 20/50/200</button>
   <button class="btn" id="btnEma" aria-haspopup="dialog" title="Chỉnh giá trị (chu kỳ) hai đường EMA">⚙</button>
   <button class="btn" id="tgVol">Vol</button>
@@ -655,6 +688,10 @@
     <svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.6-5.9"/><path d="M4 4v4.5h4.5"/></svg>
     <span>Đặt lại biểu đồ</span><span class="k">Alt + R</span>
   </button>
+  <button class="it" id="ctxCandle" role="menuitem">
+    <svg viewBox="0 0 24 24"><path d="M9 4v3m0 10v3M7 7h4v10H7zM17 6v2m0 8v4M15 8h4v8h-4z"/></svg>
+    <span>Chỉnh màu nến</span>
+  </button>
   <button class="it" id="ctxResetLayout" role="menuitem">
     <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>
     <span>Đặt lại bố cục mặc định</span>
@@ -668,6 +705,33 @@
   <div class="f"><label><input id="eS3" type="checkbox" checked aria-label="Hiển thị EMA thứ ba"><i style="background:#9c27b0"></i>EMA thứ ba</label><input id="eN3" type="number" min="1" max="500" step="1" aria-label="Chu kỳ EMA thứ ba"></div>
   <div class="err" id="eErr"></div>
   <div class="acts"><button class="btn" id="eReset">Mặc định</button><button class="btn on" id="eClose">Đóng</button></div>
+</div>
+
+<div id="candleCfg" role="dialog" aria-label="Cài đặt màu nến">
+  <h4>Chỉnh màu nến</h4>
+  <div class="presets" id="ccPresets">
+    <button type="button" class="pre" data-pre="bw"><span class="sw"><i style="background:#fff"></i><i style="background:#444"></i></span>Trắng / Đen</button>
+    <button type="button" class="pre" data-pre="tv"><span class="sw"><i style="background:#089981"></i><i style="background:#f23645"></i></span>Xanh / Đỏ</button>
+    <button type="button" class="pre" data-pre="bn"><span class="sw"><i style="background:#0ecb81"></i><i style="background:#f6465d"></i></span>Binance</button>
+    <button type="button" class="pre" data-pre="bp"><span class="sw"><i style="background:#2962ff"></i><i style="background:#e91e63"></i></span>Xanh / Hồng</button>
+  </div>
+  <div class="cols hdr"><span>Thành phần</span><span>Tăng</span><span>Giảm</span></div>
+  <div class="cols">
+    <label>Thân nến</label>
+    <input id="ccUp" type="color" aria-label="Màu thân nến tăng">
+    <input id="ccDn" type="color" aria-label="Màu thân nến giảm">
+  </div>
+  <div class="cols">
+    <label><input id="ccBOn" type="checkbox" checked>Viền nến</label>
+    <input id="ccBUp" type="color" aria-label="Màu viền nến tăng">
+    <input id="ccBDn" type="color" aria-label="Màu viền nến giảm">
+  </div>
+  <div class="cols">
+    <label><input id="ccWOn" type="checkbox" checked>Râu nến</label>
+    <input id="ccWUp" type="color" aria-label="Màu râu nến tăng">
+    <input id="ccWDn" type="color" aria-label="Màu râu nến giảm">
+  </div>
+  <div class="acts"><button class="btn" id="ccReset">Mặc định</button><button class="btn on" id="ccClose">Đóng</button></div>
 </div>
 
 <div id="cfg" role="dialog" aria-label="Cài đặt RSI">
@@ -1011,11 +1075,37 @@
   const rsiChart = LightweightCharts.createChart($('rsi'), chartOptions());
 
   const p0 = palette();
-  /* Nến kiểu trắng đen: nến tăng rỗng (viền đen), nến giảm đặc (xám đậm). Giao diện tối thì đảo màu. */
-  const candleOpts = () => state.dark
-    ? { upColor: palette().bg, downColor: '#b2b5be', borderUpColor: '#d1d4dc', borderDownColor: '#b2b5be', wickUpColor: '#d1d4dc', wickDownColor: '#b2b5be', priceLineColor: '#d1d4dc' }
-    : { upColor: '#ffffff', downColor: '#444444', borderUpColor: '#000000', borderDownColor: '#000000', wickUpColor: '#000000', wickDownColor: '#000000', priceLineColor: '#131722' };
-  const candles = main.addCandlestickSeries({ borderVisible: true, ...candleOpts() });
+  /* Nến: mặc định trắng đen (tự đảo theo nền sáng/tối), hỗ trợ tùy chỉnh màu và lưu localStorage */
+  const CANDLE_KEY = 'candleCfg_v1';
+  const CANDLE_PRESETS = {
+    bw: null,
+    tv: { upColor: '#089981', downColor: '#f23645', borderVisible: true, borderUpColor: '#089981', borderDownColor: '#f23645', wickVisible: true, wickUpColor: '#089981', wickDownColor: '#f23645' },
+    bn: { upColor: '#0ecb81', downColor: '#f6465d', borderVisible: true, borderUpColor: '#0ecb81', borderDownColor: '#f6465d', wickVisible: true, wickUpColor: '#0ecb81', wickDownColor: '#f6465d' },
+    bp: { upColor: '#2962ff', downColor: '#e91e63', borderVisible: true, borderUpColor: '#2962ff', borderDownColor: '#e91e63', wickVisible: true, wickUpColor: '#2962ff', wickDownColor: '#e91e63' }
+  };
+  let candleCfg = { custom: false, preset: 'bw', upColor: '#ffffff', downColor: '#444444', borderVisible: true, borderUpColor: '#000000', borderDownColor: '#000000', wickVisible: true, wickUpColor: '#000000', wickDownColor: '#000000' };
+  try {
+    const sv = JSON.parse(localStorage.getItem(CANDLE_KEY) || 'null');
+    if (sv && typeof sv === 'object') candleCfg = { ...candleCfg, ...sv };
+  } catch (e) {}
+  const defaultCandleOpts = () => state.dark
+    ? { upColor: palette().bg, downColor: '#b2b5be', borderVisible: true, borderUpColor: '#d1d4dc', borderDownColor: '#b2b5be', wickVisible: true, wickUpColor: '#d1d4dc', wickDownColor: '#b2b5be', priceLineColor: '#d1d4dc' }
+    : { upColor: '#ffffff', downColor: '#444444', borderVisible: true, borderUpColor: '#000000', borderDownColor: '#000000', wickVisible: true, wickUpColor: '#000000', wickDownColor: '#000000', priceLineColor: '#131722' };
+  const candleOpts = () => {
+    if (!candleCfg.custom) return defaultCandleOpts();
+    return {
+      upColor: candleCfg.upColor,
+      downColor: candleCfg.downColor,
+      borderVisible: candleCfg.borderVisible !== false,
+      borderUpColor: candleCfg.borderUpColor,
+      borderDownColor: candleCfg.borderDownColor,
+      wickVisible: candleCfg.wickVisible !== false,
+      wickUpColor: candleCfg.wickUpColor,
+      wickDownColor: candleCfg.wickDownColor,
+      priceLineColor: state.dark ? '#d1d4dc' : '#131722'
+    };
+  };
+  const candles = main.addCandlestickSeries({ ...candleOpts() });
   const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
@@ -1471,7 +1561,7 @@
   $('btnEma').onclick = e => {
     const open = emaCfg.classList.toggle('open');
     e.currentTarget.classList.toggle('on', open);
-    if (open) { $('cClose').click(); fillEmaCfg(); $('eErr').textContent = ''; }
+    if (open) { $('cClose').click(); $('ccClose').click(); fillEmaCfg(); $('eErr').textContent = ''; }
   };
   $('eClose').onclick = () => { emaCfg.classList.remove('open'); $('btnEma').classList.remove('on'); };
   $('eReset').onclick = () => {
@@ -1479,6 +1569,74 @@
     applyEmaCfg();
   };
   refreshEmaLabel();
+
+  /* ---------- Chỉnh màu nến ---------- */
+  const candleDlg = $('candleCfg');
+  const saveCandleCfg = () => { try { localStorage.setItem(CANDLE_KEY, JSON.stringify(candleCfg)); } catch (e) {} };
+  const hexOk = c => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c);
+  function fillCandleCfg() {
+    const cur = candleOpts();
+    $('ccUp').value = hexOk(cur.upColor) ? cur.upColor : '#ffffff';
+    $('ccDn').value = hexOk(cur.downColor) ? cur.downColor : '#444444';
+    $('ccBOn').checked = cur.borderVisible !== false;
+    $('ccBUp').value = hexOk(cur.borderUpColor) ? cur.borderUpColor : '#000000';
+    $('ccBDn').value = hexOk(cur.borderDownColor) ? cur.borderDownColor : '#000000';
+    $('ccWOn').checked = cur.wickVisible !== false;
+    $('ccWUp').value = hexOk(cur.wickUpColor) ? cur.wickUpColor : '#000000';
+    $('ccWDn').value = hexOk(cur.wickDownColor) ? cur.wickDownColor : '#000000';
+    $('ccBUp').disabled = $('ccBDn').disabled = !$('ccBOn').checked;
+    $('ccWUp').disabled = $('ccWDn').disabled = !$('ccWOn').checked;
+    const activePre = !candleCfg.custom ? 'bw' : (candleCfg.preset || '');
+    $('ccPresets').querySelectorAll('.pre').forEach(b => b.classList.toggle('on', b.dataset.pre === activePre));
+  }
+  function applyCandleFromInputs() {
+    candleCfg = {
+      custom: true,
+      preset: '',
+      upColor: $('ccUp').value,
+      downColor: $('ccDn').value,
+      borderVisible: $('ccBOn').checked,
+      borderUpColor: $('ccBUp').value,
+      borderDownColor: $('ccBDn').value,
+      wickVisible: $('ccWOn').checked,
+      wickUpColor: $('ccWUp').value,
+      wickDownColor: $('ccWDn').value
+    };
+    $('ccBUp').disabled = $('ccBDn').disabled = !candleCfg.borderVisible;
+    $('ccWUp').disabled = $('ccWDn').disabled = !candleCfg.wickVisible;
+    $('ccPresets').querySelectorAll('.pre').forEach(b => b.classList.remove('on'));
+    candles.applyOptions(candleOpts());
+    saveCandleCfg();
+  }
+  ['ccUp','ccDn','ccBUp','ccBDn','ccWUp','ccWDn'].forEach(id => $(id).addEventListener('input', applyCandleFromInputs));
+  ['ccBOn','ccWOn'].forEach(id => $(id).addEventListener('change', applyCandleFromInputs));
+  $('ccPresets').querySelectorAll('.pre').forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.pre, pre = CANDLE_PRESETS[k];
+      if (!pre) {
+        candleCfg = { ...defaultCandleOpts(), custom: false, preset: 'bw' };
+      } else {
+        candleCfg = { ...pre, custom: true, preset: k };
+      }
+      candles.applyOptions(candleOpts());
+      saveCandleCfg();
+      fillCandleCfg();
+    };
+  });
+  function openCandleDlg(forceOpen) {
+    const open = forceOpen === true ? true : !candleDlg.classList.contains('open');
+    candleDlg.classList.toggle('open', open);
+    $('btnCandle').classList.toggle('on', open);
+    if (open) { $('cClose').click(); $('eClose').click(); fillCandleCfg(); }
+  }
+  $('btnCandle').onclick = () => openCandleDlg();
+  $('ccClose').onclick = () => { candleDlg.classList.remove('open'); $('btnCandle').classList.remove('on'); };
+  $('ccReset').onclick = () => {
+    candleCfg = { ...defaultCandleOpts(), custom: false, preset: 'bw' };
+    candles.applyOptions(candleOpts());
+    saveCandleCfg();
+    fillCandleCfg();
+  };
   $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); saveLayout(); renderAll(); };
   $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); saveLayout(); renderAll(); };
   $('tgTheme').onclick = e => {
@@ -1491,6 +1649,7 @@
     rsiChart.applyOptions(chartOptions());
     setLevels();
     candles.applyOptions(candleOpts());
+    if (candleDlg.classList.contains('open')) fillCandleCfg();
     saveLayout();
     renderAll();
   };
@@ -1585,11 +1744,11 @@
   $('btnCfg').onclick = e => {
     const open = cfg.classList.toggle('open');
     e.currentTarget.classList.toggle('on', open);
-    if (open) { $('eClose').click(); fillCfg(); }
+    if (open) { $('eClose').click(); $('ccClose').click(); fillCfg(); }
   };
   $('cClose').onclick = () => { cfg.classList.remove('open'); $('btnCfg').classList.remove('on'); };
   $('cReset').onclick = () => { state.rsi = { ...RSI_DEFAULT }; fillCfg(); applyCfg(); };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); $('ccClose').click(); } });
 
   /* ---------- Chế độ Log ---------- */
   function applyLogMode() {
@@ -3132,6 +3291,7 @@
     showCtx(e.clientX, e.clientY);
   }));
   $('ctxReset').onclick = () => { hideCtx(); resetChartView(true); };
+  $('ctxCandle').onclick = () => { hideCtx(); openCandleDlg(true); };
   // Bấm chuột trái (hoặc bất kỳ chỗ nào ngoài menu) để tắt menu
   document.addEventListener('pointerdown', e => { if (!ctxMenu.contains(e.target)) hideCtx(); }, true);
   document.addEventListener('keydown', e => {
@@ -3739,6 +3899,7 @@
   $('btnSaveLayout').onclick = () => {
     saveLayout();
     saveCurrentView();
+    saveCandleCfg();
     wlSaveUi();
     saveDrawings();
     const b = $('btnSaveLayout');
