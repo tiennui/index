@@ -760,6 +760,7 @@
     <input type="color" id="dColor" value="#2962ff" title="Màu hình vẽ" aria-label="Màu hình vẽ">
     <div class="grow"></div>
     <div class="hr"></div>
+    <button class="tb" id="dHide" data-tip="Ẩn tất cả bản vẽ" aria-label="Ẩn / hiện bản vẽ" aria-pressed="false"><svg viewBox="0 0 28 28"><path d="M3.5 14s4-6.5 10.5-6.5S24.5 14 24.5 14s-4 6.5-10.5 6.5S3.5 14 3.5 14z"/><circle cx="14" cy="14" r="3"/></svg></button>
     <button class="tb" id="dDel" data-tip="Xoá hình đang chọn (Delete)" aria-label="Xoá hình vẽ"><svg viewBox="0 0 28 28"><path d="M6 8.5h16M11 8.5V5.5h6v3M8.5 8.5l1 14h9l1-14M12 12.5v6.5M16 12.5v6.5"/></svg></button>
   </div>
   <div class="pane" id="mainPane">
@@ -1807,7 +1808,7 @@
   let P = PANES.main, cx = P.cx, W = 0, H = 0;   // khung đang xử lý
   const useP = p => { P = p; cx = p.cx; W = p.W; H = p.H; };
   let drawings = [], drawSym = null, selId = null, cur = null, measure = null;
-  let tool = 'cursor', magnet = false, dColor = '#2962ff', drag = null;
+  let tool = 'cursor', magnet = false, hideDrawings = false, dColor = '#2962ff', drag = null;
   let justStarted = false, downXY = null, ver = 0;
   let brushW = 3, brushing = false, brushLast = null;
   const paneOf = d => d.pane || 'main';
@@ -2417,8 +2418,10 @@
     cx.save(); cx.beginPath(); cx.rect(0, 0, w, h); cx.clip();
     retryDraw = false;
     if (p.key === 'main') drawMab();
-    drawings.forEach(d => { if (paneOf(d) === p.key) drawShape(d, d.id === selId); });
-    if (measure && paneOf(measure) === p.key) drawShape(measure, false);
+    if (!hideDrawings) {
+      drawings.forEach(d => { if (paneOf(d) === p.key) drawShape(d, d.id === selId); });
+      if (measure && paneOf(measure) === p.key) drawShape(measure, false);
+    }
     if (cur && paneOf(cur) === p.key) drawShape(cur, false);
     if (tool === 'brush' && p.hover) {
       cx.strokeStyle = dColor; cx.lineWidth = 1; cx.setLineDash([]);
@@ -2517,6 +2520,7 @@
     return false;
   }
   function hit(x, y) {
+    if (hideDrawings) return null;
     for (let i = drawings.length - 1; i >= 0; i--) {
       const s = drawings[i];
       if (paneOf(s) !== P.key) continue;
@@ -2606,11 +2610,12 @@
   }
   function syncSelBar() {
     const s = drawings.find(d => d.id === selId);
-    const show = !!(s && s.type === 'fibch' && tool === 'cursor');
+    const show = !!(!hideDrawings && s && s.type === 'fibch' && tool === 'cursor');
     $('selBar').classList.toggle('show', show);
   }
   function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
   function setTool(t) {
+    if (t !== 'cursor' && hideDrawings) setHideDrawings(false);
     if (RANGE_META[t]) syncRangeBtn(t);
     if (FIB_META[t]) syncFibBtn(t);
     tool = t; cur = null; drag = null; brushing = false;
@@ -2759,7 +2764,7 @@
 
     // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
     p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
-      if (tool !== 'cursor' || drag || !drawings.length) return;
+      if (tool !== 'cursor' || drag || hideDrawings || !drawings.length) return;
       useP(p);
       const { x, y } = xyOf(e);
       if (x < 0 || y < 0 || x > W || y > H) return;
@@ -2998,6 +3003,25 @@
   syncRangeBtn(activeRangeTool);
   syncFibBtn(activeFibTool);
   renderFavBar();
+  const EYE_OPEN_SVG = '<svg viewBox="0 0 28 28"><path d="M3.5 14s4-6.5 10.5-6.5S24.5 14 24.5 14s-4 6.5-10.5 6.5S3.5 14 3.5 14z"/><circle cx="14" cy="14" r="3"/></svg>';
+  const EYE_OFF_SVG = '<svg viewBox="0 0 28 28"><path d="M3.5 14s4-6.5 10.5-6.5c2.2 0 4.1.7 5.7 1.6M24.5 14s-4 6.5-10.5 6.5c-2.2 0-4.1-.7-5.7-1.6"/><path d="M12.1 12.1a3 3 0 0 0 3.8 3.8"/><path d="M5 23L23 5"/></svg>';
+  function setHideDrawings(v, persist = true) {
+    hideDrawings = !!v;
+    const btn = $('dHide');
+    btn.classList.toggle('on', hideDrawings);
+    btn.setAttribute('aria-pressed', String(hideDrawings));
+    btn.dataset.tip = hideDrawings ? 'Hiện tất cả bản vẽ' : 'Ẩn tất cả bản vẽ';
+    btn.innerHTML = hideDrawings ? EYE_OFF_SVG : EYE_OPEN_SVG;
+    if (hideDrawings) {
+      selId = null; drag = null;
+      PLIST.forEach(p => setAuto(tool !== 'cursor', p));
+      closeFibChCfg();
+    }
+    syncSelBar();
+    touch();
+    if (persist) saveLayout();
+  }
+  $('dHide').onclick = () => setHideDrawings(!hideDrawings);
   $('dMagnet').onclick = e => { magnet = !magnet; e.currentTarget.classList.toggle('on', magnet); saveLayout(); };
   $('dMagnet').dataset.tip = 'Nam châm: hít vào giá O/H/L/C (chỉ khung giá)';
   $('dColor').oninput = e => {
@@ -3629,6 +3653,7 @@
         dark: !!state.dark,
         log: !!state.log,
         magnet: !!magnet,
+        hideDrawings: !!hideDrawings,
         dColor,
         brushW,
         dayMode,
@@ -3685,6 +3710,9 @@
       if (typeof savedLayout.magnet === 'boolean') {
         magnet = savedLayout.magnet;
         $('dMagnet').classList.toggle('on', magnet);
+      }
+      if (typeof savedLayout.hideDrawings === 'boolean') {
+        setHideDrawings(savedLayout.hideDrawings, false);
       }
       if (typeof savedLayout.dColor === 'string' && /^#[0-9a-f]{6}$/i.test(savedLayout.dColor)) {
         dColor = savedLayout.dColor;
