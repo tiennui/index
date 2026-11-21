@@ -1111,7 +1111,7 @@
     };
   };
   const candles = main.addCandlestickSeries({ ...candleOpts() });
-  const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false });
+  const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false, visible: state.showVol });
   main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
   const EMA_DEF = [[20,'#f5a623'],[50,'#2962ff'],[200,'#9c27b0']];
@@ -1201,52 +1201,63 @@
   let cache = {};
   function renderIndicators() {
     const d = state.data, t = d.map(x => x.time), c = d.map(x => x.close);
-    const R = rsi(c, state.rsi.len);
-    // Lấp giá trị null để EMA/WMA tính trên phần RSI hợp lệ
-    let first = R.findIndex(v => v != null);
-    if (first < 0) first = R.length;
-    const valid = R.slice(first);
-    const E9 = ema(valid, state.rsi.ema), W45 = wma(valid, state.rsi.wma);
-    const pad = new Array(first).fill(null);
-    const E = pad.concat(E9), W = pad.concat(W45);
+    const wasSync = syncing;
+    const prevRng = !wasSync && d.length ? main.timeScale().getVisibleLogicalRange() : null;
+    syncing = true;
+    try {
+      const R = rsi(c, state.rsi.len);
+      // Lấp giá trị null để EMA/WMA tính trên phần RSI hợp lệ
+      let first = R.findIndex(v => v != null);
+      if (first < 0) first = R.length;
+      const valid = R.slice(first);
+      const E9 = ema(valid, state.rsi.ema), W45 = wma(valid, state.rsi.wma);
+      const pad = new Array(first).fill(null);
+      const E = pad.concat(E9), W = pad.concat(W45);
 
-    rsiLine.setData(toSeries(t, R));
-    rsiEma.setData(toSeries(t, E));
-    rsiWma.setData(toSeries(t, W));
+      rsiLine.setData(toSeries(t, R));
+      rsiEma.setData(toSeries(t, E));
+      rsiWma.setData(toSeries(t, W));
 
-    // Cột tô màu khi RSI chạm vùng quá mua / quá bán
-    const cols = [];
-    for (let i = 0; i < d.length; i++) {
-      if (R[i] == null) continue;
-      if (R[i] >= state.rsi.xhi) cols.push({ time: t[i], value: 1, color: 'rgba(76,175,80,0.45)' });
-      else if (R[i] <= state.rsi.xlo) cols.push({ time: t[i], value: 1, color: 'rgba(242,54,69,0.35)' });
-    }
-    rsiCols.setData(cols);
-    rsiLine.setMarkers([]);
+      // Cột tô màu khi RSI chạm vùng quá mua / quá bán
+      const cols = [];
+      for (let i = 0; i < d.length; i++) {
+        if (R[i] == null) continue;
+        if (R[i] >= state.rsi.xhi) cols.push({ time: t[i], value: 1, color: 'rgba(76,175,80,0.45)' });
+        else if (R[i] <= state.rsi.xlo) cols.push({ time: t[i], value: 1, color: 'rgba(242,54,69,0.35)' });
+      }
+      rsiCols.setData(cols);
+      rsiLine.setMarkers([]);
 
-    // Các vùng nền: [đáy, đỉnh, màu]
-    const s = state.rsi, P = 'rgba(126,87,194,';
-    const zones = [
-      [s.xhi, 100, 'rgba(76,175,80,0.16)'],
-      [s.hi, s.xhi, P + '0.20)'],
-      [s.lo, s.hi, P + '0.09)'],
-      [s.xlo, s.lo, P + '0.20)'],
-      [s.xlo, 0, 'rgba(255,193,7,0.12)']
-    ];
-    zones.forEach(([base, val, c], i) => {
-      zoneSeries[i].applyOptions({
-        baseValue: { type: 'price', price: base },
-        topFillColor1: c, topFillColor2: c, bottomFillColor1: c, bottomFillColor2: c
+      // Các vùng nền: [đáy, đỉnh, màu]
+      const s = state.rsi, P = 'rgba(126,87,194,';
+      const zones = [
+        [s.xhi, 100, 'rgba(76,175,80,0.16)'],
+        [s.hi, s.xhi, P + '0.20)'],
+        [s.lo, s.hi, P + '0.09)'],
+        [s.xlo, s.lo, P + '0.20)'],
+        [s.xlo, 0, 'rgba(255,193,7,0.12)']
+      ];
+      zones.forEach(([base, val, c], i) => {
+        zoneSeries[i].applyOptions({
+          baseValue: { type: 'price', price: base },
+          topFillColor1: c, topFillColor2: c, bottomFillColor1: c, bottomFillColor2: c
+        });
+        zoneSeries[i].setData(t.map(time => ({ time, value: val })));
       });
-      zoneSeries[i].setData(t.map(time => ({ time, value: val })));
-    });
 
-    emaSeries.forEach(e => {
-      const v = ema(c, e.n);
-      e.vals = v;
-      e.s.setData(state.showEma && e.show ? toSeries(t, v) : []);
-    });
-    cache = { R, E, W };
+      emaSeries.forEach(e => {
+        const v = ema(c, e.n);
+        e.vals = v;
+        e.s.setData(state.showEma && e.show ? toSeries(t, v) : []);
+      });
+      cache = { R, E, W };
+      if (prevRng && prevRng.to > 2 && prevRng.from < d.length - 2) {
+        main.timeScale().setVisibleLogicalRange(prevRng);
+        rsiChart.timeScale().setVisibleLogicalRange(prevRng);
+      }
+    } finally {
+      syncing = wasSync;
+    }
     updateLegend(d.length - 1);
   }
 
@@ -1273,13 +1284,26 @@
     return haCache[i];
   }
 
-  function renderAll() {
+  function renderAll(keepRange = true) {
     const p = palette();
-    candles.setData(buildCandles());
+    const prevRng = keepRange && state.data.length ? main.timeScale().getVisibleLogicalRange() : null;
+    const wasSync = syncing;
+    syncing = true;
+    guardViewRestore();
+    try {
+      candles.setData(buildCandles());
+      vol.setData(state.data.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? p.volUp : p.volDn })));
+      vol.applyOptions({ visible: state.showVol });
+      renderIndicators();
+      if (prevRng && state.data.length && prevRng.to > 2 && prevRng.from < state.data.length - 2) {
+        main.timeScale().setVisibleLogicalRange(prevRng);
+        rsiChart.timeScale().setVisibleLogicalRange(prevRng);
+      }
+    } finally {
+      syncing = wasSync;
+    }
     try { touch(); } catch (e) {}
     try { mabRefresh(); } catch (e) {}
-    vol.setData(state.showVol ? state.data.map(x => ({ time: x.time, value: x.volume, color: x.close >= x.open ? p.volUp : p.volDn })) : []);
-    renderIndicators();
   }
 
   /* ---------- Chú giải ---------- */
@@ -1386,7 +1410,7 @@
       else state.data = acc.concat(state.data);
       const add = state.data.length - n0;
       acc = [];
-      renderAll();
+      renderAll(false);
       if (rng) {
         guardViewRestore();
         main.timeScale().setVisibleLogicalRange({ from: rng.from + add, to: rng.to + add });
@@ -1422,14 +1446,13 @@
       if (id !== state.reqId) return;
       state.data = raw.map(mapKline);
       if (isDerived(state.interval)) { state.base = state.data; state.data = aggregateTf(state.base, state.interval); }
-      renderAll();
+      renderAll(false);
       const vKey = state.symbol + '|' + state.interval, sv = savedViews[vKey], n = state.data.length;
       guardViewRestore();
-      if (sv && Number.isFinite(sv.fromOff) && Number.isFinite(sv.toOff)) {
-        main.timeScale().setVisibleLogicalRange({ from: n - sv.fromOff, to: n + sv.toOff });
-      } else {
-        main.timeScale().setVisibleLogicalRange({ from: n - 130, to: n + 12 });
-      }
+      const validSaved = sv && Number.isFinite(sv.fromOff) && Number.isFinite(sv.toOff) && (n - sv.fromOff) < n - 2 && (n + sv.toOff) > 2;
+      const vr = validSaved ? { from: n - sv.fromOff, to: n + sv.toOff } : { from: n - 130, to: n + 12 };
+      main.timeScale().setVisibleLogicalRange(vr);
+      rsiChart.timeScale().setVisibleLogicalRange(vr);
       updateQuote(state.data[state.data.length - 1].close);
       $('loading').classList.remove('show');
       openWs(id);
@@ -1474,7 +1497,7 @@
       else state.data.push(bar);
       const p = palette();
       candles.update(candlePoint(state.data.length - 1));
-      if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
+      vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
       renderIndicators();
       updateQuote(bar.close);
       if (isNew && rp.phase === 'off') resetChartView(); // có nến mới -> reset biểu đồ
@@ -1643,7 +1666,7 @@
     fillCandleCfg();
   };
   $('tgHA').onclick = e => { state.ha = !state.ha; e.currentTarget.classList.toggle('on', state.ha); saveLayout(); renderAll(); };
-  $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); saveLayout(); renderAll(); };
+  $('tgVol').onclick = e => { state.showVol = !state.showVol; e.currentTarget.classList.toggle('on', state.showVol); vol.applyOptions({ visible: state.showVol }); saveLayout(); };
   $('tgTheme').onclick = e => {
     state.dark = !state.dark;
     document.documentElement.dataset.theme = state.dark ? 'dark' : 'light';
@@ -1880,7 +1903,7 @@
     const bar = state.full[state.data.length], p = palette();
     state.data.push(bar);
     candles.update(candlePoint(state.data.length - 1));
-    if (state.showVol) vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
+    vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
     renderIndicators();
     updateQuote(bar.close);
     updateStats();
@@ -3920,6 +3943,7 @@
     const r = main.timeScale().getVisibleLogicalRange();
     if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to)) return;
     const n = state.data.length;
+    if (r.to <= 2 || r.from >= n - 2) return;
     savedViews[state.symbol + '|' + state.interval] = {
       fromOff: +(n - r.from).toFixed(2),
       toOff: +(r.to - n).toFixed(2)
