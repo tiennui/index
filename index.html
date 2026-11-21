@@ -942,15 +942,19 @@
     <button class="tm-star" type="button" data-star="fibch" aria-label="Yêu thích Fib channel" title="Ghim lên thanh yêu thích">☆</button>
   </div>
   <div class="tm-hr"></div>
+  <div class="tm-row" id="fibRetMenuCfg" role="menuitem" tabindex="0">
+    <svg class="tm-ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="3.5"/><path d="M14 5v2.2M14 20.8V23M5 14h2.2M20.8 14H23M7.6 7.6l1.6 1.6M18.8 18.8l1.6 1.6M20.4 7.6l-1.6 1.6M9.2 18.8l-1.6 1.6"/></svg>
+    <span class="tm-lb">Cài đặt Fib Retracement…</span>
+  </div>
   <div class="tm-row" id="fibMenuCfg" role="menuitem" tabindex="0">
     <svg class="tm-ic" viewBox="0 0 28 28"><circle cx="14" cy="14" r="3.5"/><path d="M14 5v2.2M14 20.8V23M5 14h2.2M20.8 14H23M7.6 7.6l1.6 1.6M18.8 18.8l1.6 1.6M20.4 7.6l-1.6 1.6M9.2 18.8l-1.6 1.6"/></svg>
     <span class="tm-lb">Cài đặt Fib channel…</span>
   </div>
 </div>
 
-<div id="fibChCfg" role="dialog" aria-label="Cài đặt Fib Channel">
+<div id="fibChCfg" role="dialog" aria-label="Cài đặt Fibonacci">
   <div class="fc-head">
-    <h4>Cài đặt Fib Channel<small id="fcScope"></small></h4>
+    <h4><span id="fcTitle">Cài đặt Fib Channel</span><small id="fcScope"></small></h4>
     <button class="fc-x" id="fcX" type="button" aria-label="Đóng">×</button>
   </div>
   <div class="fc-body">
@@ -969,6 +973,7 @@
       <label class="fc-chk"><input id="fcLbl" type="checkbox"> Hiện nhãn mức</label>
       <label class="fc-chk"><input id="fcPrc" type="checkbox"> Hiện giá</label>
       <label class="fc-chk"><input id="fcFill" type="checkbox"> Tô màu nền</label>
+      <label class="fc-chk" id="fcTrendWrap" style="grid-column:1/-1;display:none"><input id="fcTrend" type="checkbox"> Hiện đường xu hướng nối 2 điểm gốc</label>
       <label class="fc-chk" style="grid-column:1/-1"><input id="fcLog" type="checkbox"> Mức Fib dựa trên thang log (Log scale)</label>
     </div>
     <div class="fc-row">
@@ -2069,8 +2074,25 @@
   const xyOf = e => { const r = P.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
 
   /* --- Vẽ --- */
-  const FIB = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-  const FIBC = ['#787b86', '#f23645', '#ff9800', '#4caf50', '#089981', '#00bcd4', '#787b86'];
+  const FIBRET_DEFAULT = {
+    levels: [
+      { on: true,  v: 0,      c: '#787b86' },
+      { on: true,  v: 0.236,  c: '#f23645' },
+      { on: true,  v: 0.382,  c: '#ff9800' },
+      { on: true,  v: 0.5,    c: '#4caf50' },
+      { on: true,  v: 0.618,  c: '#089981' },
+      { on: true,  v: 0.786,  c: '#00bcd4' },
+      { on: true,  v: 1,      c: '#787b86' },
+      { on: false, v: 1.272,  c: '#2962ff' },
+      { on: false, v: 1.618,  c: '#2962ff' },
+      { on: false, v: 2.618,  c: '#f23645' },
+      { on: false, v: 3.618,  c: '#9c27b0' },
+      { on: false, v: 4.236,  c: '#e91e63' }
+    ],
+    extendLeft: false, extendRight: false, reverse: false, logScale: false,
+    showLabels: true, showPrices: true, showTrend: true,
+    lineWidth: 1, lineStyle: 'solid', fill: true, fillAlpha: 0.08
+  };
   const FIBCH_DEFAULT = {
     levels: [
       { on: false, v: -0.618, c: '#787b86' },
@@ -2088,32 +2110,59 @@
       { on: false, v: 4.236,  c: '#e91e63' }
     ],
     extendLeft: false, extendRight: true, reverse: false, logScale: false,
-    showLabels: true, showPrices: false,
+    showLabels: true, showPrices: false, showTrend: false,
     lineWidth: 1.5, lineStyle: 'solid', fill: true, fillAlpha: 0.1
   };
-  function cloneFibChCfg(c) {
-    const src = c || FIBCH_DEFAULT;
+  function cloneFibCfg(c, base = FIBCH_DEFAULT) {
+    const src = c || base;
     return {
-      levels: (Array.isArray(src.levels) && src.levels.length ? src.levels : FIBCH_DEFAULT.levels)
+      levels: (Array.isArray(src.levels) && src.levels.length ? src.levels : base.levels)
         .map(l => ({ on: l.on !== false, v: +l.v || 0, c: l.c || '#787b86' })),
-      extendLeft: !!src.extendLeft,
-      extendRight: src.extendRight !== false,
+      extendLeft: src.extendLeft != null ? !!src.extendLeft : !!base.extendLeft,
+      extendRight: src.extendRight != null ? !!src.extendRight : !!base.extendRight,
       reverse: !!src.reverse,
       logScale: !!src.logScale,
       showLabels: src.showLabels !== false,
-      showPrices: !!src.showPrices,
-      lineWidth: Number.isFinite(+src.lineWidth) ? +src.lineWidth : 1.5,
+      showPrices: src.showPrices != null ? !!src.showPrices : !!base.showPrices,
+      showTrend: src.showTrend != null ? !!src.showTrend : !!base.showTrend,
+      lineWidth: Number.isFinite(+src.lineWidth) ? +src.lineWidth : base.lineWidth,
       lineStyle: src.lineStyle === 'dashed' || src.lineStyle === 'dotted' ? src.lineStyle : 'solid',
       fill: src.fill !== false,
-      fillAlpha: Number.isFinite(+src.fillAlpha) ? Math.max(0, Math.min(0.4, +src.fillAlpha)) : 0.1
+      fillAlpha: Number.isFinite(+src.fillAlpha) ? Math.max(0, Math.min(0.4, +src.fillAlpha)) : base.fillAlpha
     };
   }
+  const cloneFibChCfg = c => cloneFibCfg(c, FIBCH_DEFAULT);
+  const cloneFibRetCfg = c => cloneFibCfg(c, FIBRET_DEFAULT);
   let fibChDef = cloneFibChCfg(FIBCH_DEFAULT);
   try {
     const sv = JSON.parse(localStorage.getItem('fibChCfg_v1') || 'null');
     if (sv && typeof sv === 'object') fibChDef = cloneFibChCfg(sv);
   } catch (e) {}
   const saveFibChDef = () => { try { localStorage.setItem('fibChCfg_v1', JSON.stringify(fibChDef)); } catch (e) {} };
+  let fibRetDef = cloneFibRetCfg(FIBRET_DEFAULT);
+  try {
+    const sv = JSON.parse(localStorage.getItem('fibRetCfg_v1') || 'null');
+    if (sv && typeof sv === 'object') fibRetDef = cloneFibRetCfg(sv);
+  } catch (e) {}
+  const saveFibRetDef = () => { try { localStorage.setItem('fibRetCfg_v1', JSON.stringify(fibRetDef)); } catch (e) {} };
+  function fibRetLines(s, pts) {
+    const cfg = s.cfg || fibRetDef;
+    const [a, b] = pts;
+    const xL = Math.min(a.x, b.x), xR = Math.max(a.x, b.x);
+    const x0 = cfg.extendLeft ? Math.min(0, xL) : xL;
+    const x1 = cfg.extendRight ? Math.max(W, xR) : xR;
+    const p0 = s.pts[0].p, p1 = s.pts[1].p;
+    const useLog = !!(cfg.logScale && P.key === 'main' && p0 > 0 && p1 > 0);
+    const enabled = (cfg.levels || []).filter(l => l.on !== false && Number.isFinite(+l.v));
+    const out = [];
+    for (const lv of enabled) {
+      const eff = cfg.reverse ? (1 - lv.v) : lv.v;
+      const price = useLog ? Math.exp(Math.log(p1) + (Math.log(p0) - Math.log(p1)) * eff) : (p1 + (p0 - p1) * eff);
+      const y = Y(price);
+      if (y != null && isFinite(y)) out.push({ v: lv.v, eff, c: lv.c || '#787b86', price, y, x0, x1, xL });
+    }
+    return out.sort((u, w) => u.eff - w.eff);
+  }
   function fibChLines(s, pts) {
     const cfg = s.cfg || fibChDef;
     const [a, b, c] = pts;
@@ -2333,21 +2382,37 @@
       const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
       cx.fillStyle = hexA(col, 0.15); cx.fillRect(x, y, w, h); cx.strokeRect(x, y, w, h);
     } else if (s.type === 'fib') {
-      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
-      const prices = FIB.map(l => s.pts[1].p + (s.pts[0].p - s.pts[1].p) * l), ys = prices.map(Y);
-      if (ys.every(v => v != null)) {
-        for (let i = 0; i < FIB.length - 1; i++) {
-          cx.fillStyle = hexA(FIBC[i + 1], 0.08);
-          cx.fillRect(x0, Math.min(ys[i], ys[i+1]), x1 - x0, Math.abs(ys[i+1] - ys[i]));
+      const cfg = s.cfg || fibRetDef;
+      const rows = fibRetLines(s, pts);
+      if (rows.length) {
+        if (cfg.fill && cfg.fillAlpha > 0 && rows.length > 1) {
+          for (let i = 0; i < rows.length - 1; i++) {
+            const u = rows[i], w = rows[i + 1];
+            cx.fillStyle = hexA(w.c, cfg.fillAlpha);
+            cx.fillRect(u.x0, Math.min(u.y, w.y), u.x1 - u.x0, Math.abs(w.y - u.y));
+          }
         }
-        cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'bottom';
-        FIB.forEach((l, i) => {
-          cx.strokeStyle = FIBC[i]; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x0, ys[i]); cx.lineTo(x1, ys[i]); cx.stroke();
-          cx.fillStyle = FIBC[i]; cx.fillText(`${l} (${fmt(prices[i])})`, x0 + 4, ys[i] - 2);
+        const dash = cfg.lineStyle === 'dashed' ? [6, 4] : cfg.lineStyle === 'dotted' ? [2, 3] : [];
+        cx.lineWidth = cfg.lineWidth || 1;
+        cx.font = '11px -apple-system, "Trebuchet MS", Roboto, sans-serif';
+        cx.textAlign = 'left'; cx.textBaseline = 'bottom';
+        rows.forEach(r => {
+          cx.strokeStyle = r.c; cx.setLineDash(dash);
+          cx.beginPath(); cx.moveTo(r.x0, r.y); cx.lineTo(r.x1, r.y); cx.stroke();
+          if (cfg.showLabels || cfg.showPrices) {
+            const txt = cfg.showLabels && cfg.showPrices ? `${r.v} (${fmt(r.price)})`
+              : cfg.showLabels ? String(r.v) : fmt(r.price);
+            const lx = Math.max(4, Math.min((cfg.extendLeft ? Math.max(0, r.xL) : r.x0) + 4, W - 90));
+            cx.fillStyle = r.c;
+            cx.fillText(txt, lx, r.y - 2);
+          }
         });
+        cx.setLineDash([]);
       }
-      cx.strokeStyle = '#787b86'; cx.lineWidth = 1; cx.setLineDash([4, 4]);
-      cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.setLineDash([]);
+      if (cfg.showTrend !== false || sel) {
+        cx.strokeStyle = '#787b86'; cx.lineWidth = 1; cx.setLineDash([4, 4]);
+        cx.beginPath(); cx.moveTo(a.x, a.y); cx.lineTo(b.x, b.y); cx.stroke(); cx.setLineDash([]);
+      }
     } else if (s.type === 'fibch') {
       const cfg = s.cfg || fibChDef;
       if (pts.length < 3) {
@@ -2661,12 +2726,8 @@
              ((Math.abs(y - y0) <= 6 || Math.abs(y - y1) <= 6) && x >= x0 - 6 && x <= x1 + 6);
     }
     if (s.type === 'fib') {
-      const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x);
       if (distSeg(x, y, a.x, a.y, b.x, b.y) <= 7) return true;
-      return FIB.some(l => {
-        const yy = Y(s.pts[1].p + (s.pts[0].p - s.pts[1].p) * l);
-        return yy != null && Math.abs(y - yy) <= 6 && x >= x0 - 6 && x <= x1 + 6;
-      });
+      return fibRetLines(s, pts).some(r => Math.abs(y - r.y) <= 6 && x >= r.x0 - 6 && x <= r.x1 + 6);
     }
     if (s.type === 'fibch') {
       if (pts.length < 3) return distSeg(x, y, a.x, a.y, b.x, b.y) <= 7;
@@ -2769,7 +2830,14 @@
   }
   function syncSelBar() {
     const s = drawings.find(d => d.id === selId);
-    const show = !!(!hideDrawings && s && s.type === 'fibch' && tool === 'cursor');
+    const isFib = !!(s && (s.type === 'fib' || s.type === 'fibch'));
+    const show = !!(!hideDrawings && isFib && tool === 'cursor');
+    if (show) {
+      $('sbTitle').textContent = s.type === 'fib' ? 'Fib Retracement' : 'Fib Channel';
+      $('sbCfg').title = s.type === 'fib'
+        ? 'Chỉnh sửa thông số Fib Retracement (hoặc bấm đúp vào hình)'
+        : 'Chỉnh sửa thông số Fib Channel (hoặc bấm đúp vào kênh)';
+    }
     $('selBar').classList.toggle('show', show);
   }
   function setAuto(v, p = P) { p.cv.style.pointerEvents = v ? 'auto' : 'none'; if (!v) p.cv.style.cursor = ''; }
@@ -2830,6 +2898,7 @@
         if (!cur) {
           measure = null;
           cur = { id: uid(), type: tool, pane: p.key, pts: [pt, { ...pt }], color: dColor };
+          if (tool === 'fib') cur.cfg = cloneFibRetCfg(fibRetDef);
           if (tool === 'fibch') { cur.cfg = cloneFibChCfg(fibChDef); cur._step = 1; $('dHint').textContent = 'Bấm điểm 2 để hoàn tất đường gốc của Fib channel'; }
           downXY = { x, y }; justStarted = true;
         } else if (cur.type === 'fibch' && cur._step === 1) {
@@ -2853,9 +2922,9 @@
       useP(p);
       const { x, y } = xyOf(e);
       const h = hit(x, y);
-      if (h && h.s.type === 'fibch') {
+      if (h && (h.s.type === 'fib' || h.s.type === 'fibch')) {
         selId = h.s.id; syncSelBar(); touch();
-        openFibChCfg(h.s);
+        openFibCfg(h.s);
       }
     });
     cv.addEventListener('pointermove', e => {
@@ -3015,8 +3084,10 @@
     row.onclick = e => { if (!e.target.closest('.tm-star')) pick(); };
     row.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } };
   });
-  $('fibMenuCfg').onclick = () => { closeSubMenus(); openFibChCfg(null); };
-  $('fibMenuCfg').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeSubMenus(); openFibChCfg(null); } };
+  $('fibRetMenuCfg').onclick = () => { closeSubMenus(); openFibCfg(null, 'fib'); };
+  $('fibRetMenuCfg').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeSubMenus(); openFibCfg(null, 'fib'); } };
+  $('fibMenuCfg').onclick = () => { closeSubMenus(); openFibCfg(null, 'fibch'); };
+  $('fibMenuCfg').onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeSubMenus(); openFibCfg(null, 'fibch'); } };
   document.querySelectorAll('#rangeMenu .tm-star, #fibMenu .tm-star').forEach(st => {
     st.onclick = e => {
       e.stopPropagation();
@@ -3033,12 +3104,20 @@
   window.addEventListener('resize', closeSubMenus);
   window.addEventListener('blur', closeSubMenus);
 
-  /* ---------- Hộp thoại cài đặt thông số Fib Channel ---------- */
+  /* ---------- Hộp thoại cài đặt thông số Fib Retracement & Fib Channel ---------- */
   const fibChDlg = $('fibChCfg');
   let fcTarget = null; // shape đang chỉnh sửa, hoặc null = chỉnh mặc định
-  const fcCfg = () => (fcTarget ? (fcTarget.cfg || (fcTarget.cfg = cloneFibChCfg(fibChDef))) : fibChDef);
+  let fcMode = 'fibch'; // 'fib' (Fib Retracement) | 'fibch' (Fib Channel)
+  const fcCfg = () => {
+    if (fcTarget) {
+      if (!fcTarget.cfg) fcTarget.cfg = fcTarget.type === 'fib' ? cloneFibRetCfg(fibRetDef) : cloneFibChCfg(fibChDef);
+      return fcTarget.cfg;
+    }
+    return fcMode === 'fib' ? fibRetDef : fibChDef;
+  };
   function fcCommit() {
     if (fcTarget) saveDrawings();
+    else if (fcMode === 'fib') saveFibRetDef();
     else saveFibChDef();
     touch();
   }
@@ -3068,9 +3147,15 @@
     });
   }
   function fcSyncForm() {
-    const cfg = fcCfg();
-    $('fcScope').textContent = fcTarget ? '(kênh đang chọn)' : '(mặc định cho kênh mới)';
+    const cfg = fcCfg(), isRet = fcMode === 'fib';
+    $('fcTitle').textContent = isRet ? 'Cài đặt Fib Retracement' : 'Cài đặt Fib Channel';
+    $('fcScope').textContent = fcTarget
+      ? (isRet ? '(hình đang chọn)' : '(kênh đang chọn)')
+      : (isRet ? '(mặc định cho hình mới)' : '(mặc định cho kênh mới)');
     $('fcSaveDef').style.display = fcTarget ? '' : 'none';
+    $('fcSaveDef').title = isRet ? 'Dùng cấu hình này cho các Fib Retracement vẽ mới' : 'Dùng cấu hình này cho các Fib Channel vẽ mới';
+    $('fcTrendWrap').style.display = isRet ? '' : 'none';
+    $('fcTrend').checked = cfg.showTrend !== false;
     fcRenderLevels();
     $('fcExtL').checked = !!cfg.extendLeft;
     $('fcExtR').checked = !!cfg.extendRight;
@@ -3079,18 +3164,22 @@
     $('fcPrc').checked = !!cfg.showPrices;
     $('fcFill').checked = cfg.fill !== false;
     $('fcLog').checked = !!cfg.logScale;
-    const pct = Math.round((cfg.fillAlpha ?? 0.1) * 100);
+    const pct = Math.round((cfg.fillAlpha ?? (isRet ? 0.08 : 0.1)) * 100);
     $('fcAlpha').value = pct;
     $('fcAlphaTxt').textContent = pct + '%';
-    $('fcWidth').value = String(cfg.lineWidth || 1.5);
+    $('fcWidth').value = String(cfg.lineWidth || (isRet ? 1 : 1.5));
     $('fcStyle').value = cfg.lineStyle || 'solid';
   }
-  function openFibChCfg(shape) {
+  function openFibCfg(shape, mode) {
     fcTarget = shape || null;
-    if (fcTarget && !fcTarget.cfg) fcTarget.cfg = cloneFibChCfg(fibChDef);
+    fcMode = fcTarget ? (fcTarget.type === 'fib' ? 'fib' : 'fibch') : (mode === 'fib' ? 'fib' : 'fibch');
+    if (fcTarget && !fcTarget.cfg) {
+      fcTarget.cfg = fcMode === 'fib' ? cloneFibRetCfg(fibRetDef) : cloneFibChCfg(fibChDef);
+    }
     fcSyncForm();
     fibChDlg.classList.add('open');
   }
+  const openFibChCfg = shape => openFibCfg(shape, 'fibch');
   function closeFibChCfg() { fibChDlg.classList.remove('open'); }
   $('fcX').onclick = closeFibChCfg;
   $('fcClose').onclick = closeFibChCfg;
@@ -3100,6 +3189,7 @@
   $('fcLbl').onchange = e => { fcCfg().showLabels = e.target.checked; fcCommit(); };
   $('fcPrc').onchange = e => { fcCfg().showPrices = e.target.checked; fcCommit(); };
   $('fcFill').onchange = e => { fcCfg().fill = e.target.checked; fcCommit(); };
+  $('fcTrend').onchange = e => { fcCfg().showTrend = e.target.checked; fcCommit(); };
   $('fcLog').onchange = e => { fcCfg().logScale = e.target.checked; fcCommit(); };
   $('fcAlpha').oninput = e => {
     const v = parseInt(e.target.value, 10) || 0;
@@ -3119,21 +3209,23 @@
   };
   $('fcNewVal').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('fcAddBtn').click(); } });
   $('fcReset').onclick = () => {
-    const fresh = cloneFibChCfg(FIBCH_DEFAULT);
-    if (fcTarget) fcTarget.cfg = fresh; else fibChDef = fresh;
+    const fresh = fcMode === 'fib' ? cloneFibRetCfg(FIBRET_DEFAULT) : cloneFibChCfg(FIBCH_DEFAULT);
+    if (fcTarget) fcTarget.cfg = fresh;
+    else if (fcMode === 'fib') fibRetDef = fresh;
+    else fibChDef = fresh;
     fcSyncForm(); fcCommit();
   };
   $('fcSaveDef').onclick = () => {
     if (!fcTarget) return;
-    fibChDef = cloneFibChCfg(fcTarget.cfg);
-    saveFibChDef();
+    if (fcMode === 'fib') { fibRetDef = cloneFibRetCfg(fcTarget.cfg); saveFibRetDef(); }
+    else { fibChDef = cloneFibChCfg(fcTarget.cfg); saveFibChDef(); }
     const b = $('fcSaveDef'), old = b.textContent;
     b.textContent = 'Đã lưu ✓';
     setTimeout(() => { b.textContent = old; }, 1200);
   };
   $('sbCfg').onclick = () => {
     const s = drawings.find(d => d.id === selId);
-    if (s && s.type === 'fibch') openFibChCfg(s);
+    if (s && (s.type === 'fib' || s.type === 'fibch')) openFibCfg(s);
   };
   $('sbDel').onclick = () => deleteSelected();
 
