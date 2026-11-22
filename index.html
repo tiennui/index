@@ -3117,7 +3117,7 @@
         return {
           layout: { background: { type: 'solid', color: p.bg }, textColor: p.text, fontSize: 11 },
           grid: { vertLines: { color: p.grid }, horzLines: { color: p.grid } },
-          rightPriceScale: { borderColor: p.line, minimumWidth: 56 },
+          rightPriceScale: { borderColor: p.line, minimumWidth: 76 },
           timeScale: { borderColor: p.line, timeVisible: true, secondsVisible: false, rightOffset: 12 },
           localization: { timeFormatter: fmtTime },
           crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
@@ -3203,40 +3203,75 @@
       setLevels();
       rsiChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.04, bottom: 0.04 } });
 
-      // Đồng bộ trục thời gian chính xác theo từng khung hình (không dùng timeout trễ)
-      let syncing = false;
+      // Bộ điều khiển trục thời gian chung (Master TimeAxis Controller) cho cả main & rsiChart
       const rsiHidden = () => {
         const el = $('rsiPane');
         return !el || el.classList.contains('collapsed') || el.clientWidth < 10 || el.clientHeight < 10;
       };
       const sameRng = (a, b) => !!(a && b && Math.abs(a.from - b.from) < 1e-4 && Math.abs(a.to - b.to) < 1e-4);
-      function lockSync() {
-        syncing = true;
-        requestAnimationFrame(() => { syncing = false; });
-      }
-      function setSyncedRange(r) {
-        if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to) || r.from >= r.to) return;
-        syncing = true;
-        try {
-          main.timeScale().setVisibleLogicalRange(r);
-          if (!rsiHidden()) rsiChart.timeScale().setVisibleLogicalRange(r);
-        } finally {
-          requestAnimationFrame(() => { syncing = false; });
+
+      const timeAxisCtrl = (() => {
+        let masterRange = null;
+        let syncingChart = null; // chỉ chặn phản hồi ngược từ chính chart đang bị ép range
+
+        function pushToCharts(r, skipChart = null) {
+          if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to) || r.from >= r.to) return;
+          masterRange = { from: r.from, to: r.to };
+          if (skipChart !== main) {
+            syncingChart = main;
+            try { main.timeScale().setVisibleLogicalRange(masterRange); }
+            finally { syncingChart = null; }
+          }
+          if (!rsiHidden() && skipChart !== rsiChart) {
+            syncingChart = rsiChart;
+            try { rsiChart.timeScale().setVisibleLogicalRange(masterRange); }
+            finally { syncingChart = null; }
+          }
         }
-      }
-      const link = (a, b) => a.timeScale().subscribeVisibleLogicalRangeChange(r => {
-        if (syncing || !r || !Number.isFinite(r.from) || !Number.isFinite(r.to)) return;
-        if (rsiHidden()) return;
-        const cur = b.timeScale().getVisibleLogicalRange();
-        if (sameRng(cur, r)) return;
-        syncing = true;
-        try {
-          b.timeScale().setVisibleLogicalRange(r);
-        } finally {
-          requestAnimationFrame(() => { syncing = false; });
+
+        function onChartRange(srcChart, r) {
+          if (syncingChart === srcChart) return;
+          if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to) || r.from >= r.to) return;
+          pushToCharts(r, srcChart);
         }
-      });
-      link(main, rsiChart); link(rsiChart, main);
+
+        function snapNow() {
+          if (rsiHidden()) return;
+          const mr = main.timeScale().getVisibleLogicalRange();
+          if (!mr || !Number.isFinite(mr.from) || !Number.isFinite(mr.to) || mr.from >= mr.to) return;
+          masterRange = { from: mr.from, to: mr.to };
+          syncingChart = rsiChart;
+          try { rsiChart.timeScale().setVisibleLogicalRange(masterRange); }
+          finally { syncingChart = null; }
+        }
+
+        main.timeScale().subscribeVisibleLogicalRangeChange(r => onChartRange(main, r));
+        rsiChart.timeScale().subscribeVisibleLogicalRangeChange(r => onChartRange(rsiChart, r));
+
+        return {
+          setRange: r => pushToCharts(r, null),
+          getRange: () => masterRange ? { ...masterRange } : main.timeScale().getVisibleLogicalRange(),
+          lock: () => {},
+          snapNow
+        };
+      })();
+
+      let syncing = false;
+      function lockSync(ms = 20) { timeAxisCtrl.lock(ms); }
+      function setSyncedRange(r) { timeAxisCtrl.setRange(r); }
+
+      let settleRaf = null;
+      const settleSync = () => {
+        if (settleRaf) cancelAnimationFrame(settleRaf);
+        settleRaf = requestAnimationFrame(() => {
+          settleRaf = null;
+          timeAxisCtrl.snapNow();
+        });
+      };
+      $('mainPane').addEventListener('pointerup', settleSync);
+      $('mainPane').addEventListener('wheel', settleSync, { passive: true });
+      $('rsiPane').addEventListener('pointerup', settleSync);
+      $('rsiPane').addEventListener('wheel', settleSync, { passive: true });
 
       /* ---------- Chỉ báo ---------- */
       function ema(values, n) {
@@ -3313,13 +3348,26 @@
           [s.xlo, s.lo, P + '0.20)'],
           [s.xlo, 0, 'rgba(255,193,7,0.12)']
         ];
-        zones.forEach(([base, val, c], i) => {
-          zoneSeries[i].applyOptions({
-            baseValue: { type: 'price', price: base },
-            topFillColor1: c, topFillColor2: c, bottomFillColor1: c, bottomFillColor2: c
+        const zoneStyleKey = s.xhi + '|' + s.hi + '|' + s.lo + '|' + s.xlo + '|' + state.dark;
+        const needZoneData = zoneSeries._lastLen !== t.length || zoneSeries._lastFirst !== (t[0] || 0) || zoneSeries._lastLast !== (t[t.length - 1] || 0);
+        const needZoneStyle = zoneSeries._lastStyle !== zoneStyleKey;
+        if (needZoneData || needZoneStyle) {
+          zones.forEach(([base, val, c], i) => {
+            if (needZoneStyle) {
+              zoneSeries[i].applyOptions({
+                baseValue: { type: 'price', price: base },
+                topFillColor1: c, topFillColor2: c, bottomFillColor1: c, bottomFillColor2: c
+              });
+            }
+            if (needZoneData) {
+              zoneSeries[i].setData(t.map(time => ({ time, value: val })));
+            }
           });
-          zoneSeries[i].setData(t.map(time => ({ time, value: val })));
-        });
+          zoneSeries._lastStyle = zoneStyleKey;
+          zoneSeries._lastLen = t.length;
+          zoneSeries._lastFirst = t[0] || 0;
+          zoneSeries._lastLast = t[t.length - 1] || 0;
+        }
 
         emaSeries.forEach(e => {
           const v = ema(c, e.n);
@@ -3328,15 +3376,6 @@
           e.s.applyOptions({ visible: !!(state.showEma && e.show) });
         });
         cache = { R, E, W };
-        const mr = main.timeScale().getVisibleLogicalRange();
-        if (mr && !rsiHidden()) {
-          const rr = rsiChart.timeScale().getVisibleLogicalRange();
-          if (!sameRng(rr, mr)) {
-            syncing = true;
-            try { rsiChart.timeScale().setVisibleLogicalRange(mr); }
-            finally { requestAnimationFrame(() => { syncing = false; }); }
-          }
-        }
         updateLegend(d.length - 1);
       }
 
@@ -3470,7 +3509,7 @@
       }
 
       /* Tải thêm lịch sử: mỗi lần Binance chỉ trả 1000 nến nên lùi dần theo endTime (tối đa HIST_PAGES trang) */
-      const HIST_PAGES = 20;
+      const HIST_PAGES = 8;
       async function loadHistory(id) {
         const isD = isDerived(state.interval);
         const src = isD ? state.base : state.data;
@@ -3509,8 +3548,8 @@
         closeWs();
         resetReplayUI();
         syncDrawings();
-        main.applyOptions({ rightPriceScale: { minimumWidth: 56 } });
-        rsiChart.applyOptions({ rightPriceScale: { minimumWidth: 56 } });
+        main.applyOptions({ rightPriceScale: { minimumWidth: 76 } });
+        rsiChart.applyOptions({ rightPriceScale: { minimumWidth: 76 } });
         titlePrice = null; // đổi mã / khung: bỏ giá cũ cho tới khi có giá mới
         updateTitle();
         $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
@@ -3796,7 +3835,7 @@
         timerEl.style.background = shown.close >= shown.open ? palette().up : palette().down;
         timerEl.style.display = 'block';
       }
-      setInterval(tickTimer, 250);
+      setInterval(tickTimer, 500);
       main.timeScale().subscribeVisibleLogicalRangeChange(tickTimer);
       main.priceScale('right').applyOptions({});
 
@@ -3918,13 +3957,24 @@
         $('hist').classList.remove('open');
         setPhase('select');
       }
+      function forceSyncAfterReplay(idx) {
+        const vr = { from: idx - 120, to: idx + 25 };
+        timeAxisCtrl.setRange(vr);
+        requestAnimationFrame(() => {
+          timeAxisCtrl.setRange(vr);
+          requestAnimationFrame(() => {
+            timeAxisCtrl.snapNow();
+          });
+        });
+      }
+
       function startReplay(idx) {
         state.data = state.full.slice(0, idx + 1);
         renderAll();
-        main.timeScale().setVisibleLogicalRange({ from: idx - 120, to: idx + 25 });
         setPhase('run');
         updateQuote(lastBar().close);
         updateStats();
+        forceSyncAfterReplay(idx);
       }
 
       /* Đổi khung thời gian khi đang backtest: tải lại ở khung mới và dừng đúng thời điểm đang phát lại
@@ -3999,6 +4049,7 @@
         renderIndicators();
         updateQuote(bar.close);
         updateStats();
+        timeAxisCtrl.snapNow();
         if (state.data.length >= state.full.length) pausePlay();
         return true;
       }
@@ -4787,17 +4838,10 @@
         if (ps.width && rps.width) {
           const wm = ps.width(), wr = rps.width();
           if (wm && wr && wm !== wr) {
-            const mr = ts.getVisibleLogicalRange();
             const target = Math.max(wm, wr);
-            syncing = true;
             main.applyOptions({ rightPriceScale: { minimumWidth: target } });
             rsiChart.applyOptions({ rightPriceScale: { minimumWidth: target } });
-            requestAnimationFrame(() => {
-              if (mr && !rsiHidden() && !sameRng(rsiChart.timeScale().getVisibleLogicalRange(), mr)) {
-                rsiChart.timeScale().setVisibleLogicalRange(mr);
-              }
-              requestAnimationFrame(() => { syncing = false; });
-            });
+            timeAxisCtrl.snapNow();
           }
         }
         const scaleW = (ps.width && ps.width()) || 72;
