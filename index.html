@@ -4214,6 +4214,31 @@
         touch();
       }
 
+      // Quy đổi thời gian <-> số nến (hỗ trợ chính xác cả khung tháng 1M theo lịch tháng)
+      function monthPos(sec) {
+        const d = new Date((sec - TZ) * 1000);
+        const y = d.getUTCFullYear(), m = d.getUTCMonth();
+        const t0 = Date.UTC(y, m, 1) / 1000 + TZ;
+        const t1 = Date.UTC(y, m + 1, 1) / 1000 + TZ;
+        return y * 12 + m + (sec - t0) / (t1 - t0);
+      }
+      function diffFracBars(baseTime, t) {
+        if (state.interval === '1M') return monthPos(t) - monthPos(baseTime);
+        return (t - baseTime) / (SECS[state.interval] || 86400);
+      }
+      function addFracBars(baseTime, fracBars) {
+        if (!fracBars) return baseTime;
+        if (state.interval === '1M') {
+          const pos = monthPos(baseTime) + fracBars;
+          const whole = Math.floor(pos), rem = pos - whole;
+          const y = Math.floor(whole / 12), m = whole - y * 12;
+          const t0 = Date.UTC(y, m, 1) / 1000 + TZ;
+          const t1 = Date.UTC(y, m + 1, 1) / 1000 + TZ;
+          return t0 + rem * (t1 - t0);
+        }
+        return baseTime + fracBars * (SECS[state.interval] || 86400);
+      }
+
       // Chuyển đổi trực tiếp giữa thời gian thực (t) <-> toạ độ X của Lightweight Charts
       // Hỗ trợ cả vùng tương lai (t > nến cuối) và các điểm nằm giữa 2 nến (như nét cọ vẽ tự do)
       function timeToX(t) {
@@ -4223,20 +4248,19 @@
         const direct = ts.timeToCoordinate(t);
         if (direct != null) return direct;
 
-        const bs = SECS[state.interval] || 86400;
         if (t < d[0].time) {
           const x0 = ts.logicalToCoordinate(0);
           if (x0 == null) return null;
           const x1 = n > 1 ? ts.logicalToCoordinate(1) : null;
           const barW = x1 != null ? (x1 - x0) : 8;
-          return x0 + ((t - d[0].time) / bs) * barW;
+          return x0 + diffFracBars(d[0].time, t) * barW;
         }
         if (t > d[n - 1].time) {
           const xn = ts.logicalToCoordinate(n - 1);
           if (xn == null) return null;
           const xp = n > 1 ? ts.logicalToCoordinate(n - 2) : null;
           const barW = xp != null ? (xn - xp) : 8;
-          return xn + ((t - d[n - 1].time) / bs) * barW;
+          return xn + diffFracBars(d[n - 1].time, t) * barW;
         }
         // Nằm giữa 2 nến (ví dụ: vẽ ở khung 1h rồi chuyển sang 1d) -> nội suy tuyến tính giữa 2 nến kề nhau
         let lo = 0, hi = n - 1;
@@ -4257,9 +4281,8 @@
         const ts = P.chart.timeScale();
         const lg = ts.coordinateToLogical(x);
         if (lg == null) return null;
-        const bs = SECS[state.interval] || 86400;
-        if (lg <= 0) return d[0].time + lg * bs;
-        if (lg >= n - 1) return d[n - 1].time + (lg - (n - 1)) * bs;
+        if (lg <= 0) return addFracBars(d[0].time, lg);
+        if (lg >= n - 1) return addFracBars(d[n - 1].time, lg - (n - 1));
         const lo = Math.floor(lg);
         const frac = lg - lo;
         return d[lo].time + frac * (d[lo + 1].time - d[lo].time);
@@ -4461,9 +4484,8 @@
       function timeToLogical(t) {
         const d = state.data, n = d.length;
         if (!n) return 0;
-        const bs = SECS[state.interval] || (state.interval === '1M' ? 2592000 : 86400);
-        if (t <= d[0].time) return (t - d[0].time) / bs;
-        if (t >= d[n - 1].time) return (n - 1) + (t - d[n - 1].time) / bs;
+        if (t <= d[0].time) return diffFracBars(d[0].time, t);
+        if (t >= d[n - 1].time) return (n - 1) + diffFracBars(d[n - 1].time, t);
         let lo = 0, hi = n - 1;
         while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (d[mid].time <= t) lo = mid; else hi = mid; }
         return lo + (t - d[lo].time) / (d[hi].time - d[lo].time);
