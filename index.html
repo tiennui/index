@@ -3203,31 +3203,38 @@
       setLevels();
       rsiChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.04, bottom: 0.04 } });
 
-      // Đồng bộ trục thời gian an toàn (tránh vòng lặp async / lệch khi RSI đang ẩn)
-      let syncing = false, syncUnlock = 0;
+      // Đồng bộ trục thời gian chính xác theo từng khung hình (không dùng timeout trễ)
+      let syncing = false;
       const rsiHidden = () => {
         const el = $('rsiPane');
         return !el || el.classList.contains('collapsed') || el.clientWidth < 10 || el.clientHeight < 10;
       };
-      const sameRng = (a, b) => !!(a && b && Math.abs(a.from - b.from) < 0.05 && Math.abs(a.to - b.to) < 0.05);
-      function lockSync(ms = 60) {
+      const sameRng = (a, b) => !!(a && b && Math.abs(a.from - b.from) < 1e-4 && Math.abs(a.to - b.to) < 1e-4);
+      function lockSync() {
         syncing = true;
-        clearTimeout(syncUnlock);
-        syncUnlock = setTimeout(() => { syncing = false; }, ms);
+        requestAnimationFrame(() => { syncing = false; });
       }
       function setSyncedRange(r) {
         if (!r || !Number.isFinite(r.from) || !Number.isFinite(r.to) || r.from >= r.to) return;
-        lockSync(80);
-        main.timeScale().setVisibleLogicalRange(r);
-        if (!rsiHidden()) rsiChart.timeScale().setVisibleLogicalRange(r);
+        syncing = true;
+        try {
+          main.timeScale().setVisibleLogicalRange(r);
+          if (!rsiHidden()) rsiChart.timeScale().setVisibleLogicalRange(r);
+        } finally {
+          requestAnimationFrame(() => { syncing = false; });
+        }
       }
       const link = (a, b) => a.timeScale().subscribeVisibleLogicalRangeChange(r => {
         if (syncing || !r || !Number.isFinite(r.from) || !Number.isFinite(r.to)) return;
         if (rsiHidden()) return;
         const cur = b.timeScale().getVisibleLogicalRange();
         if (sameRng(cur, r)) return;
-        lockSync(40);
-        b.timeScale().setVisibleLogicalRange(r);
+        syncing = true;
+        try {
+          b.timeScale().setVisibleLogicalRange(r);
+        } finally {
+          requestAnimationFrame(() => { syncing = false; });
+        }
       });
       link(main, rsiChart); link(rsiChart, main);
 
@@ -3321,6 +3328,15 @@
           e.s.applyOptions({ visible: !!(state.showEma && e.show) });
         });
         cache = { R, E, W };
+        const mr = main.timeScale().getVisibleLogicalRange();
+        if (mr && !rsiHidden()) {
+          const rr = rsiChart.timeScale().getVisibleLogicalRange();
+          if (!sameRng(rr, mr)) {
+            syncing = true;
+            try { rsiChart.timeScale().setVisibleLogicalRange(mr); }
+            finally { requestAnimationFrame(() => { syncing = false; }); }
+          }
+        }
         updateLegend(d.length - 1);
       }
 
@@ -4773,10 +4789,15 @@
           if (wm && wr && wm !== wr) {
             const mr = ts.getVisibleLogicalRange();
             const target = Math.max(wm, wr);
-            lockSync(80);
+            syncing = true;
             main.applyOptions({ rightPriceScale: { minimumWidth: target } });
             rsiChart.applyOptions({ rightPriceScale: { minimumWidth: target } });
-            if (mr && !rsiHidden()) requestAnimationFrame(() => setSyncedRange(mr));
+            requestAnimationFrame(() => {
+              if (mr && !rsiHidden() && !sameRng(rsiChart.timeScale().getVisibleLogicalRange(), mr)) {
+                rsiChart.timeScale().setVisibleLogicalRange(mr);
+              }
+              requestAnimationFrame(() => { syncing = false; });
+            });
           }
         }
         const scaleW = (ps.width && ps.width()) || 72;
