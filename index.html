@@ -2389,12 +2389,18 @@
       padding: 0 8px;
       pointer-events: none;
       white-space: nowrap;
-      font-size: 12px;
-      font-weight: 500;
-      background: #4c525e;
-      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: #131722;
+      color: #ffffff;
       border-radius: 2px;
       transform: translateX(-50%);
+    }
+
+    :root[data-theme="dark"] #tlabel {
+      background: #363a45;
+      color: #ffffff;
     }
 
     .legend {
@@ -3163,7 +3169,7 @@
           rightPriceScale: { borderColor: p.line, minimumWidth: 76 },
           timeScale: { borderColor: p.line, timeVisible: true, secondsVisible: false, rightOffset: 12 },
           localization: { timeFormatter: fmtTime },
-          crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+          crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { labelVisible: false } },
           autoSize: true
         };
       }
@@ -3294,7 +3300,7 @@
         return {
           setRange: r => pushToCharts(r, null),
           getRange: () => masterRange ? { ...masterRange } : main.timeScale().getVisibleLogicalRange(),
-          lock: () => {},
+          lock: () => { },
           snapNow
         };
       })();
@@ -5172,12 +5178,14 @@
               if (np.every(Boolean)) s.pts = np;
             }
             if (p.key === 'main') showPLabel(y);
+            showTLabel(p.chart, x);
             touch(); return;
           }
           if (tool !== 'cursor') {
             p.hover = { x, y };
             if (tool !== 'brush') showSync(x, p.key);
             if (p.key === 'main') showPLabel(y);
+            showTLabel(p.chart, x);
             if (cur && paneOf(cur) === p.key && !brushing) {
               const pt = ptFromEvent(e);
               if (pt) {
@@ -5188,6 +5196,7 @@
             touch(); return;
           }
           if (p.key === 'main') showPLabel(y);
+          showTLabel(p.chart, x);
           const h = hit(x, y);
           if (!h) setAuto(false, p); else cv.style.cursor = h.handle >= 0 ? 'grab' : 'move';
         });
@@ -5211,7 +5220,7 @@
           }
         });
         cv.addEventListener('pointercancel', () => { endBrush(); if (drag) { drag = null; saveDrawings(); } });
-        cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); if (p.key === 'main') hidePLabel(); touch(); } });
+        cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); hideTLabel(); if (p.key === 'main') hidePLabel(); touch(); } });
 
         // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
         p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
@@ -5634,23 +5643,62 @@
         vsync.style.height = (bottom - top) + 'px';
         vsync.style.display = 'block';
       }
-      // Bám đúng giữa nến (giống đường dọc có sẵn của biểu đồ), ngoài vùng nến thì theo chuột
+      // Bám đúng giữa nến (kể cả các cột trống ở tương lai / quá khứ)
       const syncX = (chart, param) => {
         if (!param.point) return null;
-        const c = param.time != null ? chart.timeScale().timeToCoordinate(param.time) : null;
-        return c != null ? c : param.point.x;
+        if (param.time != null) {
+          const c = chart.timeScale().timeToCoordinate(param.time);
+          if (c != null) return c;
+        }
+        const ts = chart.timeScale();
+        const lg = ts.coordinateToLogical(param.point.x);
+        if (lg != null && Number.isFinite(lg)) {
+          const c = ts.logicalToCoordinate(Math.round(lg));
+          const maxW = (ts.width && ts.width()) || Infinity;
+          if (c != null && Number.isFinite(c) && c >= 0 && c <= maxW) return c;
+        }
+        return param.point.x;
       };
-      // Trục thời gian của khung giá bị ẩn -> hiện nhãn ngày giờ tự vẽ ở đáy khi rê chuột vào khung giá
+      // Tính thời gian theo vị trí X (hỗ trợ cả vùng tương lai bên phải nến cuối & quá khứ trước nến đầu)
+      function shiftBarTime(baseTime, bars) {
+        if (!bars) return baseTime;
+        if (state.interval === '1M') {
+          const d = new Date((baseTime - TZ) * 1000);
+          return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + bars, 1) / 1000 + TZ;
+        }
+        const bs = SECS[state.interval] || 86400;
+        return baseTime + bars * bs;
+      }
+      function timeAtChartX(chart, x, fallbackTime = null) {
+        if (fallbackTime != null) return fallbackTime;
+        const d = state.data, n = d.length;
+        if (!n || !chart || x == null || !Number.isFinite(x)) return null;
+        const lg = chart.timeScale().coordinateToLogical(x);
+        if (lg == null || !Number.isFinite(lg)) return null;
+        const idx = Math.round(lg);
+        if (idx < 0) return shiftBarTime(d[0].time, idx);
+        if (idx >= n) return shiftBarTime(d[n - 1].time, idx - (n - 1));
+        return d[idx].time;
+      }
+      // Nhãn thời gian ở đáy khi rê chuột (dùng chung cho cả vùng nến lẫn vùng tương lai, cả khi ẩn/hiện RSI)
       const tlabel = $('tlabel');
-      function hideTLabel() { tlabel.style.display = 'none'; }
-      function showTLabel(x, time) {
-        if (x == null || time == null || $('rsiPane').classList.contains('collapsed')) { hideTLabel(); return; }
-        const tsH = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
+      let lastHoverX = null, lastHoverChart = null;
+      function hideTLabel() { lastHoverX = null; lastHoverChart = null; tlabel.style.display = 'none'; }
+      function showTLabel(chart, x, fallbackTime = null) {
+        if (!chart || x == null || !Number.isFinite(x)) { hideTLabel(); return; }
+        const time = timeAtChartX(chart, x, fallbackTime);
+        if (time == null || !Number.isFinite(time)) { hideTLabel(); return; }
+        const collapsed = $('rsiPane').classList.contains('collapsed');
+        const tsChart = collapsed ? main : rsiChart;
+        const tsH = (tsChart.timeScale().height && tsChart.timeScale().height()) || 26;
+        lastHoverX = x;
+        lastHoverChart = chart;
         tlabel.textContent = fmtTime(time);
         tlabel.style.height = tsH + 'px';
         tlabel.style.display = 'flex';
-        const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 58;
+        const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 76;
         const mp = $('mainPane'), half = tlabel.offsetWidth / 2, maxX = mp.clientWidth - sw - half;
+        if (maxX < half) { hideTLabel(); return; }
         tlabel.style.left = (mp.offsetLeft + Math.max(half, Math.min(x, maxX))) + 'px';
       }
       // Nhãn giá khi rê chuột (vẽ bằng DOM để luôn nằm đè lên nhãn giá hiện tại #timer)
@@ -5677,16 +5725,28 @@
       }
       main.timeScale().subscribeVisibleLogicalRangeChange(() => {
         if (lastHoverY != null) showPLabel(lastHoverY);
+        if (lastHoverX != null && lastHoverChart) showTLabel(lastHoverChart, lastHoverX);
       });
-      $('mainPane').addEventListener('pointerleave', hidePLabel);
+      $('mainPane').addEventListener('pointerleave', () => {
+        hidePLabel();
+        if (lastHoverChart === main) hideTLabel();
+      });
+      $('rsiPane').addEventListener('pointerleave', () => {
+        if (lastHoverChart === rsiChart) hideTLabel();
+      });
 
       main.subscribeCrosshairMove(param => {
         const x = syncX(main, param);
         x == null ? hideSync() : showSync(x, 'main');
-        showTLabel(x, param.time);
+        showTLabel(main, x, param.time);
         param.point ? showPLabel(param.point.y) : hidePLabel();
       });
-      rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); hidePLabel(); });
+      rsiChart.subscribeCrosshairMove(param => {
+        const x = syncX(rsiChart, param);
+        x == null ? hideSync() : showSync(x, 'rsi');
+        showTLabel(rsiChart, x, param.time);
+        hidePLabel();
+      });
 
       /* ---------- Watchlist (Tab bên phải giống TradingView) ---------- */
       const WL_KEY = 'watchlist_v1', WL_UI_KEY = 'wlUi_v1';
