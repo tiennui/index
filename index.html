@@ -2311,13 +2311,55 @@
       display: none;
       pointer-events: none;
       color: #fff;
-      font-size: 10px;
-      font-weight: 600;
+      border-radius: 2px 0 0 2px;
+      padding: 2px 4px;
       text-align: center;
-      line-height: 15px;
-      height: 15px;
       font-variant-numeric: tabular-nums;
       background: var(--up);
+      transform: translateY(-50%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+    }
+
+    #timer .t-pr {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 13px;
+      letter-spacing: -0.2px;
+    }
+
+    #timer .t-cd {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      line-height: 12px;
+      opacity: 0.95;
+    }
+
+    #hoverPrice {
+      position: absolute;
+      right: 0;
+      z-index: 7;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      color: #ffffff;
+      background: #131722;
+      border-radius: 2px 0 0 2px;
+      padding: 3px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 14px;
+      letter-spacing: -0.2px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      transform: translateY(-50%);
+    }
+
+    :root[data-theme="dark"] #hoverPrice {
+      background: #363a45;
+      color: #ffffff;
     }
 
     .chart {
@@ -2812,6 +2854,7 @@
         <div class="loading" id="loading">Đang tải dữ liệu từ Binance…</div>
         <div class="chart" id="main"></div>
         <div id="timer"></div>
+        <div id="hoverPrice"></div>
         <canvas id="draw"></canvas>
         <div id="dHint"></div>
         <div id="scaleBtns" role="group" aria-label="Chế độ trục giá">
@@ -3127,7 +3170,7 @@
 
       /* ---------- Biểu đồ ---------- */
       const main = LightweightCharts.createChart($('main'), chartOptions());
-      main.applyOptions({ timeScale: { visible: false } });
+      main.applyOptions({ timeScale: { visible: false }, crosshair: { horzLine: { labelVisible: false } } });
       const rsiChart = LightweightCharts.createChart($('rsi'), chartOptions());
 
       const p0 = palette();
@@ -3161,7 +3204,7 @@
           priceLineColor: state.dark ? '#d1d4dc' : '#131722'
         };
       };
-      const candles = main.addCandlestickSeries({ ...candleOpts() });
+      const candles = main.addCandlestickSeries({ ...candleOpts(), lastValueVisible: false });
       const vol = main.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: 'vol', lastValueVisible: false, priceLineVisible: false, visible: state.showVol });
       main.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
 
@@ -3799,7 +3842,10 @@
         e.currentTarget.textContent = state.dark ? 'Giao diện sáng' : 'Giao diện tối';
         const p = palette();
         main.applyOptions(chartOptions());
-        main.applyOptions({ timeScale: { visible: $('rsiPane').classList.contains('collapsed') } });
+        main.applyOptions({
+          timeScale: { visible: $('rsiPane').classList.contains('collapsed') },
+          crosshair: { horzLine: { labelVisible: false } }
+        });
         rsiChart.applyOptions(chartOptions());
         setLevels();
         candles.applyOptions(candleOpts());
@@ -3828,10 +3874,12 @@
         let left = Math.max(0, Math.floor(closeTime(last.time) - (Date.now() / 1000 + TZ)));
         const days = Math.floor(left / 86400); left -= days * 86400;
         const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
-        timerEl.textContent = (days ? days + 'd ' : '') + `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
-        const w = (main.priceScale('right').width && main.priceScale('right').width()) || 72;
+        const cdStr = (days ? days + 'd ' : '') + `${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+        const prStr = fmt(shown.close);
+        timerEl.innerHTML = `<span class="t-pr">${prStr}</span><span class="t-cd">${cdStr}</span>`;
+        const w = (main.priceScale('right').width && main.priceScale('right').width()) || 76;
         timerEl.style.width = w + 'px';
-        timerEl.style.top = (y + 9) + 'px';
+        timerEl.style.top = y + 'px';
         timerEl.style.background = shown.close >= shown.open ? palette().up : palette().down;
         timerEl.style.display = 'block';
       }
@@ -3931,6 +3979,7 @@
         rp.phase = p;
         if (p === 'off') rbar.removeAttribute('data-phase'); else rbar.dataset.phase = p;
         $('tgReplay').classList.toggle('on', p !== 'off');
+        candles.applyOptions({ lastValueVisible: p !== 'off' });
         try { if (p !== 'off') mabOff(); } catch (e) { }
       }
       function pausePlay() {
@@ -5122,11 +5171,13 @@
               });
               if (np.every(Boolean)) s.pts = np;
             }
+            if (p.key === 'main') showPLabel(y);
             touch(); return;
           }
           if (tool !== 'cursor') {
             p.hover = { x, y };
             if (tool !== 'brush') showSync(x, p.key);
+            if (p.key === 'main') showPLabel(y);
             if (cur && paneOf(cur) === p.key && !brushing) {
               const pt = ptFromEvent(e);
               if (pt) {
@@ -5136,6 +5187,7 @@
             }
             touch(); return;
           }
+          if (p.key === 'main') showPLabel(y);
           const h = hit(x, y);
           if (!h) setAuto(false, p); else cv.style.cursor = h.handle >= 0 ? 'grab' : 'move';
         });
@@ -5159,7 +5211,7 @@
           }
         });
         cv.addEventListener('pointercancel', () => { endBrush(); if (drag) { drag = null; saveDrawings(); } });
-        cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); touch(); } });
+        cv.addEventListener('pointerleave', () => { if (!drag && !brushing) { p.hover = null; hideSync(); if (p.key === 'main') hidePLabel(); touch(); } });
 
         // Khi ở chế độ con trỏ: rê chuột lên hình vẽ thì bật khả năng chọn / kéo
         p.chart && $(p.key === 'main' ? 'main' : 'rsi').addEventListener('pointermove', e => {
@@ -5601,12 +5653,40 @@
         const mp = $('mainPane'), half = tlabel.offsetWidth / 2, maxX = mp.clientWidth - sw - half;
         tlabel.style.left = (mp.offsetLeft + Math.max(half, Math.min(x, maxX))) + 'px';
       }
+      // Nhãn giá khi rê chuột (vẽ bằng DOM để luôn nằm đè lên nhãn giá hiện tại #timer)
+      const hoverPriceEl = $('hoverPrice');
+      let lastHoverY = null;
+      function hidePLabel() { lastHoverY = null; hoverPriceEl.style.display = 'none'; }
+      function showPLabel(y) {
+        if (y == null || !Number.isFinite(y)) { hidePLabel(); return; }
+        const mp = $('mainPane');
+        const collapsed = $('rsiPane').classList.contains('collapsed');
+        const tsH = collapsed ? ((main.timeScale().height && main.timeScale().height()) || 26) : 0;
+        const plotH = mp.clientHeight - tsH;
+        if (plotH <= 0 || y < 0 || y > plotH) { hidePLabel(); return; }
+        const price = candles.coordinateToPrice(y);
+        if (price == null || !Number.isFinite(price)) { hidePLabel(); return; }
+        lastHoverY = y;
+        const w = (main.priceScale('right').width && main.priceScale('right').width()) || 76;
+        hoverPriceEl.textContent = fmt(price);
+        hoverPriceEl.style.width = w + 'px';
+        hoverPriceEl.style.display = 'flex';
+        const half = (hoverPriceEl.offsetHeight || 20) / 2;
+        const topY = plotH >= half * 2 ? Math.max(half, Math.min(y, plotH - half)) : y;
+        hoverPriceEl.style.top = topY + 'px';
+      }
+      main.timeScale().subscribeVisibleLogicalRangeChange(() => {
+        if (lastHoverY != null) showPLabel(lastHoverY);
+      });
+      $('mainPane').addEventListener('pointerleave', hidePLabel);
+
       main.subscribeCrosshairMove(param => {
         const x = syncX(main, param);
         x == null ? hideSync() : showSync(x, 'main');
         showTLabel(x, param.time);
+        param.point ? showPLabel(param.point.y) : hidePLabel();
       });
-      rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); });
+      rsiChart.subscribeCrosshairMove(param => { const x = syncX(rsiChart, param); x == null ? hideSync() : showSync(x, 'rsi'); hideTLabel(); hidePLabel(); });
 
       /* ---------- Watchlist (Tab bên phải giống TradingView) ---------- */
       const WL_KEY = 'watchlist_v1', WL_UI_KEY = 'wlUi_v1';
