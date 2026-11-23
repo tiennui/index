@@ -1886,6 +1886,209 @@
       display: none;
     }
 
+    /* Nút Chọn nến (Select bar) kiểu TradingView */
+    .rp-sel-wrap {
+      display: inline-flex;
+      align-items: stretch;
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--hover);
+      flex: none;
+    }
+
+    #rbar .rp-sel-btn,
+    #rbar .rp-sel-more {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 0;
+      background: transparent;
+      color: var(--text);
+      padding: 5px 8px;
+      font: inherit;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    #rbar .rp-sel-more {
+      padding: 5px 6px;
+      border-left: 1px solid var(--line);
+    }
+
+    #rbar .rp-sel-btn:hover,
+    #rbar .rp-sel-more:hover {
+      background: color-mix(in srgb, var(--accent) 12%, var(--hover));
+    }
+
+    #rbar[data-phase="select"] .rp-sel-wrap,
+    .rp-sel-wrap.open {
+      background: var(--active);
+    }
+
+    #rbar[data-phase="select"] .rp-sel-btn,
+    .rp-sel-wrap.open .rp-sel-btn,
+    .rp-sel-wrap.open .rp-sel-more {
+      color: var(--accent);
+    }
+
+    #rbar .rp-sel-btn svg,
+    #rbar .rp-sel-more svg {
+      width: 15px;
+      height: 15px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: none;
+    }
+
+    #rbar .rp-sel-more svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    #rCancelSel {
+      display: none;
+    }
+
+    #rbar[data-phase="select"][data-prev="1"] #rCancelSel {
+      display: inline-flex;
+    }
+
+    #rSelectMenu {
+      position: fixed;
+      z-index: 96;
+      display: none;
+      width: 244px;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .32);
+      font-size: 12.5px;
+    }
+
+    #rSelectMenu.open {
+      display: block;
+    }
+
+    #rSelectMenu .rsm-it {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      background: none;
+      color: var(--text);
+      padding: 7px 9px;
+      border-radius: 5px;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    #rSelectMenu .rsm-it:hover {
+      background: var(--hover);
+    }
+
+    #rSelectMenu .rsm-it svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.65;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      flex: none;
+    }
+
+    #rSelectMenu .rsm-hr {
+      height: 1px;
+      background: var(--line);
+      margin: 5px 4px;
+    }
+
+    #rSelectMenu .rsm-date {
+      padding: 4px 6px 2px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #rSelectMenu .rsm-date label {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    #rSelectMenu .rsm-row {
+      display: flex;
+      gap: 5px;
+    }
+
+    #rSelectMenu input[type="date"] {
+      flex: 1;
+      min-width: 0;
+      background: var(--hover);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 4px 6px;
+      font: inherit;
+      font-size: 12px;
+    }
+
+    #rSelectMenu .rsm-go {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 5px;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #rSelectMenu .rsm-go:hover {
+      filter: brightness(1.08);
+    }
+
+    #rSelectMenu .rsm-range {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    /* Đường cắt xanh & vùng phủ tương lai khi chọn nến Backtest (kiểu TradingView) */
+    #rpCurtain {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 5;
+      display: none;
+      pointer-events: none;
+      border-left: 2px solid var(--accent);
+      background: rgba(41, 98, 255, 0.09);
+    }
+
+    #rpCurtain .rpc-tag {
+      position: absolute;
+      top: 8px;
+      left: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .24);
+    }
+
     #draw,
     #drawRsi {
       position: absolute;
@@ -3326,7 +3529,24 @@
   </div>
 
   <div id="rbar">
+    <div class="rp-sel-wrap" id="rSelectWrap">
+      <button class="rp-sel-btn" id="rSelectBar" type="button"
+        title="Chọn cây nến khác trên biểu đồ để bắt đầu Backtest">
+        <svg viewBox="0 0 18 18" aria-hidden="true">
+          <rect x="2.5" y="2.5" width="3" height="13" rx="0.6" />
+          <path d="M15.5 9H8.2M11 6.2L8.2 9l2.8 2.8" />
+        </svg>
+        <span>Chọn nến</span>
+      </button>
+      <button class="rp-sel-more" id="rSelectMore" type="button" aria-haspopup="menu" aria-expanded="false"
+        title="Tùy chọn chọn nến (trên biểu đồ, theo ngày, ngẫu nhiên)" aria-label="Tùy chọn chọn nến">
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M2.5 4.5L6 8l3.5-3.5" />
+        </svg>
+      </button>
+    </div>
     <span id="rHint">Bấm vào một nến trên biểu đồ để chọn điểm bắt đầu.</span>
+    <button class="btn" id="rCancelSel" type="button" title="Quay lại cây nến đang Backtest (Esc)">Hủy chọn</button>
     <div class="grp">
       <button class="btn" id="rPlay">▶ Chạy</button>
       <button class="btn" id="rStep" title="Phím mũi tên phải">Nến tiếp ›</button>
@@ -3347,8 +3567,38 @@
       <button class="btn" id="rHist">Lịch sử</button>
     </div>
     <div class="spacer">
-      <button class="btn grp-redo" id="rRedo">Chọn lại</button>
+      <button class="btn grp-redo" id="rRedo" title="Chọn lại cây nến khác trên biểu đồ">Chọn lại</button>
       <button class="btn" id="rExit">Thoát</button>
+    </div>
+  </div>
+
+  <div id="rSelectMenu" role="menu" aria-label="Chọn điểm bắt đầu Backtest">
+    <button class="rsm-it" id="rsmPick" type="button" role="menuitem">
+      <svg viewBox="0 0 18 18" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="3" height="13" rx="0.6" />
+        <path d="M15.5 9H8.2M11 6.2L8.2 9l2.8 2.8" />
+      </svg>
+      <span>Chọn nến trên biểu đồ</span>
+    </button>
+    <button class="rsm-it" id="rsmRandom" type="button" role="menuitem">
+      <svg viewBox="0 0 18 18" aria-hidden="true">
+        <rect x="2.5" y="2.5" width="13" height="13" rx="2.5" />
+        <circle cx="6.2" cy="6.2" r="1" fill="currentColor" stroke="none" />
+        <circle cx="11.8" cy="6.2" r="1" fill="currentColor" stroke="none" />
+        <circle cx="9" cy="9" r="1" fill="currentColor" stroke="none" />
+        <circle cx="6.2" cy="11.8" r="1" fill="currentColor" stroke="none" />
+        <circle cx="11.8" cy="11.8" r="1" fill="currentColor" stroke="none" />
+      </svg>
+      <span>Chọn nến ngẫu nhiên</span>
+    </button>
+    <div class="rsm-hr"></div>
+    <div class="rsm-date">
+      <label for="rsmDateIn">Nhảy đến ngày cụ thể</label>
+      <div class="rsm-row">
+        <input id="rsmDateIn" type="date" aria-label="Chọn ngày bắt đầu Backtest">
+        <button class="rsm-go" id="rsmDateGo" type="button">Đi tới</button>
+      </div>
+      <div class="rsm-range" id="rsmRange">–</div>
     </div>
   </div>
 
@@ -3498,6 +3748,7 @@
         </div>
         <div class="loading" id="loading">Đang tải dữ liệu từ Binance…</div>
         <div class="chart" id="main"></div>
+        <div id="rpCurtain"><span class="rpc-tag" id="rpCurtainTag"></span></div>
         <div id="timer"></div>
         <div id="hoverPrice"></div>
         <canvas id="draw"></canvas>
@@ -4221,18 +4472,44 @@
         if (i >= 0) updateLegend(i);
       });
 
-      let titlePrice = null; // giá hiển thị trên tiêu đề tab trình duyệt
+      let titlePrice = null; // luôn giữ giá thời gian thực trên tiêu đề tab trình duyệt (kể cả khi Backtest)
+      let livePriceWs = null, livePriceTimer = null;
       function updateTitle() {
         const base = state.symbol.replace('USDT', '');
         const tf = TF_LABEL[state.interval] || state.interval;
         $('lgName').textContent = `${NAMES[state.symbol] || base} / TetherUS · ${tf} · Binance`;
         document.title = (titlePrice != null ? fmt(titlePrice) + ' · ' : '') + `${state.symbol} · ${tf} · Binance`;
       }
+      function setLiveTitlePrice(price) {
+        if (price == null || !Number.isFinite(price)) return;
+        titlePrice = price;
+        updateTitle();
+      }
+      function closeLivePriceWs() {
+        clearTimeout(livePriceTimer);
+        if (livePriceWs) { livePriceWs.onclose = null; livePriceWs.close(); livePriceWs = null; }
+      }
+      function openLivePriceWs() {
+        closeLivePriceWs();
+        const sym = state.symbol;
+        const ws = new WebSocket(`wss://stream.binance.com:9443/ws/${sym.toLowerCase()}@miniTicker`);
+        livePriceWs = ws;
+        ws.onmessage = ev => {
+          try {
+            const d = JSON.parse(ev.data);
+            if (d && d.c != null && state.symbol === sym) setLiveTitlePrice(+d.c);
+          } catch (e) { }
+        };
+        ws.onclose = () => {
+          if (livePriceWs !== ws || rp.phase === 'off' || state.symbol !== sym) return;
+          livePriceTimer = setTimeout(openLivePriceWs, 3000);
+        };
+        ws.onerror = () => ws.close();
+      }
       function updateQuote(price) {
         $('qSell').textContent = fmt(price);
         $('qBuy').textContent = fmt(price + 0.01);
-        titlePrice = price;
-        updateTitle();
+        if (rp.phase === 'off') setLiveTitlePrice(price);
       }
 
       /* ---------- Dữ liệu Binance ---------- */
@@ -5048,11 +5325,14 @@
         const endExcl = lo;
         const start = Math.max(0, endExcl - maxBars);
         const out = all.slice(start, endExcl);
-        // Kiểm tra xem đoạn cắt có thực sự sát mốc anchor không (tránh lấy dữ liệu cũ/thiếu khi cuộn quá xa)
+        // Kiểm tra xem đoạn cắt có thực sự sát mốc anchor không khi backtest quá khứ (bỏ qua khi đang xem nến hiện tại vì khung W/2W/M chưa đóng)
         if (out.length) {
           const last4 = out[out.length - 1];
-          const gapSec = anchor.closeUtc - ((last4.time - TZ) + 14400);
-          if (gapSec > 86400 * 3) return [];
+          if (!anchor.isLive) {
+            const effClose = Math.min(anchor.closeUtc, Math.floor(Date.now() / 1000));
+            const gapSec = effClose - ((last4.time - TZ) + 14400);
+            if (gapSec > 86400 * 3) return [];
+          }
           if (state.interval === '4h' && last4.time === anchor.bar.time) {
             out[out.length - 1] = { time: anchor.bar.time, open: anchor.bar.open, high: anchor.bar.high, low: anchor.bar.low, close: anchor.bar.close };
           } else if (anchor.isLive) {
@@ -5191,8 +5471,8 @@
         const dailySlice = needDaily() ? sliceDailyAtAnchor(anchor) : [];
         const h4Slice = needH4() ? sliceH4AtAnchor(anchor) : [];
         // Nếu người dùng cuộn về quá khứ xa ngoài vùng 4H đã tải -> tự động tải thêm 4H quanh mốc đó
-        if (needH4() && anchor && h4Slice.length < 240 && !mtfState.loadingH4) {
-          scheduleH4HistoryAt(anchor.closeUtc);
+        if (needH4() && anchor && !anchor.isLive && h4Slice.length < 240 && !mtfState.loadingH4) {
+          scheduleH4HistoryAt(Math.min(anchor.closeUtc, Math.floor(Date.now() / 1000)));
         }
 
         const tfBars = {
@@ -5543,12 +5823,22 @@
 
       /* ---------- Backtest theo nến (replay + giao dịch thử) ---------- */
       const FEE = 0.001; // phí 0,1% mỗi chiều
-      const rbar = $('rbar');
+      const rbar = $('rbar'), rpCurtain = $('rpCurtain'), rpCurtainTag = $('rpCurtainTag');
+      const rSelectMenu = $('rSelectMenu'), rSelectWrap = $('rSelectWrap');
       const lastBar = () => state.data[state.data.length - 1];
+      let rpPrevIdx = null;
 
+      function hideRpCurtain() { rpCurtain.style.display = 'none'; }
+      function closeSelectMenu() {
+        rSelectMenu.classList.remove('open');
+        rSelectWrap.classList.remove('open');
+        $('rSelectMore').setAttribute('aria-expanded', 'false');
+      }
       function setPhase(p) {
         rp.phase = p;
-        if (p === 'off') rbar.removeAttribute('data-phase'); else rbar.dataset.phase = p;
+        if (p === 'off') { rbar.removeAttribute('data-phase'); rbar.removeAttribute('data-prev'); }
+        else rbar.dataset.phase = p;
+        if (p !== 'select') { hideRpCurtain(); rbar.removeAttribute('data-prev'); }
         $('tgReplay').classList.toggle('on', p !== 'off');
         candles.applyOptions({ lastValueVisible: p !== 'off' });
         try { if (p !== 'off') mabOff(); } catch (e) { }
@@ -5563,19 +5853,46 @@
       }
       function resetReplayUI() {
         rp.switching = false;
+        rpPrevIdx = null;
+        closeSelectMenu();
+        hideRpCurtain();
+        closeLivePriceWs();
         if (rp.phase === 'off') return;
         pausePlay(); resetTrades(); setPhase('off'); $('hist').classList.remove('open');
       }
 
-      function enterSelect() {
+      function enterSelect(preservePrev = false) {
         if (!state.data.length) return;
+        closeSelectMenu();
         if (rp.phase === 'off') {
+          rpPrevIdx = null;
           closeWs(); state.full = state.data.slice(); setStatus('', 'Backtest');
+          openLivePriceWs();
         } else {
-          pausePlay(); resetTrades(); state.data = state.full.slice(); renderAll();
+          pausePlay();
+          if (preservePrev && rp.phase === 'run') {
+            rpPrevIdx = state.data.length - 1;
+          } else {
+            rpPrevIdx = null;
+            resetTrades();
+          }
+          state.data = state.full.slice();
+          renderAll();
         }
         $('hist').classList.remove('open');
         setPhase('select');
+        if (rpPrevIdx != null) rbar.dataset.prev = '1';
+      }
+      function cancelSelect() {
+        if (rp.phase !== 'select' || rpPrevIdx == null) return;
+        const idx = Math.max(1, Math.min(rpPrevIdx, state.full.length - 1));
+        rpPrevIdx = null;
+        state.data = state.full.slice(0, idx + 1);
+        renderAll();
+        setPhase('run');
+        updateQuote(lastBar().close);
+        updateStats();
+        forceSyncAfterReplay(idx);
       }
       function forceSyncAfterReplay(idx) {
         const vr = { from: idx - 120, to: idx + 25 };
@@ -5589,12 +5906,58 @@
       }
 
       function startReplay(idx) {
+        closeSelectMenu();
+        hideRpCurtain();
+        if (rpPrevIdx != null) { resetTrades(); rpPrevIdx = null; }
         state.data = state.full.slice(0, idx + 1);
         renderAll();
         setPhase('run');
         updateQuote(lastBar().close);
         updateStats();
         forceSyncAfterReplay(idx);
+      }
+      function pickRandomBar() {
+        if (!state.full.length) return;
+        const minIdx = Math.min(60, Math.max(1, state.full.length - 2));
+        const maxIdx = Math.max(minIdx, state.full.length - 15);
+        const idx = minIdx + Math.floor(Math.random() * (maxIdx - minIdx + 1));
+        pausePlay(); resetTrades(); rpPrevIdx = null;
+        startReplay(idx);
+      }
+      function jumpToDateStr(dateStr) {
+        if (!dateStr || !state.full.length) return;
+        const parts = dateStr.split('-').map(Number);
+        if (parts.length !== 3 || parts.some(n => !Number.isFinite(n))) return;
+        // Cuối ngày UTC+7 đã chọn -> tìm nến gần nhất trước/tại ngày đó
+        const target = Date.UTC(parts[0], parts[1] - 1, parts[2], 23, 59, 59) / 1000;
+        let idx = 1;
+        for (let i = 1; i < state.full.length; i++) {
+          if (state.full[i].time <= target) idx = i; else break;
+        }
+        pausePlay(); resetTrades(); rpPrevIdx = null;
+        startReplay(idx);
+      }
+      function openSelectMenu() {
+        if (rSelectMenu.classList.contains('open')) { closeSelectMenu(); return; }
+        const r = rSelectWrap.getBoundingClientRect();
+        rSelectMenu.style.left = Math.max(4, Math.min(r.left, innerWidth - 252)) + 'px';
+        rSelectMenu.style.top = (r.bottom + 4) + 'px';
+        if (state.full.length) {
+          const toIso = t => {
+            const d = new Date(t * 1000);
+            return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+          };
+          const minD = toIso(state.full[1] ? state.full[1].time : state.full[0].time);
+          const maxD = toIso(state.full[state.full.length - 1].time);
+          const inp = $('rsmDateIn');
+          inp.min = minD; inp.max = maxD;
+          const curT = lastBar() ? lastBar().time : state.full[state.full.length - 1].time;
+          inp.value = toIso(curT);
+          $('rsmRange').textContent = `Dữ liệu: ${fmtTime(state.full[0].time).split(' ')[0]} → ${fmtTime(state.full[state.full.length - 1].time).split(' ')[0]}`;
+        }
+        rSelectMenu.classList.add('open');
+        rSelectWrap.classList.add('open');
+        $('rSelectMore').setAttribute('aria-expanded', 'true');
       }
 
       /* Đổi khung thời gian khi đang backtest: tải lại ở khung mới và dừng đúng thời điểm đang phát lại
@@ -5658,6 +6021,23 @@
         const idx = state.full.findIndex(x => x.time === param.time);
         if (idx >= 1) startReplay(idx);
       });
+      // Hiệu ứng đường cắt xanh + phủ mờ tương lai khi rê chuột chọn nến Backtest (kiểu TradingView)
+      main.subscribeCrosshairMove(param => {
+        if (rp.phase !== 'select' || !param.point || param.time == null) { hideRpCurtain(); return; }
+        const x = main.timeScale().timeToCoordinate(param.time);
+        if (x == null) { hideRpCurtain(); return; }
+        const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 76;
+        const mp = $('mainPane');
+        const plotW = mp.clientWidth - sw;
+        const tsH = bottomChart() === main ? ((main.timeScale().height && main.timeScale().height()) || 26) : 0;
+        if (x < 0 || x >= plotW) { hideRpCurtain(); return; }
+        rpCurtain.style.left = Math.round(x) + 'px';
+        rpCurtain.style.width = Math.max(0, Math.round(plotW - x)) + 'px';
+        rpCurtain.style.bottom = tsH + 'px';
+        rpCurtainTag.textContent = '✂ ' + fmtTime(param.time);
+        rpCurtain.style.display = 'block';
+      });
+      $('mainPane').addEventListener('pointerleave', hideRpCurtain);
 
       function step() {
         if (rp.switching) return false;
@@ -5743,11 +6123,26 @@
       }
       $('rHist').onclick = () => { const o = $('hist').classList.toggle('open'); if (o) renderHist(); };
 
-      $('tgReplay').onclick = () => { if (rp.phase === 'off') enterSelect(); else { resetReplayUI(); load(); } };
-      $('rRedo').onclick = enterSelect;
+      $('tgReplay').onclick = () => { if (rp.phase === 'off') enterSelect(false); else { resetReplayUI(); load(); } };
+      $('rSelectBar').onclick = () => { if (rp.phase === 'select' && rpPrevIdx != null) cancelSelect(); else enterSelect(true); };
+      $('rSelectMore').onclick = e => { e.stopPropagation(); openSelectMenu(); };
+      $('rsmPick').onclick = () => enterSelect(true);
+      $('rsmRandom').onclick = pickRandomBar;
+      $('rsmDateGo').onclick = () => jumpToDateStr($('rsmDateIn').value);
+      $('rsmDateIn').addEventListener('keydown', e => { if (e.key === 'Enter') jumpToDateStr(e.target.value); });
+      $('rCancelSel').onclick = cancelSelect;
+      $('rRedo').onclick = () => enterSelect(true);
       $('rExit').onclick = () => { resetReplayUI(); load(); };
+      document.addEventListener('pointerdown', e => {
+        if (rSelectMenu.classList.contains('open') && !rSelectMenu.contains(e.target) && !rSelectWrap.contains(e.target)) {
+          closeSelectMenu();
+        }
+      });
       document.addEventListener('keydown', e => {
-        if (e.key === 'ArrowRight' && rp.phase === 'run' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
+        if (e.key === 'Escape') {
+          if (rSelectMenu.classList.contains('open')) closeSelectMenu();
+          else if (rp.phase === 'select' && rpPrevIdx != null) cancelSelect();
+        } else if (e.key === 'ArrowRight' && rp.phase === 'run' && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) {
           pausePlay(); step();
         }
       });
@@ -7659,6 +8054,7 @@
             const d = msg && (msg.data || msg);
             if (!d || !d.s) return;
             wlUpdateRowData(d.s, +d.c, +d.p, +d.P, true);
+            if (d.s === state.symbol) setLiveTitlePrice(+d.c);
           } catch (e) { }
         };
         ws.onclose = () => {
