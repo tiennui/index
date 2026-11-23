@@ -4394,7 +4394,8 @@
         });
         cache = { R, E, W };
         renderFngSeries();
-        updateLegend(d.length - 1);
+        const fngCtx = getFngContext();
+        updateLegend(fngCtx.anchor ? fngCtx.anchor.idx : d.length - 1);
         try { scheduleMtfRender(true); } catch (e) { }
       }
 
@@ -4462,7 +4463,11 @@
         */
       }
       main.subscribeCrosshairMove(param => {
-        if (!param.time) { updateLegend(state.data.length - 1); return; }
+        if (!param.time) {
+          const ctx = getFngContext();
+          updateLegend(ctx.anchor ? ctx.anchor.idx : state.data.length - 1);
+          return;
+        }
         const i = state.data.findIndex(x => x.time === param.time);
         if (i >= 0) updateLegend(i);
       });
@@ -4949,7 +4954,7 @@
         if (v < 75) return { label: 'Tham lam', short: 'Tham lam', color: '#7cb342', bg: 'rgba(124,179,66,0.16)' };
         return { label: 'Cực kỳ tham lam', short: 'Cực tham', color: '#089981', bg: 'rgba(8,153,129,0.16)' };
       }
-      function fngFindAt(utcSec) {
+      function fngFindEntryAt(utcSec) {
         const arr = fngState.items;
         if (!arr.length || utcSec < arr[0].ts) return null;
         let lo = 0, hi = arr.length - 1;
@@ -4957,14 +4962,36 @@
           const mid = (lo + hi + 1) >> 1;
           if (arr[mid].ts <= utcSec) lo = mid; else hi = mid - 1;
         }
-        return arr[lo].v;
+        return arr[lo];
+      }
+      function fngFindAt(utcSec) {
+        const it = fngFindEntryAt(utcSec);
+        return it ? it.v : null;
+      }
+      function getFngTargetUtc(bar) {
+        if (!bar) return null;
+        const step = SECS[state.interval];
+        const multiDay = !step || step > 86400;
+        const rawUtc = multiDay ? (closeTime(bar.time) - TZ - 1) : (bar.time - TZ);
+        return Math.min(rawUtc, Math.floor(Date.now() / 1000));
+      }
+      function getFngContext() {
+        const anchor = typeof getMtfAnchor === 'function' ? getMtfAnchor() : null;
+        if (anchor && !anchor.isLive) {
+          const targetUtc = getFngTargetUtc(anchor.bar);
+          const entry = targetUtc != null ? fngFindEntryAt(targetUtc) : null;
+          return { isLive: false, anchor, entry };
+        }
+        const items = fngState.items;
+        return { isLive: true, anchor, entry: items.length ? items[items.length - 1] : null };
       }
       function updateFngLegend(i) {
         const el = $('lgFng');
         if (!el) return;
+        const ctx = getFngContext();
         let v = null;
         if (i != null && i >= 0 && i < fngState.barVals.length) v = fngState.barVals[i];
-        if (v == null && fngState.items.length) v = fngState.items[fngState.items.length - 1].v;
+        else if (ctx.entry) v = ctx.entry.v;
         const m = fngMeta(v);
         el.innerHTML = v == null
           ? `<span>Tham lam &amp; Sợ hãi</span><span style="color:var(--muted);font-weight:500">${fngState.loading ? 'Đang tải…' : (fngState.err || '–')}</span>`
@@ -4972,17 +4999,14 @@
       }
       function renderFngSeries() {
         const d = state.data;
-        if (!d.length) { fngState.barVals = []; fngLine.setData([]); fngZoneLow.setData([]); fngZoneHigh.setData([]); updateFngLegend(-1); return; }
-        const step = SECS[state.interval];
-        const multiDay = !step || step > 86400;
+        if (!d.length) { fngState.barVals = []; fngLine.setData([]); fngZoneLow.setData([]); fngZoneHigh.setData([]); updateFngLegend(-1); renderFngUI(true); return; }
         const vals = new Array(d.length);
         const lineData = new Array(d.length);
         const lowData = new Array(d.length);
         const highData = new Array(d.length);
         for (let i = 0; i < d.length; i++) {
           const t = d[i].time;
-          const targetUtc = multiDay ? (closeTime(t) - TZ - 1) : (t - TZ);
-          const v = fngFindAt(targetUtc);
+          const v = fngFindAt(getFngTargetUtc(d[i]));
           vals[i] = v;
           lineData[i] = v == null ? { time: t } : { time: t, value: v, color: fngMeta(v).color };
           lowData[i] = { time: t, value: 25 };
@@ -4995,11 +5019,23 @@
         fngZoneHigh.setData(highData);
         fngLine.setData(lineData);
         if (!fngHidden()) timeAxisCtrl.snapNow();
-        updateFngLegend(d.length - 1);
+        const ctx = getFngContext();
+        updateFngLegend(ctx.anchor ? ctx.anchor.idx : d.length - 1);
+        renderFngUI(true);
       }
-      function renderFngUI() {
-        const items = fngState.items;
-        const cur = items.length ? items[items.length - 1] : null;
+      let fngUiSig = '';
+      function renderFngUI(force = false) {
+        const ctx = getFngContext();
+        const cur = ctx.entry;
+        const sig = [
+          ctx.isLive ? 1 : 0, cur ? `${cur.ts}:${cur.v}` : 'none',
+          ctx.anchor ? ctx.anchor.bar.time : 0,
+          fngState.loading ? 1 : 0, fngState.err,
+          fngPane.classList.contains('collapsed') ? 1 : 0
+        ].join('|');
+        if (!force && sig === fngUiSig) return;
+        fngUiSig = sig;
+
         const v = cur ? cur.v : null;
         const m = fngMeta(v);
         $('fngDot').style.background = m.color;
@@ -5020,12 +5056,9 @@
           if (daysAgo === 0) return cur.v;
           return fngFindAt(cur.ts - daysAgo * 86400);
         };
-        const cards = [
-          ['Hôm nay', pick(0), false],
-          ['Hôm qua', pick(1), true],
-          ['7 ngày trước', pick(7), true],
-          ['30 ngày trước', pick(30), true]
-        ];
+        const cards = ctx.isLive
+          ? [['Hôm nay', pick(0), false], ['Hôm qua', pick(1), true], ['7 ngày trước', pick(7), true], ['30 ngày trước', pick(30), true]]
+          : [['Tại nến cuối', pick(0), false], ['Trước 1 ngày', pick(1), true], ['Trước 7 ngày', pick(7), true], ['Trước 30 ngày', pick(30), true]];
         $('fngHist').innerHTML = cards.map(([title, val, showDiff]) => {
           const cm = fngMeta(val);
           let diffHtml = '';
@@ -5044,6 +5077,11 @@
       function updateFngNextText() {
         const el = $('fngNext');
         if (!el) return;
+        const ctx = getFngContext();
+        if (!ctx.isLive && ctx.anchor) {
+          el.innerHTML = `<span style="color:var(--accent);font-weight:600">⏪ Mốc: ${fmtTime(ctx.anchor.bar.time)}</span>`;
+          return;
+        }
         if (!fngState.nextUpdateAt) { el.textContent = 'Nguồn: Alternative.me'; return; }
         const left = Math.max(0, Math.floor((fngState.nextUpdateAt - Date.now()) / 1000));
         if (left <= 0) { el.textContent = 'Alternative.me · Sắp cập nhật'; return; }
@@ -5620,6 +5658,9 @@
         mtfRaf = requestAnimationFrame(() => {
           mtfRaf = null;
           renderMtf(false);
+          renderFngUI(false);
+          const ctx = getFngContext();
+          if (ctx.anchor) updateFngLegend(ctx.anchor.idx);
         });
       }
       main.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleMtfRender(false));
@@ -7738,7 +7779,8 @@
       });
       $('fngPane').addEventListener('pointerleave', () => {
         if (lastHoverChart === fngChart) hideTLabel();
-        updateFngLegend(state.data.length - 1);
+        const ctx = getFngContext();
+        updateFngLegend(ctx.anchor ? ctx.anchor.idx : state.data.length - 1);
       });
 
       main.subscribeCrosshairMove(param => {
@@ -7758,7 +7800,11 @@
         x == null ? hideSync() : showSync(x, 'fng');
         showTLabel(fngChart, x, param.time);
         hidePLabel();
-        if (!param.time) { updateFngLegend(state.data.length - 1); return; }
+        if (!param.time) {
+          const ctx = getFngContext();
+          updateFngLegend(ctx.anchor ? ctx.anchor.idx : state.data.length - 1);
+          return;
+        }
         const i = state.data.findIndex(bar => bar.time === param.time);
         if (i >= 0) updateLegend(i);
       });
