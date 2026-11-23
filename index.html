@@ -894,7 +894,7 @@
     }
 
     #rsiPane {
-      height: 28%;
+      height: 24%;
       max-height: 75%;
       flex: none;
     }
@@ -903,7 +903,18 @@
       display: none;
     }
 
-    #splitter {
+    #fngPane {
+      height: 17%;
+      max-height: 55%;
+      flex: none;
+    }
+
+    #fngPane.collapsed {
+      display: none;
+    }
+
+    #splitter,
+    #fngSplitter {
       height: 7px;
       flex: none;
       cursor: row-resize;
@@ -913,7 +924,8 @@
       z-index: 20;
     }
 
-    #splitter::after {
+    #splitter::after,
+    #fngSplitter::after {
       content: "";
       position: absolute;
       left: 50%;
@@ -927,18 +939,561 @@
     }
 
     #splitter:hover,
-    #splitter.drag {
+    #splitter.drag,
+    #fngSplitter:hover,
+    #fngSplitter.drag {
       background: var(--accent);
     }
 
     #splitter:hover::after,
-    #splitter.drag::after {
+    #splitter.drag::after,
+    #fngSplitter:hover::after,
+    #fngSplitter.drag::after {
       background: #fff;
       opacity: .9;
     }
 
-    #splitter.hidden {
+    #splitter.hidden,
+    #fngSplitter.hidden {
       display: none;
+    }
+
+    .fng-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+
+    .fng-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex: none;
+    }
+
+    #fngPop {
+      position: fixed;
+      top: 48px;
+      right: 12px;
+      z-index: 52;
+      display: none;
+      width: 292px;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      user-select: none;
+    }
+
+    #fngPop.open {
+      display: block;
+    }
+
+    #fngPop .fp-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    #fngPop .fp-hd h4 {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+
+    #fngPop .fp-acts {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    #fngPop .fp-ib {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 4px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    #fngPop .fp-ib:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    #fngPop .fp-gauge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 2px 0 10px;
+    }
+
+    #fngPop .fp-gauge svg {
+      width: 220px;
+      height: 122px;
+      overflow: visible;
+    }
+
+    #fngNeedle {
+      transform-origin: 110px 108px;
+      transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+    }
+
+    #fngPop .fp-score {
+      margin-top: -8px;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #fngPop .fp-cls {
+      margin-top: 4px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    #fngPop .fp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    #fngPop .fp-card {
+      background: var(--hover);
+      border-radius: 6px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    #fngPop .fp-card small {
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    #fngPop .fp-card .fp-cv {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #fngPop .fp-card b {
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    #fngPop .fp-card span {
+      font-size: 10.5px;
+      font-weight: 600;
+    }
+
+    #fngPop .fp-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    #fngPop .fp-err {
+      color: var(--down);
+      font-size: 11px;
+      text-align: center;
+      margin-bottom: 6px;
+      display: none;
+    }
+
+    #lgFng {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    #lgFng .fng-tag {
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Bảng quét chiến lược đa khung 1W / 3D / 2D / 1D */
+    .mtf-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .mtf-badge {
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      background: var(--hover);
+      color: var(--muted);
+    }
+
+    .mtf-badge.bull {
+      background: rgba(8, 153, 129, 0.16);
+      color: var(--up);
+    }
+
+    .mtf-badge.bear {
+      background: rgba(242, 54, 69, 0.16);
+      color: var(--down);
+    }
+
+    .mtf-badge.warn {
+      background: rgba(245, 166, 35, 0.18);
+      color: #d98200;
+    }
+
+    :root[data-theme="dark"] .mtf-badge.warn {
+      color: #f5a623;
+    }
+
+    #mtfDlg {
+      position: fixed;
+      top: 50px;
+      right: 12px;
+      z-index: 53;
+      display: none;
+      width: 468px;
+      max-width: calc(100vw - 24px);
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 13px;
+      box-shadow: 0 12px 34px rgba(0, 0, 0, .35);
+      user-select: none;
+    }
+
+    #mtfDlg.open {
+      display: block;
+    }
+
+    #mtfDlg .mtf-hd {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      cursor: move;
+    }
+
+    #mtfDlg .mtf-hd h4 {
+      margin: 0;
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #mtfDlg .mtf-sym {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--hover);
+      color: var(--accent);
+    }
+
+    #mtfDlg .mtf-acts {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #mtfDlg .mtf-mode {
+      border: 1px solid var(--line);
+      background: var(--hover);
+      color: var(--text);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #mtfDlg .mtf-mode.on {
+      border-color: var(--accent);
+      background: var(--active);
+      color: var(--accent);
+    }
+
+    #mtfDlg .mtf-ib {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 4px;
+      background: none;
+      color: var(--muted);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+    }
+
+    #mtfDlg .mtf-ib:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    #mtfDlg .mtf-sum {
+      background: var(--hover);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 8px;
+    }
+
+    #mtfDlg .mtf-sum-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    #mtfDlg .mtf-verdict {
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 5px;
+      letter-spacing: 0.1px;
+    }
+
+    #mtfDlg .mtf-verdict.bull {
+      background: rgba(8, 153, 129, 0.16);
+      color: var(--up);
+    }
+
+    #mtfDlg .mtf-verdict.bear {
+      background: rgba(242, 54, 69, 0.16);
+      color: var(--down);
+    }
+
+    #mtfDlg .mtf-verdict.warn {
+      background: rgba(245, 166, 35, 0.18);
+      color: #d98200;
+    }
+
+    :root[data-theme="dark"] #mtfDlg .mtf-verdict.warn {
+      color: #f5a623;
+    }
+
+    #mtfDlg .mtf-verdict.flat {
+      background: rgba(120, 123, 134, 0.16);
+      color: var(--muted);
+    }
+
+    #mtfDlg .mtf-dots {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #mtfDlg .mtf-dot {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(120, 123, 134, 0.16);
+      color: var(--muted);
+    }
+
+    #mtfDlg .mtf-dot.bull {
+      background: rgba(8, 153, 129, 0.18);
+      color: var(--up);
+    }
+
+    #mtfDlg .mtf-dot.bear {
+      background: rgba(242, 54, 69, 0.18);
+      color: var(--down);
+    }
+
+    #mtfDlg .mtf-note {
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--text);
+      opacity: 0.9;
+    }
+
+    #mtfDlg table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #mtfDlg th {
+      text-align: right;
+      font-weight: 600;
+      font-size: 10.5px;
+      color: var(--muted);
+      padding: 4px 5px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    #mtfDlg th:first-child,
+    #mtfDlg td:first-child {
+      text-align: left;
+    }
+
+    #mtfDlg th:last-child,
+    #mtfDlg td:last-child {
+      text-align: right;
+    }
+
+    #mtfDlg td {
+      padding: 6px 5px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #mtfDlg tbody tr {
+      cursor: pointer;
+      transition: background .1s;
+    }
+
+    #mtfDlg tbody tr:hover {
+      background: var(--hover);
+    }
+
+    #mtfDlg tbody tr.cur {
+      background: color-mix(in srgb, var(--active) 60%, transparent);
+    }
+
+    #mtfDlg .mtf-tf {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 700;
+    }
+
+    #mtfDlg .mtf-role {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--muted);
+      padding: 0 4px;
+      border-radius: 3px;
+      background: var(--hover);
+    }
+
+    #mtfDlg .mtf-st {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+
+    #mtfDlg .mtf-tag {
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+
+    #mtfDlg .mtf-tag.bull {
+      background: rgba(8, 153, 129, 0.15);
+      color: var(--up);
+    }
+
+    #mtfDlg .mtf-tag.bear {
+      background: rgba(242, 54, 69, 0.15);
+      color: var(--down);
+    }
+
+    #mtfDlg .mtf-tag.flat {
+      background: rgba(120, 123, 134, 0.15);
+      color: var(--muted);
+    }
+
+    #mtfDlg .mtf-cx {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--active);
+      color: var(--accent);
+    }
+
+    #mtfDlg .mtf-foot {
+      margin-top: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10.5px;
+      color: var(--muted);
+    }
+
+    #mtfDlg .mtf-tfs {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    #mtfDlg .mtf-tfs-lbl {
+      font-size: 10.5px;
+      color: var(--muted);
+      margin-right: 2px;
+    }
+
+    #mtfDlg .mtf-tf-tog {
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .12s, color .12s, border-color .12s;
+    }
+
+    #mtfDlg .mtf-tf-tog:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    #mtfDlg .mtf-tf-tog.on {
+      border-color: var(--accent);
+      background: var(--active);
+      color: var(--accent);
     }
 
     body.dragging {
@@ -2367,7 +2922,8 @@
       inset: 0;
     }
 
-    #vsync {
+    #vsync,
+    #vsync2 {
       position: absolute;
       left: 0;
       top: 0;
@@ -2584,6 +3140,15 @@
     <button class="btn" id="tgVol">Vol</button>
     <button class="btn on" id="tgRsi">RSI</button>
     <button class="btn" id="btnCfg" aria-haspopup="dialog">⚙ Cài đặt RSI</button>
+    <button class="btn on" id="tgFng"
+      title="Bật / tắt khung biểu đồ lịch sử Chỉ số Tham lam & Sợ hãi (Crypto Fear & Greed Index)">Tham lam &amp; Sợ
+      hãi</button>
+    <button class="btn fng-pill" id="btnFng" aria-haspopup="dialog"
+      title="Xem đồng hồ và thống kê Chỉ số Tham lam & Sợ hãi"><i class="fng-dot" id="fngDot"></i><span
+        id="fngVal">–</span></button>
+    <button class="btn mtf-pill" id="btnMtf" aria-haspopup="dialog"
+      title="Bảng quét chiến lược đa khung 1W / 3D / 2D / 1D / 12H / 4H theo RSI + 2 đường TB">📊 Đa khung <span
+        class="mtf-badge" id="mtfTopBadge">–</span></button>
     <span class="sep"></span>
     <button class="btn" id="tgReplay" title="Phát lại từng nến và giao dịch thử">⏪ Backtest</button>
     <button class="btn" id="tgMaBt"
@@ -2683,6 +3248,80 @@
     <div class="f"><label for="cXlo">Vùng quá bán</label><input id="cXlo" type="number" min="0" max="97" step="1"></div>
     <div class="err" id="cErr"></div>
     <div class="acts"><button class="btn" id="cReset">Mặc định</button><button class="btn on" id="cClose">Đóng</button>
+    </div>
+  </div>
+
+  <div id="fngPop" role="dialog" aria-label="Chỉ số Tham lam & Sợ hãi">
+    <div class="fp-hd">
+      <h4>Chỉ số Tham lam &amp; Sợ hãi</h4>
+      <div class="fp-acts">
+        <button class="fp-ib" id="fngRefresh" type="button" title="Tải lại dữ liệu mới nhất"
+          aria-label="Tải lại">↻</button>
+        <button class="fp-ib" id="fngClose" type="button" title="Đóng" aria-label="Đóng">✕</button>
+      </div>
+    </div>
+    <div class="fp-err" id="fngErr"></div>
+    <div class="fp-gauge">
+      <svg viewBox="0 0 220 122" aria-hidden="true">
+        <path d="M 28 108 A 82 82 0 0 1 50.2 51.9" fill="none" stroke="#ea3943" stroke-width="14" stroke-linecap="butt" />
+        <path d="M 52.9 49.1 A 82 82 0 0 1 94.6 27.5" fill="none" stroke="#f58220" stroke-width="14" stroke-linecap="butt" />
+        <path d="M 98.4 26.8 A 82 82 0 0 1 121.6 26.8" fill="none" stroke="#f3ba2f" stroke-width="14" stroke-linecap="butt" />
+        <path d="M 125.4 27.5 A 82 82 0 0 1 167.1 49.1" fill="none" stroke="#8cc63f" stroke-width="14" stroke-linecap="butt" />
+        <path d="M 169.8 51.9 A 82 82 0 0 1 192 108" fill="none" stroke="#089981" stroke-width="14" stroke-linecap="butt" />
+        <g id="fngNeedle" style="transform:rotate(0deg)">
+          <polygon points="107,108 113,108 110,36" fill="currentColor" opacity="0.9" />
+          <circle cx="110" cy="108" r="6" fill="currentColor" />
+          <circle cx="110" cy="108" r="2.5" fill="var(--panel)" />
+        </g>
+        <text x="18" y="120" font-size="9.5" fill="var(--muted)" text-anchor="middle">0</text>
+        <text x="110" y="14" font-size="9.5" fill="var(--muted)" text-anchor="middle">50</text>
+        <text x="202" y="120" font-size="9.5" fill="var(--muted)" text-anchor="middle">100</text>
+      </svg>
+      <div class="fp-score" id="fngScore">–</div>
+      <div class="fp-cls" id="fngCls">Đang tải…</div>
+    </div>
+    <div class="fp-grid" id="fngHist"></div>
+    <div class="fp-foot">
+      <span id="fngNext">Nguồn: Alternative.me</span>
+      <button class="btn" id="fngTogglePane" type="button" style="padding:3px 8px;font-size:11.5px">Ẩn biểu đồ</button>
+    </div>
+  </div>
+
+  <div id="mtfDlg" role="dialog" aria-label="Bảng quét chiến lược đa khung 1W / 3D / 2D / 1D / 12H / 4H">
+    <div class="mtf-hd" id="mtfHead" title="Kéo để di chuyển bảng">
+      <h4>📊 Đa khung RSI + 2 TB <span class="mtf-sym" id="mtfSym">BTCUSDT</span></h4>
+      <div class="mtf-acts">
+        <button class="mtf-mode" id="mtfClosed" type="button"
+          title="Chuyển giữa tính trên nến đang chạy (Live) hoặc chỉ tính trên nến đã đóng">Đang chạy</button>
+        <button class="mtf-ib" id="mtfRefresh" type="button" title="Tải lại dữ liệu các khung"
+          aria-label="Tải lại">↻</button>
+        <button class="mtf-ib" id="mtfClose" type="button" title="Đóng" aria-label="Đóng">✕</button>
+      </div>
+    </div>
+    <div class="mtf-tfs" id="mtfTfBar" role="group" aria-label="Chọn bật / tắt khung thời gian"></div>
+    <div class="mtf-sum">
+      <div class="mtf-sum-top">
+        <span class="mtf-verdict flat" id="mtfVerdict">Đang quét…</span>
+        <div class="mtf-dots" id="mtfDots"></div>
+      </div>
+      <div class="mtf-note" id="mtfNote">Đang tải dữ liệu đa khung từ Binance…</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Khung</th>
+          <th id="mtfThRsi">RSI 14</th>
+          <th id="mtfThEma">EMA 9</th>
+          <th id="mtfThWma">WMA 45</th>
+          <th id="mtfThPrice">EMA Giá</th>
+          <th>Trạng thái</th>
+        </tr>
+      </thead>
+      <tbody id="mtfBody"></tbody>
+    </table>
+    <div class="mtf-foot">
+      <span id="mtfMeta">Bấm vào từng dòng để chuyển nhanh khung thời gian</span>
+      <span id="mtfUpdated">–</span>
     </div>
   </div>
 
@@ -2878,7 +3517,16 @@
         <div class="chart" id="rsi"></div>
         <canvas id="drawRsi"></canvas>
       </div>
+      <div id="fngSplitter" role="separator" aria-orientation="horizontal"
+        title="Kéo để đổi kích thước · bấm đúp để đặt lại"></div>
+      <div class="pane" id="fngPane">
+        <div class="legend">
+          <div class="row" id="lgFng"></div>
+        </div>
+        <div class="chart" id="fng"></div>
+      </div>
       <div id="vsync"></div>
+      <div id="vsync2"></div>
       <div id="tlabel"></div>
       <div id="clock" role="button" tabindex="0"><b id="clkNow">--:--:-- UTC+7</b><span id="clkLeft"></span></div>
       <div id="favBar" role="toolbar" aria-label="Công cụ vẽ yêu thích">
@@ -3178,6 +3826,8 @@
       const main = LightweightCharts.createChart($('main'), chartOptions());
       main.applyOptions({ timeScale: { visible: false }, crosshair: { horzLine: { labelVisible: false } } });
       const rsiChart = LightweightCharts.createChart($('rsi'), chartOptions());
+      rsiChart.applyOptions({ timeScale: { visible: false } });
+      const fngChart = LightweightCharts.createChart($('fng'), chartOptions());
 
       const p0 = palette();
       /* Nến: mặc định trắng đen (tự đảo theo nền sáng/tối), hỗ trợ tùy chỉnh màu và lưu localStorage */
@@ -3252,11 +3902,64 @@
       setLevels();
       rsiChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.04, bottom: 0.04 } });
 
-      // Bộ điều khiển trục thời gian chung (Master TimeAxis Controller) cho cả main & rsiChart
+      /* ---------- Biểu đồ Chỉ số Tham lam & Sợ hãi (Fear & Greed Index) ---------- */
+      const fngZoneLow = fngChart.addBaselineSeries({
+        baseValue: { type: 'price', price: 0 },
+        topLineColor: 'transparent', bottomLineColor: 'transparent', lineWidth: 1,
+        topFillColor1: 'rgba(234,57,67,0.11)', topFillColor2: 'rgba(234,57,67,0.11)',
+        bottomFillColor1: 'rgba(234,57,67,0.11)', bottomFillColor2: 'rgba(234,57,67,0.11)',
+        priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+        autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } })
+      });
+      const fngZoneHigh = fngChart.addBaselineSeries({
+        baseValue: { type: 'price', price: 75 },
+        topLineColor: 'transparent', bottomLineColor: 'transparent', lineWidth: 1,
+        topFillColor1: 'rgba(8,153,129,0.11)', topFillColor2: 'rgba(8,153,129,0.11)',
+        bottomFillColor1: 'rgba(8,153,129,0.11)', bottomFillColor2: 'rgba(8,153,129,0.11)',
+        priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+        autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } })
+      });
+      const fngLine = fngChart.addLineSeries({
+        color: '#f3ba2f', lineWidth: 2, priceLineVisible: false, lastValueVisible: true,
+        priceFormat: { type: 'price', precision: 0, minMove: 1 },
+        autoscaleInfoProvider: () => ({ priceRange: { minValue: 0, maxValue: 100 } })
+      });
+      let fngLevelLines = [];
+      function setFngLevels() {
+        fngLevelLines.forEach(l => fngLine.removePriceLine(l));
+        const midCol = state.dark ? 'rgba(255,255,255,0.28)' : 'rgba(120,123,134,0.45)';
+        fngLevelLines = [
+          [25, 'rgba(234,57,67,0.55)'],
+          [50, midCol],
+          [75, 'rgba(8,153,129,0.55)']
+        ].map(([price, color]) => fngLine.createPriceLine({
+          price, color, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: false, title: ''
+        }));
+      }
+      setFngLevels();
+      fngChart.priceScale('right').applyOptions({ scaleMargins: { top: 0.06, bottom: 0.06 } });
+
+      // Bộ điều khiển trục thời gian chung (Master TimeAxis Controller) cho main, rsiChart & fngChart
       const rsiHidden = () => {
         const el = $('rsiPane');
         return !el || el.classList.contains('collapsed') || el.clientWidth < 10 || el.clientHeight < 10;
       };
+      const fngHidden = () => {
+        const el = $('fngPane');
+        return !el || el.classList.contains('collapsed') || el.clientWidth < 10 || el.clientHeight < 10;
+      };
+      const bottomChart = () => {
+        if (!$('fngPane').classList.contains('collapsed')) return fngChart;
+        if (!$('rsiPane').classList.contains('collapsed')) return rsiChart;
+        return main;
+      };
+      function syncPaneTimeScales() {
+        const bc = bottomChart();
+        main.applyOptions({ timeScale: { visible: bc === main } });
+        rsiChart.applyOptions({ timeScale: { visible: bc === rsiChart } });
+        fngChart.applyOptions({ timeScale: { visible: bc === fngChart } });
+        try { tickClock(); } catch (_) { }
+      }
       const sameRng = (a, b) => !!(a && b && Math.abs(a.from - b.from) < 1e-4 && Math.abs(a.to - b.to) < 1e-4);
 
       const timeAxisCtrl = (() => {
@@ -3276,6 +3979,11 @@
             try { rsiChart.timeScale().setVisibleLogicalRange(masterRange); }
             finally { syncingChart = null; }
           }
+          if (!fngHidden() && skipChart !== fngChart) {
+            syncingChart = fngChart;
+            try { fngChart.timeScale().setVisibleLogicalRange(masterRange); }
+            finally { syncingChart = null; }
+          }
         }
 
         function onChartRange(srcChart, r) {
@@ -3285,17 +3993,24 @@
         }
 
         function snapNow() {
-          if (rsiHidden()) return;
           const mr = main.timeScale().getVisibleLogicalRange();
           if (!mr || !Number.isFinite(mr.from) || !Number.isFinite(mr.to) || mr.from >= mr.to) return;
           masterRange = { from: mr.from, to: mr.to };
-          syncingChart = rsiChart;
-          try { rsiChart.timeScale().setVisibleLogicalRange(masterRange); }
-          finally { syncingChart = null; }
+          if (!rsiHidden()) {
+            syncingChart = rsiChart;
+            try { rsiChart.timeScale().setVisibleLogicalRange(masterRange); }
+            finally { syncingChart = null; }
+          }
+          if (!fngHidden()) {
+            syncingChart = fngChart;
+            try { fngChart.timeScale().setVisibleLogicalRange(masterRange); }
+            finally { syncingChart = null; }
+          }
         }
 
         main.timeScale().subscribeVisibleLogicalRangeChange(r => onChartRange(main, r));
         rsiChart.timeScale().subscribeVisibleLogicalRangeChange(r => onChartRange(rsiChart, r));
+        fngChart.timeScale().subscribeVisibleLogicalRangeChange(r => onChartRange(fngChart, r));
 
         return {
           setRange: r => pushToCharts(r, null),
@@ -3321,6 +4036,8 @@
       $('mainPane').addEventListener('wheel', settleSync, { passive: true });
       $('rsiPane').addEventListener('pointerup', settleSync);
       $('rsiPane').addEventListener('wheel', settleSync, { passive: true });
+      $('fngPane').addEventListener('pointerup', settleSync);
+      $('fngPane').addEventListener('wheel', settleSync, { passive: true });
 
       /* ---------- Chỉ báo ---------- */
       function ema(values, n) {
@@ -3425,7 +4142,9 @@
           e.s.applyOptions({ visible: !!(state.showEma && e.show) });
         });
         cache = { R, E, W };
+        renderFngSeries();
         updateLegend(d.length - 1);
+        try { scheduleMtfRender(true); } catch (e) { }
       }
 
       /* ---------- Nến Heiken Ashi ---------- */
@@ -3469,6 +4188,7 @@
 
       /* ---------- Chú giải ---------- */
       function updateLegend(i) {
+        updateFngLegend(i);
         const d = state.data[i]; if (!d) return;
         const prev = state.data[i - 1];
         const diff = prev ? d.close - prev.close : d.close - d.open;
@@ -3599,6 +4319,7 @@
         syncDrawings();
         main.applyOptions({ rightPriceScale: { minimumWidth: 76 } });
         rsiChart.applyOptions({ rightPriceScale: { minimumWidth: 76 } });
+        fngChart.applyOptions({ rightPriceScale: { minimumWidth: 76 } });
         titlePrice = null; // đổi mã / khung: bỏ giá cũ cho tới khi có giá mới
         updateTitle();
         $('loading').textContent = 'Đang tải dữ liệu từ Binance…';
@@ -3663,8 +4384,9 @@
           vol.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? p.volUp : p.volDn });
           renderIndicators();
           updateQuote(bar.close);
+          try { mtfLiveTick(bar.close); } catch (e) { }
           if (isNew && rp.phase === 'off') resetChartView(); // có nến mới -> reset biểu đồ
-          if (isNew) try { mabRefresh(); } catch (e) { } // nến vừa đóng -> tính lại backtest MA
+          if (isNew) { try { mabRefresh(); } catch (e) { } try { fetchMtf(true); } catch (e) { } }
         };
         ws.onclose = () => {
           if (id !== state.reqId) return;
@@ -3690,6 +4412,7 @@
           setTfButtons(tf);
           saveLayout();
           load();
+          try { renderMtf(); } catch (e) { }
         };
         tfBox.appendChild(b);
       });
@@ -3722,6 +4445,7 @@
         try { wlSyncActive(); } catch (e) { }
         saveLayout();
         load();
+        try { fetchMtf(true); } catch (e) { }
       }
       $('symbol').onchange = e => selectSymbol(e.target.value);
       $('tgEma').onclick = e => {
@@ -3746,6 +4470,7 @@
         saveEmaCfg();
         refreshEmaLabel();
         renderIndicators();
+        try { renderMtf(); } catch (e) { }
       }
       eNs.forEach(el => el.addEventListener('input', applyEmaCfg));
       eSs.forEach((el, i) => el.addEventListener('change', e => {
@@ -3757,7 +4482,7 @@
       $('btnEma').onclick = e => {
         const open = emaCfg.classList.toggle('open');
         e.currentTarget.classList.toggle('on', open);
-        if (open) { $('cClose').click(); $('ccClose').click(); fillEmaCfg(); $('eErr').textContent = ''; }
+        if (open) { $('cClose').click(); $('ccClose').click(); $('fngClose').click(); fillEmaCfg(); $('eErr').textContent = ''; }
       };
       $('eClose').onclick = () => { emaCfg.classList.remove('open'); $('btnEma').classList.remove('on'); };
       $('eReset').onclick = () => {
@@ -3823,7 +4548,7 @@
         const open = forceOpen === true ? true : !candleDlg.classList.contains('open');
         candleDlg.classList.toggle('open', open);
         $('btnCandle').classList.toggle('on', open);
-        if (open) { $('cClose').click(); $('eClose').click(); fillCandleCfg(); }
+        if (open) { $('cClose').click(); $('eClose').click(); $('fngClose').click(); fillCandleCfg(); }
       }
       $('btnCandle').onclick = () => openCandleDlg();
       $('ccClose').onclick = () => { candleDlg.classList.remove('open'); $('btnCandle').classList.remove('on'); };
@@ -3848,12 +4573,12 @@
         e.currentTarget.textContent = state.dark ? 'Giao diện sáng' : 'Giao diện tối';
         const p = palette();
         main.applyOptions(chartOptions());
-        main.applyOptions({
-          timeScale: { visible: $('rsiPane').classList.contains('collapsed') },
-          crosshair: { horzLine: { labelVisible: false } }
-        });
+        main.applyOptions({ crosshair: { horzLine: { labelVisible: false } } });
         rsiChart.applyOptions(chartOptions());
+        fngChart.applyOptions(chartOptions());
+        syncPaneTimeScales();
         setLevels();
+        setFngLevels();
         candles.applyOptions(candleOpts());
         if (candleDlg.classList.contains('open')) fillCandleCfg();
         saveLayout();
@@ -3893,28 +4618,34 @@
       main.timeScale().subscribeVisibleLogicalRangeChange(tickTimer);
       main.priceScale('right').applyOptions({});
 
-      /* ---------- Kéo để đổi kích thước khung RSI ---------- */
+      /* ---------- Kéo để đổi kích thước khung RSI & Tham lam / Sợ hãi ---------- */
       const splitter = $('splitter'), rsiPane = $('rsiPane'), charts = document.querySelector('.charts');
-      let startY = 0, startH = 0;
-      splitter.addEventListener('pointerdown', e => {
-        startY = e.clientY; startH = rsiPane.getBoundingClientRect().height;
-        splitter.setPointerCapture(e.pointerId);
-        splitter.classList.add('drag'); document.body.classList.add('dragging');
-      });
-      splitter.addEventListener('pointermove', e => {
-        if (!splitter.hasPointerCapture(e.pointerId)) return;
-        const total = charts.getBoundingClientRect().height - splitter.offsetHeight;
-        const h = Math.min(total - 120, Math.max(60, startH + (startY - e.clientY)));
-        rsiPane.style.height = h + 'px';
-      });
-      const endDrag = e => {
-        if (splitter.hasPointerCapture(e.pointerId)) splitter.releasePointerCapture(e.pointerId);
-        splitter.classList.remove('drag'); document.body.classList.remove('dragging');
-        saveLayout();
-      };
-      splitter.addEventListener('pointerup', endDrag);
-      splitter.addEventListener('pointercancel', endDrag);
-      splitter.addEventListener('dblclick', () => { rsiPane.style.height = ''; saveLayout(); });
+      const fngSplitter = $('fngSplitter'), fngPane = $('fngPane');
+      function bindRowSplitter(spEl, paneEl, otherPaneEl, otherSpEl) {
+        let sY = 0, sH = 0;
+        spEl.addEventListener('pointerdown', e => {
+          sY = e.clientY; sH = paneEl.getBoundingClientRect().height;
+          spEl.setPointerCapture(e.pointerId);
+          spEl.classList.add('drag'); document.body.classList.add('dragging');
+        });
+        spEl.addEventListener('pointermove', e => {
+          if (!spEl.hasPointerCapture(e.pointerId)) return;
+          const otherH = otherPaneEl.classList.contains('collapsed') ? 0 : (otherPaneEl.getBoundingClientRect().height + otherSpEl.offsetHeight);
+          const total = charts.getBoundingClientRect().height - spEl.offsetHeight - otherH;
+          const h = Math.min(Math.max(60, total - 120), Math.max(60, sH + (sY - e.clientY)));
+          paneEl.style.height = h + 'px';
+        });
+        const finish = e => {
+          if (spEl.hasPointerCapture(e.pointerId)) spEl.releasePointerCapture(e.pointerId);
+          spEl.classList.remove('drag'); document.body.classList.remove('dragging');
+          saveLayout();
+        };
+        spEl.addEventListener('pointerup', finish);
+        spEl.addEventListener('pointercancel', finish);
+        spEl.addEventListener('dblclick', () => { paneEl.style.height = ''; saveLayout(); });
+      }
+      bindRowSplitter(splitter, rsiPane, fngPane, fngSplitter);
+      bindRowSplitter(fngSplitter, fngPane, rsiPane, splitter);
 
       // Bật / tắt hẳn khung RSI
       $('tgRsi').onclick = e => {
@@ -3922,14 +4653,847 @@
         e.currentTarget.classList.toggle('on', on);
         splitter.classList.toggle('hidden', !on);
         lockSync(100);
-        main.applyOptions({ timeScale: { visible: !on } });
+        syncPaneTimeScales();
         if (on) {
           const mr = main.timeScale().getVisibleLogicalRange();
           requestAnimationFrame(() => { if (mr && !rsiHidden()) setSyncedRange(mr); });
         }
         saveLayout();
-        try { tickClock(); } catch (_) { }
       };
+
+      /* ---------- Chỉ số Tham lam & Sợ hãi (Crypto Fear & Greed Index) ---------- */
+      const FNG_CACHE_KEY = 'fngCache_v1';
+      const fngState = { items: [], barVals: [], fetchedAt: 0, nextUpdateAt: 0, loading: false, err: '' };
+      function fngMeta(v) {
+        if (v == null || !Number.isFinite(v)) return { label: 'Chưa có dữ liệu', short: '–', color: '#787b86', bg: 'rgba(120,123,134,0.16)' };
+        if (v < 25) return { label: 'Cực kỳ sợ hãi', short: 'Cực sợ', color: '#ea3943', bg: 'rgba(234,57,67,0.15)' };
+        if (v < 45) return { label: 'Sợ hãi', short: 'Sợ hãi', color: '#f58220', bg: 'rgba(245,130,32,0.15)' };
+        if (v <= 54) return { label: 'Trung lập', short: 'Trung lập', color: '#e6a700', bg: 'rgba(243,186,47,0.16)' };
+        if (v < 75) return { label: 'Tham lam', short: 'Tham lam', color: '#7cb342', bg: 'rgba(124,179,66,0.16)' };
+        return { label: 'Cực kỳ tham lam', short: 'Cực tham', color: '#089981', bg: 'rgba(8,153,129,0.16)' };
+      }
+      function fngFindAt(utcSec) {
+        const arr = fngState.items;
+        if (!arr.length || utcSec < arr[0].ts) return null;
+        let lo = 0, hi = arr.length - 1;
+        while (lo < hi) {
+          const mid = (lo + hi + 1) >> 1;
+          if (arr[mid].ts <= utcSec) lo = mid; else hi = mid - 1;
+        }
+        return arr[lo].v;
+      }
+      function updateFngLegend(i) {
+        const el = $('lgFng');
+        if (!el) return;
+        let v = null;
+        if (i != null && i >= 0 && i < fngState.barVals.length) v = fngState.barVals[i];
+        if (v == null && fngState.items.length) v = fngState.items[fngState.items.length - 1].v;
+        const m = fngMeta(v);
+        el.innerHTML = v == null
+          ? `<span>Tham lam &amp; Sợ hãi</span><span style="color:var(--muted);font-weight:500">${fngState.loading ? 'Đang tải…' : (fngState.err || '–')}</span>`
+          : `<span>Tham lam &amp; Sợ hãi</span><span class="fng-tag" style="color:${m.color};background:${m.bg}">${v} · ${m.label}</span>`;
+      }
+      function renderFngSeries() {
+        const d = state.data;
+        if (!d.length) { fngState.barVals = []; fngLine.setData([]); fngZoneLow.setData([]); fngZoneHigh.setData([]); updateFngLegend(-1); return; }
+        const step = SECS[state.interval];
+        const multiDay = !step || step > 86400;
+        const vals = new Array(d.length);
+        const lineData = new Array(d.length);
+        const lowData = new Array(d.length);
+        const highData = new Array(d.length);
+        for (let i = 0; i < d.length; i++) {
+          const t = d[i].time;
+          const targetUtc = multiDay ? (closeTime(t) - TZ - 1) : (t - TZ);
+          const v = fngFindAt(targetUtc);
+          vals[i] = v;
+          lineData[i] = v == null ? { time: t } : { time: t, value: v, color: fngMeta(v).color };
+          lowData[i] = { time: t, value: 25 };
+          highData[i] = { time: t, value: 100 };
+        }
+        fngState.barVals = vals;
+        const lastValid = vals.reduce((acc, v) => v != null ? v : acc, null);
+        if (lastValid != null) fngLine.applyOptions({ color: fngMeta(lastValid).color });
+        fngZoneLow.setData(lowData);
+        fngZoneHigh.setData(highData);
+        fngLine.setData(lineData);
+        if (!fngHidden()) timeAxisCtrl.snapNow();
+        updateFngLegend(d.length - 1);
+      }
+      function renderFngUI() {
+        const items = fngState.items;
+        const cur = items.length ? items[items.length - 1] : null;
+        const v = cur ? cur.v : null;
+        const m = fngMeta(v);
+        $('fngDot').style.background = m.color;
+        $('fngVal').textContent = v == null ? '–' : `${v} ${m.short}`;
+        $('fngVal').style.color = v == null ? '' : m.color;
+        $('fngScore').textContent = v == null ? '–' : String(v);
+        $('fngScore').style.color = m.color;
+        $('fngCls').textContent = v == null ? (fngState.loading ? 'Đang tải…' : 'Không có dữ liệu') : m.label;
+        $('fngCls').style.color = m.color;
+        $('fngCls').style.background = m.bg;
+        const deg = v == null ? 0 : (-90 + (Math.max(0, Math.min(100, v)) / 100) * 180);
+        $('fngNeedle').style.transform = `rotate(${deg.toFixed(1)}deg)`;
+        const errEl = $('fngErr');
+        errEl.textContent = fngState.err || '';
+        errEl.style.display = fngState.err ? 'block' : 'none';
+        const pick = daysAgo => {
+          if (!cur) return null;
+          if (daysAgo === 0) return cur.v;
+          return fngFindAt(cur.ts - daysAgo * 86400);
+        };
+        const cards = [
+          ['Hôm nay', pick(0), false],
+          ['Hôm qua', pick(1), true],
+          ['7 ngày trước', pick(7), true],
+          ['30 ngày trước', pick(30), true]
+        ];
+        $('fngHist').innerHTML = cards.map(([title, val, showDiff]) => {
+          const cm = fngMeta(val);
+          let diffHtml = '';
+          if (showDiff && val != null && v != null) {
+            const df = v - val;
+            const col = df > 0 ? 'var(--up)' : df < 0 ? 'var(--down)' : 'var(--muted)';
+            diffHtml = `<span style="color:${col}">${df > 0 ? '+' : ''}${df}</span>`;
+          } else if (val != null) {
+            diffHtml = `<span style="color:${cm.color}">${cm.short}</span>`;
+          }
+          return `<div class="fp-card"><small>${title}</small><div class="fp-cv"><b style="color:${cm.color}">${val == null ? '–' : val}</b>${diffHtml}</div></div>`;
+        }).join('');
+        $('fngTogglePane').textContent = fngPane.classList.contains('collapsed') ? 'Hiện biểu đồ' : 'Ẩn biểu đồ';
+        updateFngNextText();
+      }
+      function updateFngNextText() {
+        const el = $('fngNext');
+        if (!el) return;
+        if (!fngState.nextUpdateAt) { el.textContent = 'Nguồn: Alternative.me'; return; }
+        const left = Math.max(0, Math.floor((fngState.nextUpdateAt - Date.now()) / 1000));
+        if (left <= 0) { el.textContent = 'Alternative.me · Sắp cập nhật'; return; }
+        const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
+        el.textContent = `Cập nhật sau ${pad2(h)}:${pad2(m)}:${pad2(s)}`;
+      }
+      setInterval(updateFngNextText, 1000);
+
+      function loadFngCache() {
+        try {
+          const sv = JSON.parse(localStorage.getItem(FNG_CACHE_KEY) || 'null');
+          if (sv && Array.isArray(sv.items) && sv.items.length) {
+            fngState.items = sv.items;
+            fngState.fetchedAt = sv.fetchedAt || 0;
+            fngState.nextUpdateAt = sv.nextUpdateAt || 0;
+            renderFngUI();
+            if (state.data.length) renderFngSeries();
+          }
+        } catch (e) { }
+      }
+      async function fetchFng(force = false) {
+        if (fngState.loading) return;
+        if (!force && fngState.items.length && Date.now() - fngState.fetchedAt < 15 * 60 * 1000 && (!fngState.nextUpdateAt || Date.now() < fngState.nextUpdateAt)) {
+          return;
+        }
+        fngState.loading = true;
+        fngState.err = '';
+        renderFngUI();
+        try {
+          let raw = null;
+          for (const url of ['https://api.alternative.me/fng/?limit=0', 'https://api.alternative.me/fng/?limit=1000']) {
+            try {
+              const res = await fetch(url);
+              if (!res.ok) throw new Error('HTTP ' + res.status);
+              const json = await res.json();
+              if (json && Array.isArray(json.data) && json.data.length) { raw = json.data; break; }
+            } catch (_) { }
+          }
+          if (!raw) throw new Error('Không tải được dữ liệu');
+          const items = raw
+            .map(x => ({ ts: parseInt(x.timestamp, 10), v: parseInt(x.value, 10) }))
+            .filter(x => Number.isFinite(x.ts) && Number.isFinite(x.v))
+            .sort((a, b) => a.ts - b.ts);
+          // Khử trùng timestamp nếu có
+          const dedup = [];
+          for (const it of items) {
+            if (dedup.length && dedup[dedup.length - 1].ts === it.ts) dedup[dedup.length - 1] = it;
+            else dedup.push(it);
+          }
+          const tuu = parseInt(raw[0].time_until_update, 10);
+          fngState.items = dedup;
+          fngState.fetchedAt = Date.now();
+          fngState.nextUpdateAt = Number.isFinite(tuu) && tuu > 0 ? Date.now() + tuu * 1000 : 0;
+          try {
+            localStorage.setItem(FNG_CACHE_KEY, JSON.stringify({
+              fetchedAt: fngState.fetchedAt, nextUpdateAt: fngState.nextUpdateAt, items: dedup
+            }));
+          } catch (e) { }
+        } catch (e) {
+          fngState.err = fngState.items.length ? 'Đang dùng dữ liệu đã lưu (mất kết nối Alternative.me)' : 'Không tải được chỉ số Tham lam & Sợ hãi.';
+        } finally {
+          fngState.loading = false;
+          renderFngUI();
+          if (state.data.length) renderFngSeries();
+          try { renderMtf(); } catch (e) { }
+        }
+      }
+      setInterval(() => fetchFng(false), 15 * 60 * 1000);
+
+      function toggleFngPane(forceOn) {
+        const on = typeof forceOn === 'boolean'
+          ? (fngPane.classList.toggle('collapsed', !forceOn), forceOn)
+          : (fngPane.classList.toggle('collapsed') === false);
+        $('tgFng').classList.toggle('on', on);
+        fngSplitter.classList.toggle('hidden', !on);
+        $('fngTogglePane').textContent = on ? 'Ẩn biểu đồ' : 'Hiện biểu đồ';
+        lockSync(100);
+        syncPaneTimeScales();
+        if (on) {
+          const mr = main.timeScale().getVisibleLogicalRange();
+          requestAnimationFrame(() => { if (mr && !fngHidden()) setSyncedRange(mr); });
+          if (!fngState.items.length) fetchFng(true);
+        }
+        saveLayout();
+      }
+      $('tgFng').onclick = () => toggleFngPane();
+      $('fngTogglePane').onclick = () => toggleFngPane();
+      const fngPop = $('fngPop');
+      $('btnFng').onclick = e => {
+        const open = fngPop.classList.toggle('open');
+        e.currentTarget.classList.toggle('on', open);
+        if (open) { $('cClose').click(); $('eClose').click(); $('ccClose').click(); renderFngUI(); fetchFng(false); }
+      };
+      $('fngClose').onclick = () => { fngPop.classList.remove('open'); $('btnFng').classList.remove('on'); };
+      $('fngRefresh').onclick = () => fetchFng(true);
+      document.addEventListener('pointerdown', e => {
+        if (fngPop.classList.contains('open') && !fngPop.contains(e.target) && !$('btnFng').contains(e.target)) {
+          $('fngClose').click();
+        }
+      });
+
+      /* ---------- Bảng quét chiến lược Đa khung (1W / 3D Bias / 2D / 1D / 12H / 4H · RSI + EMA + WMA) ---------- */
+      const MTF_TFS = [
+        { tf: '1w', lbl: '1W', role: 'Chu kỳ' },
+        { tf: '3d', lbl: '3D', role: 'Bias' },
+        { tf: '2d', lbl: '2D', role: 'Lọc' },
+        { tf: '1d', lbl: '1D', role: 'Ngày' },
+        { tf: '12h', lbl: '12H', role: 'Ngắn' },
+        { tf: '4h', lbl: '4H', role: 'Entry' }
+      ];
+      const MTF_TFS_KEY = 'mtfTfs_v1';
+      // Mốc gộp nến khớp tuyệt đối với Binance (2d:0, 3d:86400, 1w:345600, 12h:0)
+      const MTF_AGG = {
+        '2d': { step: 172800, anchor: 0 },
+        '3d': { step: 259200, anchor: 86400 },
+        '1w': { step: 604800, anchor: 345600 },
+        '12h': { step: 43200, anchor: 0 }
+      };
+      let mtfEnabled = new Set(MTF_TFS.map(x => x.tf));
+      try {
+        const sv = JSON.parse(localStorage.getItem(MTF_TFS_KEY) || 'null');
+        if (Array.isArray(sv)) {
+          const valid = sv.filter(t => MTF_TFS.some(m => m.tf === t));
+          if (valid.length) mtfEnabled = new Set(valid);
+        }
+      } catch (e) { }
+      const saveMtfTfs = () => { try { localStorage.setItem(MTF_TFS_KEY, JSON.stringify([...mtfEnabled])); } catch (e) { } };
+      const needH4 = () => mtfEnabled.has('4h') || mtfEnabled.has('12h');
+      const needDaily = () => mtfEnabled.has('1w') || mtfEnabled.has('3d') || mtfEnabled.has('2d') || mtfEnabled.has('1d');
+
+      const mtfState = { sym: '', reqId: 0, loading: false, loadingH4: false, err: '', closedOnly: false, daily: [], h4: [], h4FetchedEnds: new Set(), fetchedAt: 0, lastTickMs: 0, lastSig: '' };
+      const mtfDlg = $('mtfDlg');
+
+      function renderMtfTfBar() {
+        $('mtfTfBar').innerHTML = '<span class="mtf-tfs-lbl">Khung:</span>' + MTF_TFS.map(m =>
+          `<button type="button" class="mtf-tf-tog${mtfEnabled.has(m.tf) ? ' on' : ''}" data-mtftog="${m.tf}" aria-pressed="${mtfEnabled.has(m.tf)}">${m.lbl}</button>`
+        ).join('');
+      }
+      renderMtfTfBar();
+
+      async function fetchMtfKlines(symbol, apiTf, limit, endTime) {
+        let lastErr;
+        for (const host of HOSTS) {
+          try {
+            const res = await fetch(`${host}/api/v3/klines?symbol=${symbol}&interval=${apiTf}&limit=${limit}${endTime ? '&endTime=' + endTime : ''}`);
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return await res.json();
+          } catch (e) { lastErr = e; }
+        }
+        throw lastErr;
+      }
+
+      function mergeSortedBars(a, b) {
+        const m = new Map();
+        for (let i = 0; i < a.length; i++) m.set(a[i].time, a[i]);
+        for (let i = 0; i < b.length; i++) m.set(b[i].time, b[i]);
+        return [...m.values()].sort((x, y) => x.time - y.time);
+      }
+
+      // Xác định cây nến hiển thị cuối cùng trên màn hình (hoạt động cả khi cuộn về quá khứ lẫn chế độ Backtest Replay)
+      function getMtfAnchor() {
+        const d = state.data, n = d.length;
+        if (!n) return null;
+        const rng = main.timeScale().getVisibleLogicalRange();
+        let idx = n - 1;
+        if (rng && Number.isFinite(rng.to)) {
+          idx = Math.min(n - 1, Math.max(0, Math.floor(rng.to)));
+        }
+        const bar = d[idx];
+        const openUtc = bar.time - TZ;
+        const closeUtc = closeTime(bar.time) - TZ;
+        const isLive = rp.phase === 'off' && idx === n - 1;
+        return { bar, idx, openUtc, closeUtc, isLive };
+      }
+
+      // Cắt chuỗi nến 1D đúng tới cây nến hiển thị cuối cùng (tuyệt đối không nhìn trước tương lai)
+      function sliceDailyAtAnchor(anchor) {
+        const all = mtfState.daily;
+        if (!all.length || !anchor) return [];
+        const step = SECS[state.interval];
+        const isIntraday = !!(step && step < 86400);
+        const maxBars = 950; // ~135 tuần -> đủ ổn định 100% RSI(14) + WMA(45) + EMA(50) cho khung 1W
+
+        if (isIntraday) {
+          const dayOpenUtc = Math.floor(anchor.openUtc / 86400) * 86400;
+          const dayTime = dayOpenUtc + TZ;
+          let lo = 0, hi = all.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (all[mid].time < dayTime) lo = mid + 1; else hi = mid;
+          }
+          const endExcl = lo;
+          const start = Math.max(0, endExcl - (maxBars - 1));
+          const out = all.slice(start, endExcl);
+          let o = anchor.bar.open, h = anchor.bar.high, l = anchor.bar.low, cl = anchor.bar.close;
+          for (let j = anchor.idx; j >= 0; j--) {
+            const b = state.data[j];
+            if (Math.floor((b.time - TZ) / 86400) * 86400 !== dayOpenUtc) break;
+            o = b.open;
+            if (b.high > h) h = b.high;
+            if (b.low < l) l = b.low;
+          }
+          if (anchor.isLive && endExcl < all.length && all[endExcl].time === dayTime) {
+            const liveDay = all[endExcl];
+            o = liveDay.open;
+            h = Math.max(liveDay.high, h);
+            l = Math.min(liveDay.low, l);
+          }
+          out.push({ time: dayTime, open: o, high: h, low: l, close: cl });
+          return out;
+        }
+
+        let lo = 0, hi = all.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if ((all[mid].time - TZ) < anchor.closeUtc) lo = mid + 1; else hi = mid;
+        }
+        const endExcl = lo;
+        const start = Math.max(0, endExcl - maxBars);
+        const out = all.slice(start, endExcl);
+        if (out.length) {
+          const lastD = out[out.length - 1];
+          if (state.interval === '1d' && lastD.time === anchor.bar.time) {
+            out[out.length - 1] = { time: anchor.bar.time, open: anchor.bar.open, high: anchor.bar.high, low: anchor.bar.low, close: anchor.bar.close };
+          } else if (anchor.isLive) {
+            out[out.length - 1] = {
+              time: lastD.time, open: lastD.open,
+              high: Math.max(lastD.high, anchor.bar.close),
+              low: Math.min(lastD.low, anchor.bar.close),
+              close: anchor.bar.close
+            };
+          }
+        }
+        return out;
+      }
+
+      // Cắt chuỗi nến 4H đúng tới cây nến hiển thị cuối cùng (dùng cho cả 4H và gộp 12H)
+      function sliceH4AtAnchor(anchor) {
+        const all = mtfState.h4;
+        if (!all.length || !anchor) return [];
+        const step = SECS[state.interval];
+        const subH4 = !!(step && step < 14400);
+        const maxBars = 420; // ~140 nến 12H -> dư sức ổn định RSI + WMA45 + EMA50
+
+        if (subH4) {
+          const h4OpenUtc = Math.floor(anchor.openUtc / 14400) * 14400;
+          const h4Time = h4OpenUtc + TZ;
+          let lo = 0, hi = all.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >> 1;
+            if (all[mid].time < h4Time) lo = mid + 1; else hi = mid;
+          }
+          const endExcl = lo;
+          const start = Math.max(0, endExcl - (maxBars - 1));
+          const out = all.slice(start, endExcl);
+          let o = anchor.bar.open, h = anchor.bar.high, l = anchor.bar.low, cl = anchor.bar.close;
+          for (let j = anchor.idx; j >= 0; j--) {
+            const b = state.data[j];
+            if (Math.floor((b.time - TZ) / 14400) * 14400 !== h4OpenUtc) break;
+            o = b.open;
+            if (b.high > h) h = b.high;
+            if (b.low < l) l = b.low;
+          }
+          if (anchor.isLive && endExcl < all.length && all[endExcl].time === h4Time) {
+            const live4 = all[endExcl];
+            o = live4.open;
+            h = Math.max(live4.high, h);
+            l = Math.min(live4.low, l);
+          }
+          out.push({ time: h4Time, open: o, high: h, low: l, close: cl });
+          return out;
+        }
+
+        let lo = 0, hi = all.length;
+        while (lo < hi) {
+          const mid = (lo + hi) >> 1;
+          if ((all[mid].time - TZ) < anchor.closeUtc) lo = mid + 1; else hi = mid;
+        }
+        const endExcl = lo;
+        const start = Math.max(0, endExcl - maxBars);
+        const out = all.slice(start, endExcl);
+        // Kiểm tra xem đoạn cắt có thực sự sát mốc anchor không (tránh lấy dữ liệu cũ/thiếu khi cuộn quá xa)
+        if (out.length) {
+          const last4 = out[out.length - 1];
+          const gapSec = anchor.closeUtc - ((last4.time - TZ) + 14400);
+          if (gapSec > 86400 * 3) return [];
+          if (state.interval === '4h' && last4.time === anchor.bar.time) {
+            out[out.length - 1] = { time: anchor.bar.time, open: anchor.bar.open, high: anchor.bar.high, low: anchor.bar.low, close: anchor.bar.close };
+          } else if (anchor.isLive) {
+            out[out.length - 1] = {
+              time: last4.time, open: last4.open,
+              high: Math.max(last4.high, anchor.bar.close),
+              low: Math.min(last4.low, anchor.bar.close),
+              close: anchor.bar.close
+            };
+          }
+        }
+        return out;
+      }
+
+      let h4HistTimer = null;
+      function scheduleH4HistoryAt(closeUtc) {
+        if (!needH4() || !closeUtc) return;
+        const bucketKey = Math.floor(closeUtc / (86400 * 10));
+        if (mtfState.h4FetchedEnds.has(bucketKey)) return;
+        clearTimeout(h4HistTimer);
+        h4HistTimer = setTimeout(async () => {
+          const sym = state.symbol, id = mtfState.reqId;
+          if (mtfState.h4FetchedEnds.has(bucketKey)) return;
+          mtfState.h4FetchedEnds.add(bucketKey);
+          try {
+            const raw = await fetchMtfKlines(sym, '4h', 1000, closeUtc * 1000 - 1);
+            if (id !== mtfState.reqId || !raw.length) return;
+            mtfState.h4 = mergeSortedBars(mtfState.h4, raw.map(mapKline));
+            renderMtf(true);
+          } catch (_) { }
+        }, 320);
+      }
+
+      function aggregateBars(srcSlice, tf) {
+        const cfg = MTF_AGG[tf];
+        if (!cfg) return srcSlice;
+        const out = [];
+        for (let i = 0; i < srcSlice.length; i++) {
+          const b = srcSlice[i];
+          const k = Math.floor((b.time - TZ - cfg.anchor) / cfg.step) * cfg.step + cfg.anchor + TZ;
+          const last = out[out.length - 1];
+          if (last && last.time === k) {
+            if (b.high > last.high) last.high = b.high;
+            if (b.low < last.low) last.low = b.low;
+            last.close = b.close;
+          } else {
+            out.push({ time: k, open: b.open, high: b.high, low: b.low, close: b.close, _first: b.time });
+          }
+        }
+        if (out.length > 1 && out[0]._first !== out[0].time) out.shift();
+        return out;
+      }
+
+      function computeMtfRow(meta, bars, anchor) {
+        const out = { ...meta, ok: false };
+        if (!bars || bars.length < Math.max(state.rsi.len + 5, 10)) return out;
+        const c = bars.map(x => x.close);
+        const R = rsi(c, state.rsi.len);
+        let first = R.findIndex(v => v != null);
+        if (first < 0) return out;
+        const valid = R.slice(first);
+        const E = new Array(first).fill(null).concat(ema(valid, state.rsi.ema));
+        const W = new Array(first).fill(null).concat(wma(valid, state.rsi.wma));
+        const fN = Math.min(emaSeries[0].n, emaSeries[1].n), sN = Math.max(emaSeries[0].n, emaSeries[1].n);
+        const pFast = ema(c, fN), pSlow = ema(c, sN);
+
+        let idx = bars.length - 1;
+        if (mtfState.closedOnly) {
+          const tfStep = SECS[meta.tf] || 86400;
+          const lastCloseUtc = (bars[bars.length - 1].time - TZ) + tfStep;
+          const isClosedAtAnchor = anchor && !anchor.isLive && lastCloseUtc <= anchor.closeUtc;
+          if (!isClosedAtAnchor) idx = bars.length - 2;
+        }
+        if (idx < 1) return out;
+        const r = R[idx], e = E[idx], w = W[idx];
+        const rP = R[idx - 1], eP = E[idx - 1], wP = W[idx - 1];
+        if (r == null) return out;
+
+        const wRef = w != null ? w : 50;
+        const eRef = e != null ? e : 50;
+        let dir = 0; // +1 tăng, -1 giảm, 0 hồi/chờ
+        if ((r > wRef && r >= eRef) || (r > wRef && eRef > wRef && r >= 50)) dir = 1;
+        else if ((r < wRef && r <= eRef) || (r < wRef && eRef < wRef && r <= 50)) dir = -1;
+
+        let cross = '';
+        if (rP != null && w != null && wP != null) {
+          if (rP <= wP && r > w) cross = '⬆ Vượt WMA';
+          else if (rP >= wP && r < w) cross = '⬇ Gãy WMA';
+        }
+        if (!cross && rP != null && e != null && eP != null) {
+          if (rP <= eP && r > e) cross = '↗ Cắt EMA';
+          else if (rP >= eP && r < e) cross = '↘ Gãy EMA';
+        }
+
+        let zone = '';
+        if (r <= state.rsi.xlo) zone = 'xlo';
+        else if (r <= state.rsi.lo) zone = 'lo';
+        else if (r >= state.rsi.xhi) zone = 'xhi';
+        else if (r >= state.rsi.hi) zone = 'hi';
+
+        const cl = c[idx], pf = pFast[idx], ps = pSlow[idx];
+        let pTrend = 0;
+        if (pf != null && ps != null) {
+          if (cl > pf && pf > ps) pTrend = 1;
+          else if (cl < pf && pf < ps) pTrend = -1;
+        } else if (pf != null) {
+          pTrend = cl >= pf ? 1 : -1;
+        }
+
+        return { ...meta, ok: true, r, e, w, dir, cross, zone, pTrend, rAboveE: r > eRef };
+      }
+
+      function renderMtf(force = false) {
+        const fN = Math.min(emaSeries[0].n, emaSeries[1].n), sN = Math.max(emaSeries[0].n, emaSeries[1].n);
+        const anchor = getMtfAnchor();
+        const activeMetas = MTF_TFS.filter(m => mtfEnabled.has(m.tf));
+        const sig = [
+          state.symbol, state.interval, mtfState.closedOnly ? 1 : 0, mtfState.daily.length, mtfState.h4.length,
+          activeMetas.map(m => m.tf).join(','),
+          state.rsi.len, state.rsi.ema, state.rsi.wma, state.rsi.hi, state.rsi.lo, state.rsi.xhi, state.rsi.xlo,
+          fN, sN, rp.phase, fngState.items.length,
+          anchor ? `${anchor.bar.time}|${anchor.bar.close}|${anchor.isLive ? 1 : 0}` : 'none'
+        ].join('#');
+        if (!force && sig === mtfState.lastSig) return;
+        mtfState.lastSig = sig;
+
+        $('mtfSym').textContent = state.symbol;
+        $('mtfThRsi').textContent = `RSI ${state.rsi.len}`;
+        $('mtfThEma').textContent = `EMA ${state.rsi.ema}`;
+        $('mtfThWma').textContent = `WMA ${state.rsi.wma}`;
+        $('mtfThPrice').textContent = `EMA ${fN}/${sN}`;
+        const modeBtn = $('mtfClosed');
+        modeBtn.textContent = mtfState.closedOnly ? 'Nến đã đóng' : 'Đang chạy';
+        modeBtn.classList.toggle('on', mtfState.closedOnly);
+
+        const dailySlice = needDaily() ? sliceDailyAtAnchor(anchor) : [];
+        const h4Slice = needH4() ? sliceH4AtAnchor(anchor) : [];
+        // Nếu người dùng cuộn về quá khứ xa ngoài vùng 4H đã tải -> tự động tải thêm 4H quanh mốc đó
+        if (needH4() && anchor && h4Slice.length < 240 && !mtfState.loadingH4) {
+          scheduleH4HistoryAt(anchor.closeUtc);
+        }
+
+        const tfBars = {
+          '1d': dailySlice,
+          '2d': mtfEnabled.has('2d') ? aggregateBars(dailySlice, '2d') : [],
+          '3d': mtfEnabled.has('3d') ? aggregateBars(dailySlice, '3d') : [],
+          '1w': mtfEnabled.has('1w') ? aggregateBars(dailySlice, '1w') : [],
+          '4h': h4Slice,
+          '12h': mtfEnabled.has('12h') ? aggregateBars(h4Slice, '12h') : []
+        };
+        const rows = activeMetas.map(m => computeMtfRow(m, tfBars[m.tf], anchor));
+        const okRows = rows.filter(x => x.ok);
+        const ready = rows.length > 0 && okRows.length === rows.length;
+        const stillLoading = mtfState.loading || (needH4() && mtfState.loadingH4);
+
+        if (mtfState.err && !okRows.length) {
+          $('mtfVerdict').className = 'mtf-verdict flat';
+          $('mtfVerdict').textContent = 'Lỗi tải dữ liệu';
+          $('mtfNote').textContent = mtfState.err;
+          $('mtfTopBadge').className = 'mtf-badge';
+          $('mtfTopBadge').textContent = '!';
+        } else if (!okRows.length) {
+          $('mtfVerdict').className = 'mtf-verdict flat';
+          $('mtfVerdict').textContent = stillLoading ? 'Đang quét…' : 'Chưa đủ lịch sử';
+          $('mtfNote').textContent = stillLoading
+            ? `Đang tải lịch sử các khung đã chọn cho ${state.symbol}…`
+            : `Chưa đủ dữ liệu nến trước mốc ${anchor ? fmtTime(anchor.bar.time) : 'này'} cho các khung đã bật.`;
+          $('mtfTopBadge').className = 'mtf-badge';
+          $('mtfTopBadge').textContent = stillLoading ? '…' : '–';
+        } else {
+          const total = okRows.length;
+          const bull = okRows.filter(x => x.dir === 1).length;
+          const bear = okRows.filter(x => x.dir === -1).length;
+          // Ưu tiên 3D làm Bias chính; nếu người dùng tắt 3D thì lấy khung lớn nhất đang bật
+          const biasRow = okRows.find(x => x.tf === '3d') || okRows[0];
+          const macroRow = okRows.find(x => x.tf === '1w' && x !== biasRow) || null;
+          const biasIdx = okRows.indexOf(biasRow);
+          const subRows = okRows.slice(biasIdx + 1);
+          const entryRow = okRows[okRows.length - 1];
+
+          const fngCur = anchor && !anchor.isLive
+            ? fngFindAt(anchor.closeUtc - 1)
+            : (fngState.items.length ? fngState.items[fngState.items.length - 1].v : null);
+          const fngTxt = fngCur != null ? ` · F&G: ${fngCur} (${fngMeta(fngCur).short})` : '';
+          const w1Note = !macroRow ? ''
+            : macroRow.dir === biasRow.dir ? ' (1W đồng pha)'
+            : macroRow.dir === 0 ? ' (1W trung tính)'
+            : ' (lưu ý ngược 1W → giảm vol)';
+          const pendingTxt = ready ? '' : ' (đang tải thêm lịch sử 1 số khung…)';
+
+          let vCls = 'flat', vTxt = `CHỜ · ${bull}↑/${bear}↓`, topCls = '', topTxt = `CHỜ ${bull}/${bear}`;
+          let note = `Bias ${biasRow.lbl} và các khung nhỏ chưa đồng pha (${bull}/${total} tăng, ${bear}/${total} giảm). Đợi xác nhận cùng hướng ${biasRow.lbl}${fngTxt}${pendingTxt}.`;
+
+          const isOversold = r => r && (r.zone === 'xlo' || r.zone === 'lo');
+          const isOverbought = r => r && (r.zone === 'xhi' || r.zone === 'hi');
+          const bigOversold = isOversold(biasRow) || isOversold(macroRow);
+          const bigOverbought = isOverbought(biasRow) || isOverbought(macroRow);
+          const osRow = isOversold(biasRow) ? biasRow : macroRow;
+          const obRow = isOverbought(biasRow) ? biasRow : macroRow;
+          const subBullAll = subRows.length > 0 && subRows.every(x => x.dir === 1);
+          const subBearAll = subRows.length > 0 && subRows.every(x => x.dir === -1);
+          const majNeed = Math.max(2, Math.ceil(total * 0.6));
+
+          if (bull === total && biasRow.zone !== 'xhi') {
+            vCls = 'bull'; topCls = 'bull';
+            vTxt = `LONG · Loại A+ (${total}/${total})`; topTxt = `${total}/${total} LONG`;
+            note = `Tất cả ${total}/${total} khung đang bật (${okRows[0].lbl} → ${entryRow.lbl}) đồng thuận tăng (RSI > EMA & WMA). Ưu tiên giữ vị thế hoặc canh chỉnh nhẹ trên ${entryRow.lbl}${fngTxt}${pendingTxt}.`;
+          } else if (bear === total && biasRow.zone !== 'xlo') {
+            vCls = 'bear'; topCls = 'bear';
+            vTxt = `SHORT · Loại A+ (${total}/${total})`; topTxt = `${total}/${total} SHORT`;
+            note = `Tất cả ${total}/${total} khung đang bật (${okRows[0].lbl} → ${entryRow.lbl}) đồng thuận giảm (RSI < EMA & WMA). Ưu tiên thuận xu hướng giảm${fngTxt}${pendingTxt}.`;
+          } else if (bigOversold && (entryRow.rAboveE || entryRow.cross === '↗ Cắt EMA')) {
+            vCls = 'warn'; topCls = 'warn';
+            vTxt = 'CANH BẮT ĐÁY · Kịch bản B'; topTxt = 'BẮT ĐÁY';
+            note = `Khung ${osRow.lbl} đang quá bán (RSI ${fmt(osRow.r, 1)}) và khung ${entryRow.lbl} bắt đầu cắt lên EMA. Chỉ đi 50% volume, nhồi khi vượt WMA${fngTxt}${pendingTxt}.`;
+          } else if (bigOverbought && (!entryRow.rAboveE || entryRow.cross === '↘ Gãy EMA')) {
+            vCls = 'warn'; topCls = 'warn';
+            vTxt = 'CẢNH BÁO ĐỈNH · Chốt lời'; topTxt = 'VÙNG ĐỈNH';
+            note = `Khung ${obRow.lbl} đang quá mua (RSI ${fmt(obRow.r, 1)}) và khung ${entryRow.lbl} suy yếu dưới EMA. Ưu tiên chốt lời từng phần${fngTxt}${pendingTxt}.`;
+          } else if (biasRow.dir === 1 && subBullAll && biasRow.zone !== 'xhi') {
+            vCls = 'bull'; topCls = 'bull';
+            vTxt = `LONG · Loại A (${biasRow.lbl}→${entryRow.lbl})`; topTxt = `${bull}/${total} LONG`;
+            note = `Bias ${biasRow.lbl} cùng toàn bộ khung nhỏ tới ${entryRow.lbl} đồng thuận tăng${w1Note}. Canh vào lệnh khi đóng nến ${entryRow.lbl}${fngTxt}${pendingTxt}.`;
+          } else if (biasRow.dir === -1 && subBearAll && biasRow.zone !== 'xlo') {
+            vCls = 'bear'; topCls = 'bear';
+            vTxt = `SHORT · Loại A (${biasRow.lbl}→${entryRow.lbl})`; topTxt = `${bear}/${total} SHORT`;
+            note = `Bias ${biasRow.lbl} cùng toàn bộ khung nhỏ tới ${entryRow.lbl} đồng thuận giảm${w1Note}. Canh Short khi đóng nến ${entryRow.lbl}${fngTxt}${pendingTxt}.`;
+          } else if (biasRow.dir === 1 && bull >= majNeed && (!subRows.length || subRows.some(x => x.dir === 1))) {
+            vCls = 'bull'; topCls = 'bull';
+            vTxt = `LONG · Loại B (${bull}/${total})`; topTxt = `${bull}/${total} LONG`;
+            note = `Bias ${biasRow.lbl} tăng${w1Note} (${bull}/${total} khung đồng thuận). Có thể vào 50%–70% khối lượng khi đóng nến ${entryRow.lbl}${fngTxt}${pendingTxt}.`;
+          } else if (biasRow.dir === -1 && bear >= majNeed && (!subRows.length || subRows.some(x => x.dir === -1))) {
+            vCls = 'bear'; topCls = 'bear';
+            vTxt = `SHORT · Loại B (${bear}/${total})`; topTxt = `${bear}/${total} SHORT`;
+            note = `Bias ${biasRow.lbl} giảm${w1Note} (${bear}/${total} khung đồng thuận). Chỉ ưu tiên canh Short 50%–70% khối lượng khi đóng nến ${entryRow.lbl}${fngTxt}${pendingTxt}.`;
+          }
+
+          $('mtfVerdict').className = 'mtf-verdict ' + vCls;
+          $('mtfVerdict').textContent = vTxt;
+          $('mtfNote').textContent = note;
+          $('mtfTopBadge').className = 'mtf-badge ' + topCls;
+          $('mtfTopBadge').textContent = topTxt;
+        }
+
+        $('mtfDots').innerHTML = rows.map(r => {
+          const c = !r.ok ? '' : r.dir === 1 ? 'bull' : r.dir === -1 ? 'bear' : '';
+          return `<span class="mtf-dot ${c}">${r.lbl}</span>`;
+        }).join('');
+
+        $('mtfBody').innerHTML = rows.map(r => {
+          const isCur = state.interval === r.tf;
+          if (!r.ok) {
+            return `<tr data-mtf="${r.tf}" class="${isCur ? 'cur' : ''}"><td><span class="mtf-tf">${r.lbl}<span class="mtf-role">${r.role}</span></span></td><td colspan="5" style="color:var(--muted)">${stillLoading ? 'Đang tải…' : '–'}</td></tr>`;
+          }
+          const rsiCol = r.zone === 'xlo' ? 'var(--down)' : r.zone === 'xhi' ? 'var(--up)' : '#ab47bc';
+          const pTxt = r.pTrend === 1 ? '<span style="color:var(--up)">↑ Tăng</span>'
+            : r.pTrend === -1 ? '<span style="color:var(--down)">↓ Giảm</span>'
+            : '<span style="color:var(--muted)">~ Đi ngang</span>';
+          const stCls = r.dir === 1 ? 'bull' : r.dir === -1 ? 'bear' : 'flat';
+          let stLbl = r.dir === 1 ? 'Tăng' : r.dir === -1 ? 'Giảm' : 'Hồi / Chờ';
+          if (r.zone === 'xlo') stLbl = 'Quá bán!';
+          else if (r.zone === 'xhi') stLbl = 'Quá mua!';
+          const cxHtml = r.cross ? `<span class="mtf-cx">${r.cross}</span>` : '';
+          return `<tr data-mtf="${r.tf}" class="${isCur ? 'cur' : ''}">
+            <td><span class="mtf-tf">${r.lbl}<span class="mtf-role">${r.role}</span></span></td>
+            <td style="color:${rsiCol};font-weight:700">${fmt(r.r, 1)}</td>
+            <td style="color:#66bb6a">${r.e != null ? fmt(r.e, 1) : '–'}</td>
+            <td style="color:#42a5f5">${r.w != null ? fmt(r.w, 1) : '–'}</td>
+            <td>${pTxt}</td>
+            <td><span class="mtf-st">${cxHtml}<span class="mtf-tag ${stCls}">${stLbl}</span></span></td>
+          </tr>`;
+        }).join('');
+
+        if (anchor) {
+          $('mtfUpdated').innerHTML = anchor.isLive
+            ? `Mốc: Trực tiếp (${fmtTime(anchor.bar.time)})`
+            : `<span style="color:var(--accent);font-weight:700">⏪ Mốc nến cuối: ${fmtTime(anchor.bar.time)}</span>`;
+        }
+      }
+
+      let mtfRaf = null;
+      function scheduleMtfRender(force = false) {
+        if (force) mtfState.lastSig = '';
+        if (mtfRaf) return;
+        mtfRaf = requestAnimationFrame(() => {
+          mtfRaf = null;
+          renderMtf(false);
+        });
+      }
+      main.timeScale().subscribeVisibleLogicalRangeChange(() => scheduleMtfRender(false));
+
+      async function fetchMtfH4(sym, id) {
+        if (!needH4()) return;
+        mtfState.loadingH4 = true;
+        renderMtf(true);
+        try {
+          const raw0 = await fetchMtfKlines(sym, '4h', 1000);
+          if (id !== mtfState.reqId) return;
+          let all = raw0.map(mapKline);
+          mtfState.h4 = mergeSortedBars(mtfState.h4, all);
+          mtfState.loadingH4 = false;
+          renderMtf(true);
+          // Tải thêm 2 trang nền (~3000 nến 4H ≈ 1.4 năm gần nhất)
+          let endMs = all.length ? (all[0].time - TZ) * 1000 - 1 : 0;
+          for (let page = 0; page < 2 && raw0.length === 1000 && endMs > 0; page++) {
+            let older;
+            try { older = await fetchMtfKlines(sym, '4h', 1000, endMs); } catch (_) { break; }
+            if (id !== mtfState.reqId || !older.length) break;
+            mtfState.h4 = mergeSortedBars(mtfState.h4, older.map(mapKline));
+            endMs = older[0][0] - 1;
+            renderMtf(true);
+            if (older.length < 1000) break;
+          }
+        } catch (_) {
+          if (id === mtfState.reqId) { mtfState.loadingH4 = false; renderMtf(true); }
+        }
+      }
+
+      async function fetchMtf(force = false) {
+        const sym = state.symbol;
+        const fresh = !force && mtfState.sym === sym && mtfState.daily.length && Date.now() - mtfState.fetchedAt < 5 * 60 * 1000;
+        if (fresh) {
+          if (needH4() && !mtfState.h4.length && !mtfState.loadingH4) fetchMtfH4(sym, mtfState.reqId);
+          renderMtf(true);
+          return;
+        }
+        const id = ++mtfState.reqId;
+        const symChanged = mtfState.sym !== sym;
+        mtfState.sym = sym;
+        mtfState.loading = true;
+        mtfState.err = '';
+        if (force || symChanged) {
+          mtfState.daily = [];
+          mtfState.h4 = [];
+          mtfState.h4FetchedEnds = new Set();
+        }
+        renderMtf(true);
+        // Tải song song 4H nếu người dùng đang bật 4H hoặc 12H
+        if (needH4()) fetchMtfH4(sym, id);
+        try {
+          const raw0 = await fetchMtfKlines(sym, '1d', 1000);
+          if (id !== mtfState.reqId) return;
+          let all = raw0.map(mapKline);
+          mtfState.daily = all;
+          mtfState.fetchedAt = Date.now();
+          mtfState.loading = false;
+          renderMtf(true);
+          // Tải thêm lịch sử nền (tối đa ~4000 nến ngày ≈ 11 năm) để backtest quá khứ xa không bị hụt 1W
+          let endMs = all.length ? (all[0].time - TZ) * 1000 - 1 : 0;
+          for (let page = 0; page < 3 && raw0.length === 1000 && endMs > 0; page++) {
+            let older;
+            try { older = await fetchMtfKlines(sym, '1d', 1000, endMs); } catch (_) { break; }
+            if (id !== mtfState.reqId || !older.length) break;
+            const mapped = older.map(mapKline);
+            all = mapped.concat(all);
+            mtfState.daily = all;
+            endMs = older[0][0] - 1;
+            renderMtf(true);
+            if (older.length < 1000) break;
+          }
+        } catch (e) {
+          if (id !== mtfState.reqId) return;
+          mtfState.err = 'Không tải được dữ liệu đa khung từ Binance.';
+          mtfState.loading = false;
+          renderMtf(true);
+        }
+      }
+
+      function mtfLiveTick(price) {
+        if (!Number.isFinite(price) || mtfState.sym !== state.symbol) return;
+        const now = Date.now();
+        if (now - mtfState.lastTickMs < 1500) return;
+        mtfState.lastTickMs = now;
+        if (mtfState.daily.length) {
+          const lb = mtfState.daily[mtfState.daily.length - 1];
+          lb.close = price;
+          if (price > lb.high) lb.high = price;
+          if (price < lb.low) lb.low = price;
+        }
+        if (mtfState.h4.length) {
+          const lb4 = mtfState.h4[mtfState.h4.length - 1];
+          lb4.close = price;
+          if (price > lb4.high) lb4.high = price;
+          if (price < lb4.low) lb4.low = price;
+        }
+        if (!mtfState.closedOnly) scheduleMtfRender(true);
+      }
+      setInterval(() => fetchMtf(false), 5 * 60 * 1000);
+
+      $('mtfTfBar').addEventListener('click', e => {
+        const b = e.target.closest('button[data-mtftog]');
+        if (!b) return;
+        const tf = b.dataset.mtftog;
+        if (mtfEnabled.has(tf)) {
+          if (mtfEnabled.size <= 1) return; // luôn giữ tối thiểu 1 khung đang bật
+          mtfEnabled.delete(tf);
+        } else {
+          mtfEnabled.add(tf);
+        }
+        saveMtfTfs();
+        renderMtfTfBar();
+        if (needH4() && !mtfState.h4.length && !mtfState.loadingH4) fetchMtfH4(state.symbol, mtfState.reqId);
+        renderMtf(true);
+      });
+      $('btnMtf').onclick = e => {
+        const open = mtfDlg.classList.toggle('open');
+        e.currentTarget.classList.toggle('on', open);
+        if (open) { $('cClose').click(); $('eClose').click(); $('ccClose').click(); $('fngClose').click(); renderMtf(true); fetchMtf(false); }
+      };
+      $('mtfClose').onclick = () => { mtfDlg.classList.remove('open'); $('btnMtf').classList.remove('on'); };
+      $('mtfRefresh').onclick = () => fetchMtf(true);
+      $('mtfClosed').onclick = () => { mtfState.closedOnly = !mtfState.closedOnly; renderMtf(true); };
+      $('mtfBody').addEventListener('click', e => {
+        const tr = e.target.closest('tr[data-mtf]');
+        if (!tr) return;
+        const tf = tr.dataset.mtf;
+        const btn = tfBox.querySelector(`.btn[data-tf="${tf}"]`);
+        if (btn) btn.click();
+      });
+      // Kéo thanh tiêu đề để di chuyển bảng đa khung
+      (() => {
+        const hd = $('mtfHead');
+        let drag = null;
+        hd.addEventListener('pointerdown', e => {
+          if (e.target.closest('button')) return;
+          const r = mtfDlg.getBoundingClientRect();
+          drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+          hd.setPointerCapture(e.pointerId);
+        });
+        hd.addEventListener('pointermove', e => {
+          if (!drag || !hd.hasPointerCapture(e.pointerId)) return;
+          const x = Math.max(4, Math.min(e.clientX - drag.dx, innerWidth - mtfDlg.offsetWidth - 4));
+          const y = Math.max(4, Math.min(e.clientY - drag.dy, innerHeight - mtfDlg.offsetHeight - 4));
+          mtfDlg.style.right = 'auto';
+          mtfDlg.style.left = x + 'px';
+          mtfDlg.style.top = y + 'px';
+        });
+        const stop = e => { if (drag && hd.hasPointerCapture(e.pointerId)) hd.releasePointerCapture(e.pointerId); drag = null; };
+        hd.addEventListener('pointerup', stop);
+        hd.addEventListener('pointercancel', stop);
+      })();
 
       /* ---------- Bảng cài đặt RSI ---------- */
       const cfg = $('cfg');
@@ -3952,16 +5516,17 @@
         try { localStorage.setItem('rsiCfg', JSON.stringify(next)); } catch (e) { }
         setLevels();
         renderIndicators();
+        try { renderMtf(); } catch (e) { }
       }
       Object.values(FIELDS).forEach(id => $(id).addEventListener('input', applyCfg));
       $('btnCfg').onclick = e => {
         const open = cfg.classList.toggle('open');
         e.currentTarget.classList.toggle('on', open);
-        if (open) { $('eClose').click(); $('ccClose').click(); fillCfg(); }
+        if (open) { $('eClose').click(); $('ccClose').click(); $('fngClose').click(); fillCfg(); }
       };
       $('cClose').onclick = () => { cfg.classList.remove('open'); $('btnCfg').classList.remove('on'); };
       $('cReset').onclick = () => { state.rsi = { ...RSI_DEFAULT }; fillCfg(); applyCfg(); };
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); $('ccClose').click(); } });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('cClose').click(); $('eClose').click(); $('ccClose').click(); $('fngClose').click(); $('mtfClose').click(); } });
 
       /* ---------- Chế độ Log ---------- */
       function applyLogMode() {
@@ -4907,24 +6472,28 @@
       }
       function frame() {
         requestAnimationFrame(frame);
-        const ts = main.timeScale(), ps = main.priceScale('right'), rps = rsiChart.priceScale('right');
+        const ts = main.timeScale(), ps = main.priceScale('right'), rps = rsiChart.priceScale('right'), fps = fngChart.priceScale('right');
         if (ps.options && rps.options) {
           const au = !!(ps.options().autoScale && rps.options().autoScale);
           if (au !== state.auto) { state.auto = au; $('tgAuto').classList.toggle('on', au); }
         }
-        if (ps.width && rps.width) {
-          const wm = ps.width(), wr = rps.width();
-          if (wm && wr && wm !== wr) {
-            const target = Math.max(wm, wr);
+        if (ps.width && rps.width && fps.width) {
+          const wm = ps.width();
+          const wr = rsiHidden() ? 0 : rps.width();
+          const wf = fngHidden() ? 0 : fps.width();
+          const target = Math.max(wm || 0, wr || 0, wf || 0);
+          if (target && ((wm && wm !== target) || (wr && wr !== target) || (wf && wf !== target))) {
             main.applyOptions({ rightPriceScale: { minimumWidth: target } });
             rsiChart.applyOptions({ rightPriceScale: { minimumWidth: target } });
+            fngChart.applyOptions({ rightPriceScale: { minimumWidth: target } });
             timeAxisCtrl.snapNow();
           }
         }
         const scaleW = (ps.width && ps.width()) || 72;
-        const collapsed = $('rsiPane').classList.contains('collapsed');
-        renderPane(PANES.main, scaleW, collapsed ? ((ts.height && ts.height()) || 26) : 0);
-        if (!collapsed) renderPane(PANES.rsi, scaleW, (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26);
+        const bc = bottomChart();
+        const rsiOff = $('rsiPane').classList.contains('collapsed');
+        renderPane(PANES.main, scaleW, bc === main ? ((ts.height && ts.height()) || 26) : 0);
+        if (!rsiOff) renderPane(PANES.rsi, scaleW, bc === rsiChart ? ((rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26) : 0);
       }
 
       /* --- Kiểm tra trúng hình --- */
@@ -5584,13 +7153,13 @@
         $('clkNow').textContent = `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())} UTC+7`;
         const into = dayMode === 'local' ? (nowSec + TZ) % 86400 : nowSec % 86400;
         $('clkLeft').textContent = (dayMode === 'local' ? 'Hết ngày: ' : 'Nến ngày đóng: ') + hms(86400 - into);
-        const collapsed = $('rsiPane').classList.contains('collapsed');
-        const h = (collapsed ? (main.timeScale().height && main.timeScale().height()) : (rsiChart.timeScale().height && rsiChart.timeScale().height())) || 26;
+        const bc = bottomChart();
+        const h = (bc.timeScale().height && bc.timeScale().height()) || 26;
         const sw = (main.priceScale('right').width && main.priceScale('right').width()) || 58;
         clock.style.height = h + 'px';
         $('scaleBtns').style.width = sw + 'px';
         $('scaleBtns').style.minWidth = sw + 'px';
-        $('scaleBtns').style.bottom = (collapsed ? h : 0) + 'px';
+        $('scaleBtns').style.bottom = (bc === main ? h : 0) + 'px';
         clock.title = dayMode === 'local'
           ? 'Đếm ngược đến 00:00 giờ Việt Nam. Bấm để đổi sang giờ đóng nến ngày của Binance (07:00).'
           : 'Đếm ngược đến lúc nến ngày Binance đóng (07:00 giờ Việt Nam). Bấm để đổi sang hết ngày 00:00.';
@@ -5631,7 +7200,7 @@
         ctxMenu.style.left = Math.max(4, Math.min(x, innerWidth - w - 4)) + 'px';
         ctxMenu.style.top = Math.max(4, Math.min(y, innerHeight - h - 4)) + 'px';
       }
-      ['mainPane', 'rsiPane'].forEach(id => $(id).addEventListener('contextmenu', e => {
+      ['mainPane', 'rsiPane', 'fngPane'].forEach(id => $(id).addEventListener('contextmenu', e => {
         e.preventDefault();
         showCtx(e.clientX, e.clientY);
       }));
@@ -5649,21 +7218,39 @@
       window.addEventListener('blur', hideCtx);
       ctxMenu.addEventListener('contextmenu', e => e.preventDefault());
 
-      /* ---------- Đường nét đứt dóng giữa khung giá và khung RSI ---------- */
-      // Khung đang được rê chuột đã có đường dọc sẵn; đường này nối phần còn lại sang khung kia.
-      const vsync = $('vsync');
-      function hideSync() { vsync.style.display = 'none'; }
+      /* ---------- Đường nét đứt dóng giữa khung giá, RSI và Tham lam / Sợ hãi ---------- */
+      // Khung đang được rê chuột đã có đường dọc sẵn; nối đường dọc sang các khung còn lại đang mở.
+      const vsync = $('vsync'), vsync2 = $('vsync2');
+      function hideSync() { vsync.style.display = 'none'; vsync2.style.display = 'none'; }
+      function placeVSeg(el, leftPx, topPx, bottomPx) {
+        if (bottomPx - topPx < 1) { el.style.display = 'none'; return; }
+        el.style.left = leftPx + 'px';
+        el.style.top = topPx + 'px';
+        el.style.height = (bottomPx - topPx) + 'px';
+        el.style.display = 'block';
+      }
       function showSync(x, from) {
-        if (x == null || $('rsiPane').classList.contains('collapsed')) { hideSync(); return; }
-        const cr = charts.getBoundingClientRect(), mr = $('mainPane').getBoundingClientRect(), rr = $('rsiPane').getBoundingClientRect();
-        const tsH = (rsiChart.timeScale().height && rsiChart.timeScale().height()) || 26;
-        const top = from === 'main' ? mr.bottom : mr.top;
-        const bottom = from === 'main' ? rr.bottom - tsH : rr.top;
-        if (bottom - top < 1) { hideSync(); return; }
-        vsync.style.left = Math.round(x + mr.left - cr.left) + 'px';
-        vsync.style.top = (top - cr.top) + 'px';
-        vsync.style.height = (bottom - top) + 'px';
-        vsync.style.display = 'block';
+        if (x == null) { hideSync(); return; }
+        const rsiOn = !$('rsiPane').classList.contains('collapsed');
+        const fngOn = !$('fngPane').classList.contains('collapsed');
+        if (!rsiOn && !fngOn) { hideSync(); return; }
+        const cr = charts.getBoundingClientRect(), mr = $('mainPane').getBoundingClientRect();
+        const rr = rsiOn ? $('rsiPane').getBoundingClientRect() : null;
+        const fr = fngOn ? $('fngPane').getBoundingClientRect() : null;
+        const bc = bottomChart();
+        const tsH = (bc.timeScale().height && bc.timeScale().height()) || 26;
+        const bottomEdge = (fr ? fr.bottom : rr.bottom) - tsH;
+        const leftPx = Math.round(x + mr.left - cr.left);
+        vsync.style.display = 'none';
+        vsync2.style.display = 'none';
+        if (from === 'main') {
+          placeVSeg(vsync, leftPx, mr.bottom - cr.top, bottomEdge - cr.top);
+        } else if (from === 'rsi' && rr) {
+          placeVSeg(vsync, leftPx, mr.top - cr.top, rr.top - cr.top);
+          if (fr) placeVSeg(vsync2, leftPx, rr.bottom - cr.top, bottomEdge - cr.top);
+        } else if (from === 'fng' && fr) {
+          placeVSeg(vsync, leftPx, mr.top - cr.top, fr.top - cr.top);
+        }
       }
       // Bám đúng giữa nến (kể cả các cột trống ở tương lai / quá khứ)
       const syncX = (chart, param) => {
@@ -5710,8 +7297,7 @@
         if (!chart || x == null || !Number.isFinite(x)) { hideTLabel(); return; }
         const time = timeAtChartX(chart, x, fallbackTime);
         if (time == null || !Number.isFinite(time)) { hideTLabel(); return; }
-        const collapsed = $('rsiPane').classList.contains('collapsed');
-        const tsChart = collapsed ? main : rsiChart;
+        const tsChart = bottomChart();
         const tsH = (tsChart.timeScale().height && tsChart.timeScale().height()) || 26;
         lastHoverX = x;
         lastHoverChart = chart;
@@ -5730,8 +7316,7 @@
       function showPLabel(y) {
         if (y == null || !Number.isFinite(y)) { hidePLabel(); return; }
         const mp = $('mainPane');
-        const collapsed = $('rsiPane').classList.contains('collapsed');
-        const tsH = collapsed ? ((main.timeScale().height && main.timeScale().height()) || 26) : 0;
+        const tsH = bottomChart() === main ? ((main.timeScale().height && main.timeScale().height()) || 26) : 0;
         const plotH = mp.clientHeight - tsH;
         if (plotH <= 0 || y < 0 || y > plotH) { hidePLabel(); return; }
         const price = candles.coordinateToPrice(y);
@@ -5756,6 +7341,10 @@
       $('rsiPane').addEventListener('pointerleave', () => {
         if (lastHoverChart === rsiChart) hideTLabel();
       });
+      $('fngPane').addEventListener('pointerleave', () => {
+        if (lastHoverChart === fngChart) hideTLabel();
+        updateFngLegend(state.data.length - 1);
+      });
 
       main.subscribeCrosshairMove(param => {
         const x = syncX(main, param);
@@ -5768,6 +7357,15 @@
         x == null ? hideSync() : showSync(x, 'rsi');
         showTLabel(rsiChart, x, param.time);
         hidePLabel();
+      });
+      fngChart.subscribeCrosshairMove(param => {
+        const x = syncX(fngChart, param);
+        x == null ? hideSync() : showSync(x, 'fng');
+        showTLabel(fngChart, x, param.time);
+        hidePLabel();
+        if (!param.time) { updateFngLegend(state.data.length - 1); return; }
+        const i = state.data.findIndex(bar => bar.time === param.time);
+        if (i >= 0) updateLegend(i);
       });
 
       /* ---------- Watchlist (Tab bên phải giống TradingView) ---------- */
@@ -6234,6 +7832,8 @@
             showVol: !!state.showVol,
             rsiOpen: !rsiPane.classList.contains('collapsed'),
             rsiH: rsiPane.style.height || '',
+            fngOpen: !fngPane.classList.contains('collapsed'),
+            fngH: fngPane.style.height || '',
             dark: !!state.dark,
             log: !!state.log,
             magnet: !!magnet,
@@ -6284,7 +7884,15 @@
         if (savedLayout && typeof savedLayout.rsiH === 'string' && savedLayout.rsiH) {
           rsiPane.style.height = savedLayout.rsiH;
         }
-        main.applyOptions({ timeScale: { visible: !rsiOpen } });
+
+        const fngOpen = savedLayout && typeof savedLayout.fngOpen === 'boolean' ? savedLayout.fngOpen : true;
+        fngPane.classList.toggle('collapsed', !fngOpen);
+        $('tgFng').classList.toggle('on', fngOpen);
+        fngSplitter.classList.toggle('hidden', !fngOpen);
+        if (savedLayout && typeof savedLayout.fngH === 'string' && savedLayout.fngH) {
+          fngPane.style.height = savedLayout.fngH;
+        }
+        syncPaneTimeScales();
 
         applyLogMode();
         ensureSymbolOption(state.symbol);
@@ -6356,7 +7964,10 @@
       wlConnectWs();
 
       restoreLayout();
+      loadFngCache();
+      fetchFng();
       load();
+      fetchMtf(true);
     })();
   </script>
 </body>
